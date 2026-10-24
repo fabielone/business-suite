@@ -105,4 +105,26 @@ These screenshots contain fictional local-demo data.
 
 The full product includes receipts, customer deposits/partial payments and balances, grouped/partial worker reimbursements, quotes, job/visit management, timer/manual hours, trips, allocations, lightweight CRM, private attachments and professional-service integrations. Early slices do not remove any of those requirements. See the requirements and development queue for dependencies, open questions and migration gates.
 
-User intent is open source. The exact software license and public product name have not been selected; this is not yet a licensed public release. The private [GitHub repository](https://github.com/fabielone/business-suite) now contains the committed source on `main`, with remote SHA verification recorded in `NOTE-010`. Local/live backend checks pass; hosted CI currently reports a startup failure before jobs run (see [verification](docs/verification.md)). `private: true` prevents accidental npm publication; repository visibility is configured independently.
+## License and contributions
+
+Copyright (C) 2026 Fabiel ([@fabielone](https://github.com/fabielone)).
+
+Business Suite is licensed under **GNU AGPL version 3 only**
+(`AGPL-3.0-only`). See [LICENSE](LICENSE) for the complete terms and
+[LICENSING.md](LICENSING.md) for attribution, source-sharing and dependency
+boundaries. This OSI-approved copyleft license permits commercial use and forks;
+covered distributions and modified versions offered over a network must meet its
+corresponding-source requirements. Preserve the required copyright and license
+notices.
+
+Fabiel is the sole maintainer of the official
+[repository](https://github.com/fabielone/business-suite), with control over its
+merges, roadmap and releases. Forks and pull requests are welcome: read
+[CONTRIBUTING.md](CONTRIBUTING.md). Contributors retain rights to their own work;
+maintainership does not imply control of independent compliant forks.
+
+The product name remains provisional. Local/live backend checks pass; hosted CI
+has a recorded startup failure before jobs run (see [verification](docs/verification.md)).
+`private: true` in the npm manifests prevents accidental npm publication and is
+independent of GitHub visibility. Source publication is not a production or app
+store release.

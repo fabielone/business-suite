@@ -11,7 +11,7 @@ updated: 2026-10-24
 | ID | Decision and status | What depends on it | Safe current position |
 |---|---|---|---|
 | BS-DEC-001 | Final brand and product name | Public identity, domains, copy | Business Suite is provisional |
-| BS-DEC-002 | Exact open-source license and reciprocity/contribution policy | Distribution, external contributions | Intent confirmed; no license claim until selected and added |
+| BS-DEC-002 | Resolved policy 2026-10-24: AGPL-3.0-only for original project work; public source; sole official maintainer welcomes contributions | License installation/publication evidence under NOTE-011; compatible dependencies and future binaries still need review | Preserve attribution; compliant independent commercial forks allowed; contributors retain their rights; see [business-suite open source and contributions](<business-suite open source and contributions.md>) |
 | BS-DEC-003 | Exact first pilot and operating day | Default screens, fixture terms, acceptance walkthrough | Preserve food selection and later physical-work clarification; do not choose one silently |
 | BS-DEC-004 | Quote acceptance: manager-recorded shared/PDF acceptance, customer web acceptance, or both | Evidence, portal, approval signatures | No fabricated acceptance; quote implementation deferred |
 | BS-DEC-005 | Job hierarchy: job with tasks/visits, projects containing jobs, or both | Navigation, grouping, job closure semantics | Flat initial jobs do not decide future hierarchy |
@@ -47,6 +47,9 @@ On 2026-10-23 the human required offline-first operation and native multiplatfor
 
 On 2026-10-24 the human answered BS-DEC-025: include Windows and macOS now. The current platform question is resolved; only the release/support details above remain open. See [business-suite desktop applications](<business-suite desktop applications.md>).
 
+## Licensing resolution — NOTE-011, 2026-10-24
+The human explicitly requests public source, credit, official-project control, forks and pull requests, and identifies themselves as the sole owner and current maintainer. Within that authorization, AGPL-3.0-only is the selected strong-copyleft policy for original project work. The exact license choice is no longer unanswered; repository installation and public visibility remain verification steps in NOTE-011 License and publicly release Business Suite (Obsidian reference). Official merge/release authority does not confer control over compliant independent forks. Contributor ownership, third-party terms and future distribution checks are defined in [business-suite open source and contributions](<business-suite open source and contributions.md>).
+
 ## Preserve these interpretations
 The interview's current-work clarification does not cancel the earlier food-pilot selection, and that selection does not require a restaurant-specific first release. Confirm the actual job/trip/expense workflow before choosing industry defaults. Approximately five test participants is not a capacity ceiling or proof of organization structure.
 
@@ -56,4 +59,4 @@ Both expense review and privileged direct posting were selected. The missing-rec
 Use: decision ID; date; human wording or source; selected policy; affected requirement IDs; data/API/UI/test consequences; migration effect; implementation evidence link. Keep rejected options only where they explain a consequential tradeoff. A later technical implementation report records what was built, not a new human answer.
 
 ## Current execution
-Current acceptance and task status live in NOTE-009 (Obsidian reference); NOTE-008 preserves the completed offline/mobile foundation; NOTE-007 (Obsidian reference) preserves the completed foundation evidence. The first local job/expense slice can progress without resolving every item above. A dependent feature must either wait for its answer or clearly expose the bounded default and limitation.
+Current licensing/public-source acceptance and task status live in NOTE-011 (Obsidian reference); NOTE-010 preserves deployed-backend evidence and NOTE-009 preserves desktop evidence; NOTE-008 preserves the completed offline/mobile foundation; NOTE-007 (Obsidian reference) preserves the completed foundation evidence. The first local job/expense slice can progress without resolving every item above. A dependent feature must either wait for its answer or clearly expose the bounded default and limitation.

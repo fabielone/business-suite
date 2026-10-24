@@ -9,7 +9,9 @@ updated: 2026-10-24
 This roadmap sequences implementation without removing confirmed scope. Jobs, assignments, trips, time, receipts, expenses, income, balances, reimbursements, optional CRM/quotes/site visits and professional integrations remain part of the intended product. The exact first pilot remains open; approximately five test users is context, not a technical capacity ceiling.
 
 ## Current authorized work
-NOTE-010 (Obsidian reference) owns the current deployment/publication acceptance criteria and status. On2026-10-24 the human explicitly requested use of the existing shared Docker host and a GitHub upload. The additive development backend is running; final verification/publication evidence is tracked in that task and [business-suite deployed backend](<business-suite deployed backend.md>). This does not authorize legacy deletion, operational data migration or an automatic client cutover.
+NOTE-011 (Obsidian reference) is the current licensing/public-source task. On 2026-10-24 the human authorized a public repository with attribution, forks and contributions, retaining official merge/release control. AGPL-3.0-only is selected for original project work; repository publication verification remains in progress. See [business-suite open source and contributions](<business-suite open source and contributions.md>).
+
+NOTE-010 (Obsidian reference) owns the completed development-deployment and initial private-upload acceptance evidence. On2026-10-24 the human explicitly requested use of the existing shared Docker host and a GitHub upload. The additive development backend is running; final verification/publication evidence is tracked in that task and [business-suite deployed backend](<business-suite deployed backend.md>). This does not authorize legacy deletion, operational data migration or an automatic client cutover.
 
 NOTE-009 completed the bounded local Windows/macOS foundation; its historical platform limitations below remain valid.
 
@@ -37,7 +39,7 @@ No real receipt upload, actual reimbursement/payment, timer, trip, full CRM, Res
 These stages describe dependencies, not fixed calendar estimates or a demand that the user rank all important requirements again. Work on independent documentation or safe foundations can continue while open product policies are resolved. The order between later work/resource and money capabilities can be adjusted to the selected pilot without cancelling either.
 
 ## Decisions needed before behavior depends on them
-First clarify the operational pilot, quote acceptance, job/project hierarchy, recurrence, materials/inventory depth and scheduling conflicts. For real money, settle self-approval, separate direct-post/reimbursement/payment grants, mixed funding/advances, obligation creation and cash/transfer evidence. Before personal data collection, settle privacy/retention, tracking and role/field visibility. License, brand, hosting and external providers remain open.
+First clarify the operational pilot, quote acceptance, job/project hierarchy, recurrence, materials/inventory depth and scheduling conflicts. For real money, settle self-approval, separate direct-post/reimbursement/payment grants, mixed funding/advances, obligation creation and cash/transfer evidence. Before personal data collection, settle privacy/retention, tracking and role/field visibility. The original-project license policy is resolved by NOTE-011; brand, production hosting, external providers and future distribution compatibility remain open.
 
 [business-suite open decisions](<business-suite open decisions.md>) owns exact decision IDs and wording. Do not resolve these through demo behavior, a database default or a speculative provider integration.
 
@@ -111,3 +113,6 @@ NOTE-009 final report: NOTE-009 2026-10-24 Desktop application foundation report
 
 ## NOTE-010 backend and publication — 2026-10-24
 Independent Suite database/Auth/API is deployed on the existing Docker host and source is uploaded to private GitHub.38 existing tests,9 real PostgreSQL groups,12 operator/adapter tests and8 deployed Auth/API groups passed; full backup and bounded schema restore succeeded; synthetic fixtures removed and peers preserved. NOTE-010 2026-10-24 Backend deployment and GitHub report (Obsidian reference) records commits, exact evidence and limits. Hosted push/manual CI reports startup_failure before jobs despite actionlint-valid workflows; exact cause is unresolved. Real client login, offline session/privacy, production operations and full product/cutover remain incomplete.
+
+## NOTE-011 licensing and public-source release — 2026-10-24
+The human authorizes a public repository with attribution, independent forks and pull requests, retaining control of official merges/releases. AGPL-3.0-only is the selected original-project license; contributor ownership and preserved third-party terms are in [business-suite open source and contributions](<business-suite open source and contributions.md>). Source/history review, repository license installation, commit/push and public-visibility verification remain in progress in NOTE-011 License and publicly release Business Suite (Obsidian reference). This updates source distribution policy without claiming new business features, production readiness, real client login, public binary releases or deployment changes.

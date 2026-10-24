@@ -1,6 +1,6 @@
 # Contributing and agent handoff
 
-Read repository `AGENTS.md` and the Obsidian project hub before working. Product requirements are authoritative in the vault; `docs/requirements` is a dated portable copy, not a second independently edited plan. Repository source and actual test output establish implementation facts. Human instructions override stale notes.
+Public contributors should start with [CONTRIBUTING.md](../CONTRIBUTING.md), repository `AGENTS.md` and the [portable requirements](requirements/README.md). Private Obsidian or infrastructure access is not required. The coordination procedure below is for maintainer agents with vault access; external contributors use GitHub issues/pull requests and the maintainer reconciles accepted requirements changes into the canonical notes. Repository source and actual test output establish implementation facts. Human instructions override stale notes.
 
 ## Start a scoped change
 

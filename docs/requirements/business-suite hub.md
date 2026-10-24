@@ -12,6 +12,8 @@ The current operation does not need a sales pipeline. CRM is optional. Jobs, rec
 
 **Current backend result — NOTE-010, 2026-10-24:** independent Suite Auth/database/API are running, and source is uploaded to private [GitHub](https://github.com/fabielone/business-suite). Real Auth/API and PostgreSQL checks pass; hosted CI cannot start yet. Real client login remains unfinished. [business-suite deployed backend](<business-suite deployed backend.md>) and NOTE-010 Deploy Business Suite backend and publish repository (Obsidian reference) hold the current deployment boundaries and evidence. Earlier local-only restrictions remain historical.
 
+**Public-source release — NOTE-011, 2026-10-24:** the human now authorizes making [fabielone/business-suite](https://github.com/fabielone/business-suite) public, with attribution and contributions under AGPL-3.0-only for original project work. Fabiel (@fabielone) remains the official maintainer. License installation, publication review and public-visibility verification are in progress in NOTE-011 License and publicly release Business Suite (Obsidian reference); the earlier private-repository checkpoint above is historical. [business-suite open source and contributions](<business-suite open source and contributions.md>) records the policy and remaining release boundaries.
+
 ## Read in this order
 1. [Confirmed requirements and their provenance](<business-suite requirements.md>).
 2. [Questions that must remain unanswered until resolved](<business-suite open decisions.md>).
@@ -35,6 +37,7 @@ The current operation does not need a sales pipeline. CRM is optional. Jobs, rec
 | Initial HTTP contract and future integrations | [business-suite API and integrations](<business-suite API and integrations.md>) |
 | Deployed Docker backend and operator handoff | [business-suite deployed backend](<business-suite deployed backend.md>) |
 | Architecture decisions and engineering defaults | [business-suite architecture](<business-suite architecture.md>) |
+| Open-source license, ownership and contributions | [business-suite open source and contributions](<business-suite open source and contributions.md>) |
 | Security, personal data and operations | [business-suite security privacy and operations](<business-suite security privacy and operations.md>) |
 | Meaningful tests and evidence levels | [business-suite quality and verification](<business-suite quality and verification.md>) |
 | Legacy import and authority cutover | [business-suite migration](<business-suite migration.md>) |
@@ -42,6 +45,8 @@ The current operation does not need a sales pipeline. CRM is optional. Jobs, rec
 | Source inventory and agent instructions | [business-suite sources and agent handoff](<business-suite sources and agent handoff.md>) |
 
 ## Active task and repository
+Current task: NOTE-011 (Obsidian reference). Its scope is licensing and public source release; it does not deploy new application behavior or enable real client login.
+
 Latest completed local extension: NOTE-009 (Obsidian reference). Its acceptance criteria and execution checklist are authoritative; these notes do not duplicate task checkboxes. NOTE-008 retains the completed offline/mobile foundation record. NOTE-007 (Obsidian reference) retains the completed local-foundation record.
 
 Repository: [Desktop business-suite](/Users/fabiel/Desktop/business-suite). Start with its [AGENTS.md](/Users/fabiel/Desktop/business-suite/AGENTS.md), [implementation contract](/Users/fabiel/Desktop/business-suite/docs/implementation-contract.md), and [interview snapshot](/Users/fabiel/Desktop/business-suite/docs/interview-snapshot.json).
@@ -51,7 +56,7 @@ Repository: [Desktop business-suite](/Users/fabiel/Desktop/business-suite). Star
 ## Specification authority
 Direct later human decisions supersede older notes. [business-suite requirements](<business-suite requirements.md>) distinguishes confirmed requirements from proposed design and bounded engineering defaults. The interview snapshot is historical evidence; its statement that implementation has not started must not overwrite later dated implementation reports. Research documents explain recommendations but are not blanket product approvals.
 
-No deployment, purchases, remote publication, legacy deletion or data migration follows from a proposed architecture or backlog entry. Current explicitly authorized deployment/publication work is recorded in NOTE-010; NOTE-007/008/009 preserve historical foundation evidence.
+No deployment, purchases, remote publication, legacy deletion or data migration follows from a proposed architecture or backlog entry. NOTE-010 records the authorized development deployment and initial private upload; NOTE-011 separately authorizes public source release and licensing. NOTE-007/008/009 preserve historical foundation evidence.
 
 **NOTE-008 local result:** 30 shared/API/native unit scenarios and10 browser flows pass; Android/iOS exports pass. Actual native-device/runtime tests, real authentication and5 high Expo toolchain audit entries remain before release. NOTE-008 2026-10-23 Offline and native foundation report (Obsidian reference).
 

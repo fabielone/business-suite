@@ -75,7 +75,7 @@ Do not unify order/job/invoice/payment into one object. Keep narrow typed record
 | BS-ADR-014 | Two-command demo allowlist with explicit conflicts — bounded initial slice | Expense submit/job close queued; create/review online; full offline coverage and live privacy pending |
 | BS-ADR-015 | Electron desktop with bundled suite origin and persistent IndexedDB — NOTE-009 engineering choice | Reuse React/shared sync; isolated renderer, narrow main-process transport; release matrix/signing pending |
 
-New decisions record date, human/engineering provenance, alternatives considered, affected requirements, migration implications and verification. Exact software license is unresolved; open-source intent is not a legal compatibility conclusion about reused code.
+New decisions record date, human/engineering provenance, alternatives considered, affected requirements, migration implications and verification. NOTE-011 resolves the original-project license policy to AGPL-3.0-only on 2026-10-24; see [business-suite open source and contributions](<business-suite open source and contributions.md>). That selection is not a compatibility conclusion about reused code, combined binaries or future distribution channels.
 
 ## Configuration and module lifecycle
 Install/deploy makes trusted code available; business activation enables its capability; role navigation decides how permitted work appears. Defaults need provenance and explicit per-business overrides so a pack update cannot silently reprice work, change permissions or invalidate history. Custom fields and templates need schema versions and migration validation.

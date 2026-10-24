@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "A single modular application for work, people and business money. Local foundation; product name and license pending.",
+  "description": "An offline-first modular application for work, people and business money.",
   "engines": {
     "node": "^22.13.0 || ^24.3.0 || >=26.0.0"
   },
@@ -49,5 +49,6 @@
     "prettier": "^3.9.10",
     "tsx": "^4.20.6",
     "typescript": "~6.0.3"
-  }
+  },
+  "license": "AGPL-3.0-only"
 }
