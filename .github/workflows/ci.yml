@@ -1,5 +1,6 @@
 name: local-foundation-checks
 on:
+  workflow_dispatch:
   push:
     paths-ignore:
       - '**/*.md'
