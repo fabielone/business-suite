@@ -5,7 +5,7 @@
   "type": "module",
   "description": "A single modular application for work, people and business money. Local foundation; product name and license pending.",
   "engines": {
-    "node": ">=22.12.0"
+    "node": "^22.13.0 || ^24.3.0 || >=26.0.0"
   },
   "workspaces": [
     "packages/*",
@@ -13,21 +13,28 @@
   ],
   "scripts": {
     "demo": "node scripts/demo.mjs",
-    "check": "npm run build --workspace @suite/core && npm run typecheck --workspaces --if-present",
-    "test": "npm run build --workspace @suite/core && npm run test --workspaces --if-present",
-    "build": "npm run build --workspace @suite/core && npm run build --workspace @suite/api && npm run build --workspace @suite/web",
+    "check": "npm run build --workspace @suite/core && npm run build --workspace @suite/offline && npm run typecheck --workspaces --if-present",
+    "test": "npm run build --workspace @suite/core && npm run build --workspace @suite/offline && npm run test --workspaces --if-present",
+    "build": "npm run build --workspace @suite/core && npm run build --workspace @suite/offline && npm run build --workspace @suite/api && npm run build --workspace @suite/web",
     "build:demo": "npm run build --workspace @suite/web -- --mode demo",
     "test:e2e": "playwright test",
     "db:start": "docker compose up -d db",
     "db:stop": "docker compose stop db",
-    "format": "prettier --write \"apps/**/*.{ts,tsx,css,json}\" \"packages/**/*.{ts,json}\" \"scripts/*.mjs\" \"tests/**/*.ts\" playwright.config.ts package.json compose.yaml .github/workflows/ci.yml",
-    "format:check": "prettier --check \"apps/**/*.{ts,tsx,css,json}\" \"packages/**/*.{ts,json}\" \"scripts/*.mjs\" \"tests/**/*.ts\" playwright.config.ts package.json compose.yaml .github/workflows/ci.yml"
+    "format": "prettier --write \"apps/**/*.{ts,tsx,css,json,cjs}\" \"packages/**/*.{ts,json}\" \"scripts/*.mjs\" \"tests/**/*.ts\" playwright*.config.ts package.json compose.yaml .github/workflows/ci.yml",
+    "format:check": "prettier --check \"apps/**/*.{ts,tsx,css,json,cjs}\" \"packages/**/*.{ts,json}\" \"scripts/*.mjs\" \"tests/**/*.ts\" playwright*.config.ts package.json compose.yaml .github/workflows/ci.yml",
+    "mobile": "npm run start --workspace @suite/mobile",
+    "mobile:demo": "npm run build --workspace @suite/core && npm run build --workspace @suite/offline && npm run start:demo --workspace @suite/mobile",
+    "build:mobile": "npm run build --workspace @suite/core && npm run build --workspace @suite/offline && npm run export --workspace @suite/mobile",
+    "build:mobile:demo": "npm run build --workspace @suite/core && npm run build --workspace @suite/offline && npm run export:demo --workspace @suite/mobile",
+    "test:offline": "playwright test --config playwright.offline.config.ts",
+    "preview:offline": "npm run preview --workspace @suite/web -- --outDir dist-demo",
+    "demo:offline": "node scripts/demo.mjs --offline"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
     "@types/node": "^22.19.0",
     "prettier": "^3.9.10",
     "tsx": "^4.20.6",
-    "typescript": "~5.9.3"
+    "typescript": "~6.0.3"
   }
 }

@@ -55,3 +55,8 @@ A narrow work-unit header can share owner, time, status and site while industry-
 Recurring contracts/generation are unanswered. Do not implement a recurring invoice as if it specified the work to perform. Any future recurrence needs schedule, date/time zone, pause/skip/cancel, generation identity and billing policy.
 
 Disabling new use must leave open jobs, expense reviews, balances, reimbursements, refunds and historic statements usable. Hiding a menu cannot disable backend obligations. Capability retirement/activation semantics are proposed in [business-suite architecture](<business-suite architecture.md>); no arbitrary uninstall is promised.
+
+## Offline delivery semantics
+NOTE-008 makes offline-first and native clients required product behavior. In the initial slice, missing-receipt submission and job close can be durably queued locally; create job and review/approval require connectivity. Queued intent is separate from the confirmed domain status. A local close request does not change the authoritative job state until acknowledged; a synchronized expense still awaits its normal review, and approval still creates no cash movement.
+
+Full receipt, timer/manual time, trip, assignment, resource, commercial and financial workflows need explicit offline behavior as they are implemented. No broad permission to merge financial conflicts, auto-rebase work versions or bypass missing-receipt review follows from offline capture. [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>) owns the detailed contract.

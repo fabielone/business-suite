@@ -32,7 +32,7 @@ All commands require a bounded `Idempotency-Key`. Repeating the same key and bod
 ## Authentication and mode boundary
 Real mode verifies a GoTrue-compatible JWT's issuer, audience and expiry using configured JWKS or a server-only secret. It uses the verified `sub` to load active membership and grants from the database. A token's role claim and client role headers are not business permissions. The frontend first slice has no production sign-in UX; live configuration must show setup requirements instead of silently falling back to demo fixtures.
 
-The demo is a separate explicit local entry with ephemeral PGlite fixtures and the same domain services, not a deployed authentication mode. It binds only to loopback, has no promised persistence across restart and must label its limitations. Real authentication failure never activates demo.
+The demo is a separate explicit local entry with ephemeral PGlite fixtures and the same domain services, not a deployed authentication mode. The API binds only to loopback and its fixture database has no promised persistence across API restart. NOTE-008 adds durable client queues with a demo-generation guard; that must not be confused with durable server fixtures. Both limits must be labeled. Real authentication failure never activates demo.
 
 ## Command and transaction contract
 A proposed consequential command runs authorization and domain checks, locks or versions affected records, writes state plus audit/idempotency/outbox records, and commits on one backend-owned PostgreSQL connection under a restricted role and transaction-local business scope. SQL constraints reinforce typed invariants. A SQL RPC can implement an entire command as an alternative, but must not duplicate competing business logic.
@@ -64,3 +64,12 @@ No new consumer has been connected to the CocinaCostos/Salad API, and no shared 
 
 ### Inspected implementation
 The paths and final checks are recorded in [business-suite roadmap](<business-suite roadmap.md#actual-implementation-evidence>) and NOTE-007 2026-10-23 Business Suite foundation report (Obsidian reference). `/healthz` is also implemented. Business writes/audit/command receipts are atomic in the tested PGlite transaction path. No outbox/inbox or external worker is implemented in this slice. The real pg adapter exists; live PostgreSQL execution remains unrun.
+
+## Offline command transport added by NOTE-008
+The initial offline client reuses the existing expense-submit and job-close API commands. It does not introduce unrestricted table replication or a generic client-authored balance endpoint. It saves the normalized intent locally first, then sends the original command key and exact payload. Server authentication, current grants, business/record scope and expected version remain decisive at every replay, including an idempotent retry.
+
+`packages/offline/src/index.ts` was inspected on 2026-10-23. Its transport accepts business ID, optional body, idempotency key and demo session ID; exact HTTP headers belong in the current adapter/server contract. It requires a matching fictional demo workspace and generation, refreshes before replay, and keeps confirmed snapshots separate from queued intents. It does not yet support real sign-in/token refresh or prove a production offline session policy.
+
+Uncertain transport/server outcomes keep the same key. Terminal conflict is not rebased automatically. Authorization denial locks replay and clears the snapshot, while the pending store remains isolated. Job creation and review/approval stay online in the initial slice. Other endpoints and future receipt/time/trip/payment behavior need explicit sync semantics before being enabled offline. [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>) contains the exact inspected state classifications and recovery limits.
+
+A **client outbox** sends user intent to this API. A future **server outbox** sends committed business events to external services. NOTE-007's statement that no server outbox/inbox existed remains historical and must not be misread as forbidding the new client queue. Actual NOTE-008 endpoint changes and test results await root's report.

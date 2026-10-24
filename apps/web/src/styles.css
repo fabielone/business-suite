@@ -2393,3 +2393,43 @@ h1 {
     padding: 12px;
   }
 }
+
+.sync-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  background: #edf3ed;
+  border: 1px solid #cddccd;
+  border-radius: 12px;
+  color: #233d30;
+}
+.sync-panel > div {
+  flex: 1;
+  min-width: 190px;
+}
+.sync-panel p {
+  margin: 5px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.sync-entries {
+  flex-basis: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sync-entries li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding: 10px 0;
+  border-top: 1px solid #cddccd;
+  font-size: 13px;
+}
+.sync-entries li span {
+  flex: 1;
+  min-width: 160px;
+}

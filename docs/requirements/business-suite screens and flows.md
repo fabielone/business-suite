@@ -6,7 +6,7 @@ updated: 2026-10-23
 
 ← [business-suite hub](<business-suite hub.md>) · [business-suite permissions](<business-suite permissions.md>) · [business-suite API and integrations](<business-suite API and integrations.md>)
 
-The confirmed experience is one responsive app, with visible modules/features based on business configuration and user privileges. The initial frontend contract uses React/Vite and local demo identities. The following screen IDs describe responsibilities; exact route filenames and observed screenshots are evidence to add after inspecting the completed implementation, not assumed existing routes.
+The confirmed experience is one responsive app, with visible modules/features based on business configuration and user privileges. The original frontend contract uses React/Vite and local demo identities. NOTE-008 now requires offline-first and native multiplatform delivery, with Android/iOS/browser assumed; [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>) defines the initial cross-client slice. The following screen IDs describe responsibilities; exact route filenames and observed screenshots are evidence to add after inspecting the completed implementation, not assumed existing routes.
 
 ## Initial screen contracts
 | ID | Screen responsibility | Required behavior and first-slice boundary |
@@ -49,12 +49,18 @@ A 401 should request reauthentication without exposing stale protected data. A 4
 Keyboard navigation, labeled fields, visible focus, text errors, sufficient contrast and non-color status cues are proposed quality requirements. Money entry must explain MXN and decimal-to-centavo conversion. Phone layouts need readable totals, practical touch targets and no horizontal overflow; desktop views may show more context without requiring separate business logic.
 
 ## Offline and draft safety
-Offline support is unanswered (`BS-DEC-020`). Initial behavior should clearly signal network failure and avoid claiming a command is committed locally. A future offline queue must have deliberate allowed actions, local encryption/storage rules, idempotency, identity expiry, conflict resolution and reconciliation. It cannot silently store receipts, customer data or salaries in unrestricted browser storage.
+Offline-first is confirmed by NOTE-008, superseding the earlier unanswered need. Supported expense submission/job closure must persist locally before send and remain visible across normal client restart. Job creation and review/approval are online-only in this first slice; explain that limit before collecting unsupported work. First-time device preparation needs a successful authorized fetch. Cache age and unavailable records must be visible.
 
-Future native clients use the same authoritative HTTPS commands, with platform secure storage for tokens and deliberate local-data retention. A mobile wrapper is not evidence of offline correctness.
+Native clients are current product scope and use the same authoritative HTTPS commands with device-specific storage. Live credential/local-data protection remains incomplete; demo is fictional only. A source bundle or mobile wrapper is not evidence of native device or offline correctness.
+
+Add `BS-SCR-014` for synchronization status and pending work: show queued/conflict/rejected intent separately from confirmed jobs/expenses, last successful sync, retry and understandable recovery. “Saved on this device” follows durable local commit; “Synchronized” follows authoritative acknowledgement; “Approved” and “Paid” remain separate financial states. Do not show a locally queued close as a confirmed completed job.
+
+Add `BS-SCR-015` for local lock/reset/recovery: authorization denial clears protected snapshot and stops replay; unresolved intents must not move to another identity. The demo reset must warn about unsynchronized fictional work. Do not offer discard for an uncertain queued command merely because the UI timed out; the server may have committed it. Exact current behavior is specified in [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>).
+
+Cross-client flow: prepare online → lose connectivity → capture supported intent → confirm durable local save → reopen → inspect queued work → reconnect/revalidate → send same key → display acknowledgement or conflict/denial. Stale closure requires an explicit reviewed new intent, not automatic version replacement. Future receipt/time/trip flows must receive their own offline contracts.
 
 ## Evidence slots
-Root should append actual screen routes/components, observed narrow/wide viewport checks, representative screenshot references and remaining UI defects in [business-suite roadmap](<business-suite roadmap.md>) or the NOTE-007 report. These conceptual IDs are stable; implementation route names may change. Test scenarios are in [business-suite quality and verification](<business-suite quality and verification.md>), with the canonical execution checklist only in NOTE-007 (Obsidian reference).
+Root should append actual screen routes/components, observed narrow/wide viewport checks, representative screenshot references and remaining UI defects in [business-suite roadmap](<business-suite roadmap.md>) or the NOTE-007 report. These conceptual IDs are stable; implementation route names may change. Test scenarios are in [business-suite quality and verification](<business-suite quality and verification.md>), with the current execution checklist only in NOTE-008 (Obsidian reference). NOTE-007 results below remain historical evidence.
 
 
 ### Verified screen inventory — 2026-10-23

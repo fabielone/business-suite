@@ -1,0 +1,33 @@
+{
+  "name": "@suite/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start --localhost",
+    "start:demo": "EXPO_PUBLIC_SUITE_MODE=demo expo start --localhost",
+    "ios:demo": "EXPO_PUBLIC_SUITE_MODE=demo expo start --localhost --ios",
+    "android:demo": "EXPO_PUBLIC_SUITE_MODE=demo expo start --localhost --android",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts",
+    "export": "expo export --platform all --output-dir dist",
+    "export:demo": "EXPO_PUBLIC_SUITE_MODE=demo expo export --platform all --output-dir dist-demo"
+  },
+  "dependencies": {
+    "@suite/core": "0.0.1",
+    "@suite/offline": "0.0.1",
+    "expo": "58.0.19",
+    "expo-crypto": "~58.0.7",
+    "expo-device": "~58.0.5",
+    "expo-network": "~58.0.4",
+    "expo-sqlite": "~58.0.14",
+    "react": "19.3.0",
+    "react-native": "0.88.0",
+    "react-native-safe-area-context": "~5.10.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "typescript": "~6.0.3"
+  }
+}

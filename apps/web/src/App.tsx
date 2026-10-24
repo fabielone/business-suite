@@ -1,3 +1,5 @@
+import { offlineClient } from './offline';
+import { statusOf, type LocalState } from '@suite/offline';
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
   ApiError,
@@ -170,7 +172,7 @@ function useCommand(role: DemoRole, businessId: string) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [conflict, setConflict] = useState(false);
-  async function run<T>(path: string, body: unknown): Promise<T | null> {
+  async function run<T>(path: string, body: unknown): Promise<T | { queued: true } | null> {
     const signature = JSON.stringify([role, businessId, path, body]);
     let key = keys.current.get(signature);
     if (!key) {
@@ -181,7 +183,31 @@ function useCommand(role: DemoRole, businessId: string) {
     setError(null);
     setConflict(false);
     try {
-      const result = await request<T>(path, role, { businessId, body, idempotencyKey: key });
+      if (path === '/expenses' || /^\/jobs\/[^/]+\/close$/.test(path)) {
+        const client = offlineClient(role);
+        const payload = body as Record<string, unknown>;
+        await client.enqueue(
+          path === '/expenses' ? 'expense.submit' : 'job.close',
+          path === '/expenses' ? payload : { ...payload, jobId: path.split('/')[2] },
+        );
+        // Durable local acknowledgement is immediate. Network work happens after saving.
+        window.dispatchEvent(new Event('suite-local-change'));
+        keys.current.delete(signature);
+        return { queued: true };
+      }
+      if (!navigator.onLine)
+        throw new ApiError(
+          0,
+          'online_required',
+          'Creating jobs and reviewing expenses need a connection in this first slice. Your form stays open.',
+        );
+      const demoSessionId = (await offlineClient(role).read()).snapshot?.workspace.demoSessionId;
+      const result = await request<T>(path, role, {
+        businessId,
+        body,
+        idempotencyKey: key,
+        demoSessionId,
+      });
       keys.current.delete(signature);
       return result;
     } catch (err) {
@@ -238,7 +264,12 @@ export function App() {
 }
 
 function DemoApp() {
-  const [role, setRole] = useState<DemoRole>('manager');
+  const [role, setRole] = useState<DemoRole>(() =>
+    sessionStorage.getItem('suite-demo-role') === 'worker' ? 'worker' : 'manager',
+  );
+  const [localState, setLocalState] = useState<LocalState | null>(null);
+  const [offline, setOffline] = useState(!navigator.onLine);
+  const [syncing, setSyncing] = useState(false);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [jobs, setJobs] = useState<Collection<Job>>(blank);
   const [expenses, setExpenses] = useState<Collection<Expense>>(blank);
@@ -256,56 +287,87 @@ function DemoApp() {
   const command = useCommand(role, workspace?.business.id ?? '');
 
   useEffect(() => {
-    const controller = new AbortController();
+    const update = () => refresh();
+    const timer = window.setInterval(() => {
+      if (navigator.onLine)
+        void offlineClient(role)
+          .read()
+          .then((state) => {
+            if (!state.blockedReason && state.commands.some((c) => c.status === 'queued'))
+              refresh();
+          })
+          .catch(() => {});
+    }, 30000);
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    window.addEventListener('focus', update);
+    window.addEventListener('suite-local-change', update);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('focus', update);
+      window.removeEventListener('online', update);
+      window.removeEventListener('offline', update);
+      window.removeEventListener('suite-local-change', update);
+    };
+  }, [refresh, role]);
+
+  useEffect(() => {
     let active = true;
     setLoading(true);
+    setSyncing(true);
     setLoadError(null);
+    const client = offlineClient(role);
+    function apply(state: LocalState) {
+      if (!active) return;
+      setLocalState(state);
+      const snapshot = state.snapshot;
+      setWorkspace(snapshot?.workspace ?? null);
+      if (snapshot) setLoading(false);
+      setJobs(snapshot ? { items: snapshot.jobs, loaded: true, error: null } : blank());
+      setExpenses(snapshot ? { items: snapshot.expenses, loaded: true, error: null } : blank());
+    }
     async function load() {
       try {
-        const next = await request<Workspace>('/workspace', role, { signal: controller.signal });
-        if (!next.demo)
-          throw new ApiError(
-            403,
-            'demo_required',
-            'This frontend is a local demo. The connected API is not in demo mode; live access requires a verified sign-in setup.',
-          );
-        if (!active) return;
-        setWorkspace(next);
-        const options = { businessId: next.business.id, signal: controller.signal };
-        const [jobResult, expenseResult] = await Promise.allSettled([
-          next.modules.includes('work') && next.permissions.includes('work.jobs.read')
-            ? request<{ jobs: Job[] }>('/jobs', role, options)
-            : Promise.resolve({ jobs: [] }),
-          next.modules.includes('money') && next.permissions.includes('money.expenses.read')
-            ? request<{ expenses: Expense[] }>('/expenses', role, options)
-            : Promise.resolve({ expenses: [] }),
-        ]);
-        if (!active) return;
-        setJobs(
-          jobResult.status === 'fulfilled'
-            ? { items: jobResult.value.jobs, loaded: true, error: null }
-            : { items: [], loaded: true, error: errorMessage(jobResult.reason) },
-        );
-        setExpenses(
-          expenseResult.status === 'fulfilled'
-            ? { items: expenseResult.value.expenses, loaded: true, error: null }
-            : { items: [], loaded: true, error: errorMessage(expenseResult.reason) },
-        );
-      } catch (err) {
+        const cached = await client.read();
+        apply(cached);
+        if (cached.blockedReason) {
+          if (active) setLoadError(cached.blockedReason);
+          return;
+        }
+        try {
+          if (!navigator.onLine)
+            throw new ApiError(0, 'offline', 'No connection. Connect once to prepare this device.');
+          apply(await client.sync());
+          if (active) setOffline(false);
+        } catch (error) {
+          const state = await client.read();
+          apply(state);
+          if (active) {
+            setOffline(statusOf(error) === 0 || statusOf(error) >= 500);
+            if (
+              !state.snapshot ||
+              (![0, 408, 429].includes(statusOf(error)) && statusOf(error) < 500)
+            )
+              setLoadError(errorMessage(error));
+          }
+        }
+      } catch (error) {
         if (active) {
           setWorkspace(null);
           setJobs(blank());
           setExpenses(blank());
-          setLoadError(errorMessage(err));
+          setLoadError(errorMessage(error));
         }
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          setSyncing(false);
+        }
       }
     }
     void load();
     return () => {
       active = false;
-      controller.abort();
     };
   }, [role, refreshCount]);
 
@@ -323,6 +385,8 @@ function DemoApp() {
     setNotice('');
     setView('overview');
     command.clear();
+    setLocalState(null);
+    sessionStorage.setItem('suite-demo-role', next);
     setRole(next);
   }
   function saved(message: string) {
@@ -335,7 +399,7 @@ function DemoApp() {
       version: job.version,
     });
     if (result) {
-      setNotice('Job completed. Expenses and payment balances remain separate.');
+      setNotice('Completion saved on this device. Check the sync queue for server confirmation.');
       refresh();
     }
   }
@@ -352,7 +416,8 @@ function DemoApp() {
           LOCAL DEMO
         </span>
         <span>
-          Temporary example data resets when the API restarts. No real uploads or payments.
+          Fictional demo only. This device keeps offline entries; the server resets on restart. No
+          real uploads or payments.
         </span>
       </div>
       <div className="app-shell">
@@ -460,6 +525,71 @@ function DemoApp() {
             </div>
           </header>
           <main id="main" tabIndex={-1}>
+            <section className="sync-panel" aria-label="Device sync">
+              <div>
+                <strong>{offline ? 'Offline · working from this device' : 'Device sync'}</strong>
+                <p>
+                  {localState?.snapshot
+                    ? `Last downloaded: ${new Date(localState.snapshot.fetchedAt).toLocaleString()}.`
+                    : 'Connect once to download your permitted work.'}{' '}
+                  Saved locally does not mean approved or paid.
+                </p>
+              </div>
+              <button className="button secondary small" disabled={syncing} onClick={refresh}>
+                {syncing ? 'Syncing…' : 'Sync now'}
+              </button>
+              {!!localState?.commands.length && (
+                <ul className="sync-entries">
+                  {localState.commands.map((entry) => (
+                    <li key={entry.id}>
+                      <strong>
+                        {entry.kind === 'expense.submit'
+                          ? String(entry.body.description)
+                          : 'Job completion'}
+                      </strong>
+                      <span>
+                        {entry.status === 'queued'
+                          ? 'Saved on device · waiting to sync'
+                          : `${entry.status} · ${entry.message}`}
+                      </span>
+                      {entry.status !== 'queued' && (
+                        <button
+                          className="text-button"
+                          onClick={() => {
+                            if (
+                              confirm(
+                                'Remove this unsuccessful local attempt? Review the current server record before creating a corrected entry.',
+                              )
+                            )
+                              void offlineClient(role).discard(entry.id).then(refresh);
+                          }}
+                        >
+                          Remove attempt
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {localState?.blockedReason && (
+                <>
+                  <p role="alert">{localState.blockedReason}</p>
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      if (
+                        confirm(
+                          'Clear this identity’s local DEMO data, including unsynced entries? This cannot be undone.',
+                        )
+                      )
+                        void offlineClient(role).reset().then(refresh);
+                    }}
+                  >
+                    Reset local demo data
+                  </button>
+                </>
+              )}
+            </section>
             {!workspace ? (
               <div className="connection-state">
                 {loading ? (
@@ -644,7 +774,7 @@ function DemoApp() {
           jobs={jobs.error ? [] : jobs.items}
           onClose={() => setModal(null)}
           onSaved={() =>
-            saved('Expense submitted for review. No reimbursement or payment has been recorded.')
+            saved('Expense saved on this device. Sync submits it for review; no money is sent.')
           }
         />
       )}

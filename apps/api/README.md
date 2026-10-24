@@ -13,6 +13,8 @@ The demo binds **127.0.0.1:4310**, initializes an in-memory PGlite database usin
 
 Use x-demo-user: manager or worker; omitted selection means manager only in this explicit demo process. Unknown identities fail. GET /v1/workspace returns demo: true and the fixture business; real mode always returns demo: false. The workspace includes members only for business-scoped job creators.
 
+Demo workspace responses also include demoSessionId: a random UUID created once for that API instance. Offline clients must associate cached records and queued commands with this epoch and refuse replay after it changes, because restarting the demo resets its ephemeral database. Send X-Demo-Session-Id with queued commands; a supplied mismatched epoch receives 409 DEMO_SESSION_CHANGED before execution. This also protects against a restart between the workspace check and command replay. Existing direct demo commands without the header remain supported. Real workspace responses omit this field, and real authentication ignores the header. This does not relax the loopback boundary: physical-device testing needs a separately authenticated development backend.
+
 Exported DEMO_IDS lives in src/demo-fixtures.ts:
 
 | Fixture | UUID |

@@ -4,12 +4,14 @@
 
 ```sh
 npm ci
-npm run demo
+npm run demo:offline
 ```
 
-The launcher builds `@suite/core`, then starts Vite and the explicit ephemeral demo API. Visit `http://127.0.0.1:5178`. Ctrl-C stops both process groups. Fictional data resets on the next API start. The UI is connected to the API; there is no browser-side successful-write simulation or automatic fixture fallback on errors.
+Use Node22.13+ (within22),24.3+ (within24), or26+. The launcher builds `@suite/core`, `@suite/offline` and the demo web shell, then serves the build with the explicit ephemeral demo API. `npm run demo` remains the hot-reload development option; offline reopening needs the built shell. Visit `http://127.0.0.1:5178`. Ctrl-C stops both process groups. Fictional data resets on the next API start. The UI stores captured intents durably before attempting sync. Local-save acknowledgement is distinct from server acceptance. A previously downloaded authorized snapshot remains usable offline; a device without one must connect once. There is no generated-success fallback.
 
 Demo roles are an inspection tool. They do not implement real account login. Never host the demo publicly or use it for business records. The real API entry point ignores demo identity headers.
+
+For native setup and simulator/emulator commands read `apps/mobile/README.md`; use `npm run mobile:demo` alongside the API. Bundle checks: `npm run build:mobile` and `npm run build:mobile:demo`. Neither produces signed installable binaries.
 
 ## Real PostgreSQL development path (not yet live-verified)
 
@@ -27,12 +29,14 @@ The migration/server commands above and `db/README.md` are provided for later in
 ## Useful checks
 
 - `npm run check`: shared package build and workspace TypeScript checks.
-- `npm test`: meaningful API/domain and authorization checks against embedded PostgreSQL.
-- `npm run build`: all packages; default web build keeps local-demo identity disabled.
+- `npm test`: API/domain/authorization checks against embedded PostgreSQL plus durable-queue semantics using a serialized JSON store adapter.
+- `npm run build`: shared packages, API and browser; default web build keeps local-demo identity disabled.
 - `npm run build:demo`: explicitly demo-only browser build for local preview.
 - `npm run test:e2e`: Chromium connected UI tests; installs require `npx playwright install chromium` once.
 
 If a check fails, report the actual error and scope. Never record a written test as a passing test. PGlite can validate SQL and application paths, but it does not prove real network PostgreSQL behavior, locking under multiple connections or deployment readiness.
+
+- `npm run test:offline`: built-shell reopening with network disabled, reload persistence, reconnect exactly once and pending completion.
 
 ## Requirements synchronization
 

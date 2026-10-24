@@ -1,67 +1,71 @@
 {
-  "exportedAt": "2026-10-24T03:49:41.636Z",
+  "exportedAt": "2026-10-24T05:12:32.146Z",
   "sourceDirectory": "/Users/fabiel/Library/Mobile Documents/iCloud~md~obsidian/Documents/obnotes/business-suite",
   "authority": "Obsidian source notes; this directory is a portable snapshot, not an independent specification.",
   "files": [
     {
       "file": "business-suite API and integrations.md",
-      "sha256": "dac7421d095e1358a9cd30958cd2fc503cae32736648acead804fef69f0c5ed9"
+      "sha256": "87c4413e3a1b3528f892e3ed99def586678ec564d8ddbbb2882041eca0d94cd4"
     },
     {
       "file": "business-suite architecture.md",
-      "sha256": "26127c15cf1b0994334dd7e314dc925071dab8895d03ad7b89ae0940d50a5281"
+      "sha256": "a230cc6b88436af1a5d628a2d71770748f7cb9e7768891ee29921cc3dee068ce"
     },
     {
       "file": "business-suite data model.md",
-      "sha256": "4f4886e3b0e09c235fbd49a9df4b4148b9ba80307af3a56e97b6636cbf272c73"
+      "sha256": "e0c9a0d1359a66308ad85b83f839bdcdcfae6e4eb2d7423f46955286435bb811"
     },
     {
       "file": "business-suite hub.md",
-      "sha256": "78659caf054f35d01df2fffd1f6d91c5b71ace1d73695a73d1bf08bf2e104e26"
+      "sha256": "f4f16e15434c3cee9eb19683d4fb0641382691e48ed9a3b89beeb9af712874ec"
     },
     {
       "file": "business-suite migration.md",
-      "sha256": "f9e0b558cb9b78bc4ab548543fb72cb8b581a782d2bf1be7543d3ba6876af627"
+      "sha256": "6f73dd6e86c98b1d3cc65af65f092ff0257fa1044d5786d07472d99ecd5d4231"
     },
     {
       "file": "business-suite modules and workflows.md",
-      "sha256": "19a71bf5f81a82f42afa4bc807dc576e8a1d02e895709877c7ad1a259e4adbff"
+      "sha256": "5ad29c6de15f40992d6f0d2fca467f5948a1e7bbff769f6feef5d1bdc3d8c57c"
     },
     {
       "file": "business-suite money and reimbursements.md",
-      "sha256": "8ee295c1b29bc9dadbe485b95fb985593696e6c59b535b15d8e84900a8aeab1f"
+      "sha256": "fbc2a3285559504ddd2ebbb359cf8f3785553f1ac5eb95cfa69fd8dd9893444d"
+    },
+    {
+      "file": "business-suite offline and multiplatform.md",
+      "sha256": "6ba7c4765acb4459cd0c54107359fe0a0502e02aae2904bf9a9e03599d3e77f8"
     },
     {
       "file": "business-suite open decisions.md",
-      "sha256": "c3b020c53116517926b491a989318f6971c5c09bdd08c880956a440a42795520"
+      "sha256": "772d400a7c3715b0a6907a49f8f8c783c12649e60bf1729889533127f1e30b19"
     },
     {
       "file": "business-suite permissions.md",
-      "sha256": "d54a1066d3f9964532ed4594437f671e0a88643a801f60a90b68bb2f8794f517"
+      "sha256": "2ff29de3b735f5901cfefd3d401c18db87c2c99f2d1b9581ebafd8f48d4fdf41"
     },
     {
       "file": "business-suite quality and verification.md",
-      "sha256": "5abae6d0a87f0cfc0c83da6561c9406faf56ffaf30f23657360413e42a13da1d"
+      "sha256": "80641dcd50b04e8a0ef7dd00ae3ff1b25c4f46a3dfb2883bf68a1981e00d8dd6"
     },
     {
       "file": "business-suite requirements.md",
-      "sha256": "ab8864e9019788e92e4aff639a18765f53c6c4d23f9a7fcee0547507260fd23b"
+      "sha256": "e5527f8543716f0844acf1c3cd628f80701e97738d1149ebc1e8a9e1ad9f476c"
     },
     {
       "file": "business-suite roadmap.md",
-      "sha256": "6177a2ab07625995b517ac9f78f92dc60a5086157a102ced147289c812e6d76f"
+      "sha256": "017bbdff6bd027743db8fc551b5e1399c1e520468896fcf2c1433dec85f91258"
     },
     {
       "file": "business-suite screens and flows.md",
-      "sha256": "1ae03b537ef0e5f49e2b3bc65b59d910da29505773015ef9886321f0dcca06a0"
+      "sha256": "ae8f8504522cd54dc3e159e50160fa5b22bc20035e412dd454da0d7846bf73cd"
     },
     {
       "file": "business-suite security privacy and operations.md",
-      "sha256": "55ac9805b74c9645d88c0dcb361cb89b6dbb2d5a1844eec35e0d908c20dd4293"
+      "sha256": "2f0b2721a64acd2f148a625260b7061d83ed2c4287b11e09bdfd73665bf36be0"
     },
     {
       "file": "business-suite sources and agent handoff.md",
-      "sha256": "32640079a07198d840289d510a0d1b722e0eda02b9a7dcc90409c6cb876a6161"
+      "sha256": "1df5f66e91addc7aba499925da88c527ced178eacc5a3cc2b1ce48dc186f513d"
     }
   ]
 }

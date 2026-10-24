@@ -39,6 +39,7 @@ export interface Workspace {
   modules: string[];
   permissions: string[];
   demo: boolean;
+  demoSessionId?: string;
   members?: { id: string; name: string }[];
 }
 export class DomainError extends Error {

@@ -11,13 +11,15 @@
   },
   "dependencies": {
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "@suite/core": "0.0.1",
+    "@suite/offline": "0.0.1"
   },
   "devDependencies": {
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.4",
-    "typescript": "~5.9.3",
+    "typescript": "~6.0.3",
     "vite": "^7.1.10"
   }
 }

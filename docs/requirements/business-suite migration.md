@@ -36,7 +36,7 @@ Future proof must follow one synthetic authorized order through signed event, ma
 6. **Switch and verify.** Only after authorization, direct the selected workflows/integrations to the new authority and reconcile again. Keep read-only legacy history available under appropriate permissions and retention.
 7. **Retire deliberately.** Remove obsolete write access and endpoints only when outstanding work, collections, refunds, reimbursements, recovery and contracts have a supported home. No default history deletion.
 
-These steps are a proposal, not an execution checklist or migration authorization. The canonical authorized task remains NOTE-007 (Obsidian reference).
+These steps are a proposal, not an execution checklist or migration authorization. The current authorized local task is NOTE-008 (Obsidian reference); NOTE-007 preserves the foundation history. Neither task performs a legacy cutover.
 
 ## Domain-specific mapping cautions
 A won CRM opportunity may be provider recruitment/onboarding, not a customer purchase. Preserve its original outcome and explicit destination handoff; create an accepted order only when commercial evidence supports one. Agency inquiry source attribution and destination product provider accounts retain their separate ownership until their successor contract is tested.
@@ -49,3 +49,6 @@ Opening customer and employee balances need provenance, currency/entity and an a
 Within the adopted suite, Commercial owns agreed terms, Work owns execution/fulfillment and Money owns operational obligations/payments. External statutory books retain their selected authority. Unrelated portfolio apps retain independent data/auth boundaries. A connector may mirror a projection with source IDs, but must not create a second independently editable authoritative order or balance and rely on bidirectional sync to resolve conflicts.
 
 **Current migration state:** direction documented; no import, source-data audit, opening-balance approval, new kitchen consumer, live retargeting or cutover performed by this documentation task.
+
+## Offline migration implication
+Native/browser local stores add another migration boundary. Before eventual cutover or API-origin/account changes, inventory pending client intents, supported schema versions and identity mappings; do not silently redirect unsent work to a new business or server authority. The initial demo epoch guard protects fictional resets, not production migration. Offline-first does not change the requirement to preserve old CRM/Cocina/Salad authority until an explicitly tested cutover.

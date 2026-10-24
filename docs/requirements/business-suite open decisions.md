@@ -29,11 +29,18 @@ updated: 2026-10-23
 | BS-DEC-017 | Time approval, timer overlap and corrections | Labor costing and payroll export | Timer/manual capture required; policies pending |
 | BS-DEC-018 | Labor rate basis, overhead allocation and costing recognition | Estimates, actual cost, margin labels | Label basis; no automatic repricing or statutory-profit claim |
 | BS-DEC-019 | Businesses, legal entities and resources shared across them | Access, intercompany records, consolidation | Explicit scope; no cross-business sharing by default |
-| BS-DEC-020 | Connectivity and offline requirements | Draft storage, replay and conflict resolution | Preserve in-session failed drafts; no claimed offline sync |
+| BS-DEC-020 | Offline policy details after confirmed offline-first requirement | Offline access duration, prefetch bounds, conflict resolution, local-data recovery | Need for offline is resolved by H-OFF-20261023; two-command demo slice does not settle full policy |
 | BS-DEC-021 | Initial import sources, opening balances and cutover scope | Replacement of CRM/CocinaCostos | Old apps remain authoritative for their existing records |
 | BS-DEC-022 | Accountant, payroll/fiscal/payment providers and authoritative books | Connectors and legal mappings | No provider selected or live connector claimed |
 | BS-DEC-023 | Hosting, operational ownership, backups and launch targets | Production rollout | Local task only; Docker unavailable at initial task inspection |
-| BS-DEC-024 | UI language, locale defaults, currencies beyond MXN | Copy, timestamps, number input | E1 MXN and responsive web; broader policy unconfirmed |
+| BS-DEC-024 | UI language, locale defaults, currencies beyond MXN | Copy, timestamps, number input | E1 MXN; broader policy unconfirmed |
+| BS-DEC-025 | Native desktop platforms and priority | Windows/macOS/Linux clients, packaging and device testing | Android/iOS/browser assumed; do not claim desktop native delivery |
+| BS-DEC-026 | Offline access after token expiry, logout, revocation or device loss | Cache lock, queue retention, shared-device behavior and authentication recovery | Fictional demo only until live auth/storage privacy is designed and tested |
+| BS-DEC-027 | Local storage retention, capacity, recovery and encryption policy | Cached records, receipt blobs, backups and unsynced loss risk | No promise that browser eviction/reinstall/device loss preserves unsynced work |
+| BS-DEC-028 | Full offline workflow and conflict resolution policy | Receipt/time/trip/assignment/money workflows beyond initial allowlist | Preserve requirements; no automatic financial merge or silent server-version rebase |
+
+## Confirmed delivery correction
+On 2026-10-23 the human required offline-first operation and native multiplatform apps. BS-PROD-003/010 now state the current requirement. BS-DEC-020 retains its ID for unresolved policy detail; whether offline is needed is no longer unanswered. Historical reports and the interview snapshot remain unchanged as dated evidence.
 
 ## Preserve these interpretations
 The interview's current-work clarification does not cancel the earlier food-pilot selection, and that selection does not require a restaurant-specific first release. Confirm the actual job/trip/expense workflow before choosing industry defaults. Approximately five test participants is not a capacity ceiling or proof of organization structure.
@@ -44,4 +51,4 @@ Both expense review and privileged direct posting were selected. The missing-rec
 Use: decision ID; date; human wording or source; selected policy; affected requirement IDs; data/API/UI/test consequences; migration effect; implementation evidence link. Keep rejected options only where they explain a consequential tradeoff. A later technical implementation report records what was built, not a new human answer.
 
 ## Current execution
-Canonical acceptance and task status live in NOTE-007 (Obsidian reference). The first local job/expense slice can progress without resolving every item above. A dependent feature must either wait for its answer or clearly expose the bounded default and limitation.
+Current acceptance and task status live in NOTE-008 (Obsidian reference); NOTE-007 (Obsidian reference) preserves the completed foundation evidence. The first local job/expense slice can progress without resolving every item above. A dependent feature must either wait for its answer or clearly expose the bounded default and limitation.

@@ -109,7 +109,7 @@ test('manager assigns a job; worker completes it and submits an expense; manager
   );
 });
 
-test('lost response keeps the draft and retries one expense with the same command key', async ({
+test('lost response preserves durable outbox and retries one expense with the same command key', async ({
   page,
   request,
 }) => {
@@ -132,11 +132,12 @@ test('lost response keeps the draft and retries one expense with the same comman
     await route.continue();
   });
   await page.getByRole('button', { name: 'Submit for review', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('could not be reached');
-  await expect(page.getByLabel('Description', { exact: true })).toHaveValue(description);
-  await page.getByRole('button', { name: 'Submit for review', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  expect(keys).toHaveLength(2);
+  await expect(page.getByRole('region', { name: 'Device sync' })).toContainText(description);
+  await expect(page.getByRole('button', { name: 'Sync now', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Sync now', exact: true }).click();
+  await expect.poll(() => keys.length).toBe(2);
+  await expect(page.getByRole('region', { name: 'Device sync' }).locator('li')).toHaveCount(0);
   expect(keys[0]).toBeTruthy();
   expect(keys[0]).toBe(keys[1]);
   const response = await request.get(`${apiBase}/expenses`, {
@@ -178,7 +179,7 @@ test('stale job completion is rejected and refresh resolves the conflict', async
   });
   expect(closed.ok()).toBeTruthy();
   await page.getByRole('button', { name: 'Complete job', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('changed');
+  await expect(page.getByRole('region', { name: 'Device sync' })).toContainText('conflict');
   await page.getByRole('button', { name: 'Refresh data', exact: true }).click();
   await expect(page.getByText('This job is complete.', { exact: false })).toBeVisible();
 });

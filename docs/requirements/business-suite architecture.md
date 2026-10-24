@@ -8,6 +8,11 @@ updated: 2026-10-23
 
 Build one custom application with trusted modules and role-specific views. Reuse commodity infrastructure and libraries rather than rebuilding databases or identity primitives. The human selected greenfield product development, not ERP adoption. Greenfield gives control over product scope and interactions while taking on correctness, migrations, permissions and maintenance; no measured speed or scale advantage is claimed.
 
+## Offline-first native direction
+The human's later NOTE-008 instruction supersedes web-first/native-later. Offline-first and multiplatform native delivery are required now; Android/iOS/browser are assumed while desktop native priority remains open. Proposed clients use Expo React Native with SQLite, the existing web UI with IndexedDB and a shell service worker, and shared `@suite/offline` command semantics. [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>) defines the bounded implementation and primary documentation sources.
+
+Local storage owns the durable unsent intent and a last-authorized read snapshot; the server owns accepted shared business facts and all consequential permission/version decisions. These are not two independent financial ledgers. The initial client keeps queued intent separate from confirmed snapshots, so pending expense capture never looks approved/paid and pending closure never silently changes authoritative job state. A client command outbox is distinct from a future server integration outbox.
+
 ## Current evidence and proposed destination
 The new local repository is [Desktop business-suite](/Users/fabiel/Desktop/business-suite). Its initial contract selects React/Vite, Fastify/TypeScript, shared domain helpers and PostgreSQL migration files. The coordinating agent reported Git initialization and installed packages while implementation was in progress. That report is not this agent's code audit or a production-readiness finding. Actual implemented paths and checks belong in [business-suite roadmap](<business-suite roadmap.md>).
 
@@ -28,8 +33,9 @@ A modular monolith means internally separated modules deployed together initiall
 
 ```mermaid
 flowchart LR
-  Web[Responsive web] --> API[Authoritative API]
-  Native[Future native client] --> API
+  Web[Browser with IndexedDB] --> Sync[Shared command sync]
+  Native[Android and iOS with SQLite] --> Sync
+  Sync --> API[Authoritative API]
   API --> Commercial[Commercial and CRM]
   API --> Work[Work and Resources]
   API --> Money[Money]
@@ -63,6 +69,9 @@ Do not unify order/job/invoice/payment into one object. Keep narrow typed record
 | BS-ADR-009 | One future suite DB/auth boundary — proposed adoption | Separate from existing app boundaries; explicit migration/cutover required |
 | BS-ADR-010 | Trusted modules and versioned packs — proposed later architecture | No general plugin marketplace or workflow engine in first slice |
 | BS-ADR-011 | Preserve all confirmed areas while sequencing delivery — confirmed scope principle | E1 is a foundation, not cancellation of money/time/trips/resources/CRM |
+| BS-ADR-012 | Offline-first multiplatform native delivery — confirmed NOTE-008 direction | Supersedes web-first/native-later; exact desktop native scope pending |
+| BS-ADR-013 | SQLite native, IndexedDB browser, shared durable command outbox — NOTE-008 engineering proposal | Keep server validation and confirmed snapshots separate from pending intent |
+| BS-ADR-014 | Two-command demo allowlist with explicit conflicts — bounded initial slice | Expense submit/job close queued; create/review online; full offline coverage and live privacy pending |
 
 New decisions record date, human/engineering provenance, alternatives considered, affected requirements, migration implications and verification. Exact software license is unresolved; open-source intent is not a legal compatibility conclusion about reused code.
 

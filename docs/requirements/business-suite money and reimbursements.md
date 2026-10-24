@@ -49,3 +49,8 @@ Refunds, customer credits, supplier credits and cancelled work need explicit cor
 Amounts use exact integer minor units for the first MXN implementation. Check safe integer bounds in JavaScript and storage; never use floating-point arithmetic for monetary totals. Multi-currency, exchange rates and tax representation need later explicit contracts. Store original timestamps and local business dates where required; do not derive payroll or tax treatment from them.
 
 Consequential commands need authorization, expected version, stable idempotency, transactional writes and audit evidence. Reports must not expose customer prices or other workers' reimbursement details to unauthorized users. Real money handling must wait for the relevant tested controls in [business-suite quality and verification](<business-suite quality and verification.md>); the local demo's approval button does not pay anyone.
+
+## Offline money semantics
+The confirmed offline-first requirement changes capture and availability, not financial authority. In NOTE-008 only expense submission is queued; amount/payer validation and review remain server-enforced. Durable local capture, server acceptance, review approval, reimbursement eligibility and actual payment must have different labels. Pending expense intent must not be counted as approved spending or paid reimbursement.
+
+Receipts, mixed purchases, customer collections and grouped reimbursements remain required future workflows with offline designs, not completed capabilities of the generic queue. There is no automatic merging of conflicting money amounts, allocations or approvals. See [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>).

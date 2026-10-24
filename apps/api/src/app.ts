@@ -1,4 +1,5 @@
 import Fastify, { type FastifyRequest } from 'fastify';
+import { randomUUID } from 'node:crypto';
 import { DomainError, uuid, type Workspace } from '@suite/core';
 import type { Database, Sql } from './database.js';
 import { type Context, inContext, scope } from './context.js';
@@ -17,6 +18,7 @@ const DEMO_ORIGINS = new Set([
   'http://localhost:4310',
 ]);
 export function buildApp(options: Options) {
+  const demoSessionId = options.mode === 'demo' ? randomUUID() : undefined;
   const app = Fastify({ logger: false, bodyLimit: 64 * 1024, trustProxy: false });
   const verify = options.mode === 'real' ? createJwtVerifier(options.auth) : undefined;
   const origins = options.mode === 'demo' ? DEMO_ORIGINS : new Set(options.allowedOrigins ?? []);
@@ -34,6 +36,18 @@ export function buildApp(options: Options) {
       ) {
         throw new DomainError(403, 'DEMO_HOST_DENIED', 'Use the documented loopback demo address.');
       }
+      const expectedSession = request.headers['x-demo-session-id'];
+      if (
+        request.method === 'POST' &&
+        expectedSession !== undefined &&
+        expectedSession !== demoSessionId
+      ) {
+        throw new DomainError(
+          409,
+          'DEMO_SESSION_CHANGED',
+          'The demo database has restarted. This saved command belongs to an earlier demo session.',
+        );
+      }
     }
     const origin = request.headers.origin;
     if (origin && !origins.has(origin))
@@ -45,7 +59,7 @@ export function buildApp(options: Options) {
       reply.header(
         'Access-Control-Allow-Headers',
         'Authorization,Content-Type,Idempotency-Key,X-Business-Id' +
-          (options.mode === 'demo' ? ',X-Demo-User' : ''),
+          (options.mode === 'demo' ? ',X-Demo-User,X-Demo-Session-Id' : ''),
       );
     }
     reply.header('Cache-Control', 'no-store');
@@ -127,6 +141,7 @@ export function buildApp(options: Options) {
         modules: context.modules,
         permissions,
         demo: options.mode === 'demo',
+        ...(demoSessionId ? { demoSessionId } : {}),
       };
       if (scope(context, 'work.jobs.create') === 'business') {
         result.members = (

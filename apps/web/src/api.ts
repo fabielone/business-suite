@@ -9,6 +9,7 @@ export interface Workspace {
   permissions: string[];
   members?: { id: string; name: string }[];
   demo: boolean;
+  demoSessionId?: string;
 }
 
 export interface Job {
@@ -54,19 +55,21 @@ export async function request<T>(
     signal?: AbortSignal;
     body?: unknown;
     idempotencyKey?: string;
+    demoSessionId?: string;
   } = {},
 ): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json', 'x-demo-user': role };
   if (options.businessId) headers['x-business-id'] = options.businessId;
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';
   if (options.idempotencyKey) headers['Idempotency-Key'] = options.idempotencyKey;
+  if (options.demoSessionId) headers['X-Demo-Session-Id'] = options.demoSessionId;
   let response: Response;
   try {
     response = await fetch(`/api/v1${path}`, {
       method: options.body === undefined ? 'GET' : 'POST',
       headers,
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
-      signal: options.signal,
+      signal: options.signal ?? AbortSignal.timeout(10000),
       credentials: 'omit',
       cache: 'no-store',
     });

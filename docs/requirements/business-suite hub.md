@@ -4,9 +4,11 @@ updated: 2026-10-23
 ---
 # Business Suite
 
-**Working name. One custom open-source business application, with modules and screens adapted to each business and each user's privileges.** It is intended eventually to replace CRM and CocinaCostos while adding operational capabilities. The existing applications remain intact until an explicit migration and cutover.
+**Working name. One custom open-source, offline-first business application with native multiplatform clients and browser access, and modules adapted to each business and user's privileges.** It is intended eventually to replace CRM and CocinaCostos while adding operational capabilities. The existing applications remain intact until an explicit migration and cutover.
 
 The current operation does not need a sales pipeline. CRM is optional. Jobs, receipts, expenses, income, amounts due, assignments and trips all remain important product requirements; the small initial implementation is sequencing, not cancellation of the rest. The first test group is approximately five people, not a product limit. The exact first operating workflow remains to be clarified. Earlier human direction also requires quotations, site visits, worker/resource allocation, man-hours and future professional payroll/tax/bookkeeping integrations, aimed at small operators in Mexico with international and larger-business growth later.
+
+**Delivery correction — NOTE-008, 2026-10-23:** offline-first and native clients are current requirements. Android/iOS/browser are assumed; native desktop priority is still open. The tested local extension queues expense submissions and job closures; Android/iOS native source and bundles now exist alongside the offline browser client. Full offline coverage and live auth/storage privacy remain incomplete. [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>) owns the detailed contract.
 
 ## Read in this order
 1. [Confirmed requirements and their provenance](<business-suite requirements.md>).
@@ -25,7 +27,8 @@ The current operation does not need a sales pipeline. CRM is optional. Jobs, rec
 | Module/action/record/field access | [business-suite permissions](<business-suite permissions.md>) |
 | Business expense, worker balances, customer payments | [business-suite money and reimbursements](<business-suite money and reimbursements.md>) |
 | Proposed entities and constraints | [business-suite data model](<business-suite data model.md>) |
-| Screens, role flows, errors, responsive and offline behavior | [business-suite screens and flows](<business-suite screens and flows.md>) |
+| Screens, role flows and errors | [business-suite screens and flows](<business-suite screens and flows.md>) |
+| Offline persistence, synchronization and native platforms | [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>) |
 | Initial HTTP contract and future integrations | [business-suite API and integrations](<business-suite API and integrations.md>) |
 | Architecture decisions and engineering defaults | [business-suite architecture](<business-suite architecture.md>) |
 | Security, personal data and operations | [business-suite security privacy and operations](<business-suite security privacy and operations.md>) |
@@ -35,7 +38,7 @@ The current operation does not need a sales pipeline. CRM is optional. Jobs, rec
 | Source inventory and agent instructions | [business-suite sources and agent handoff](<business-suite sources and agent handoff.md>) |
 
 ## Active task and repository
-Canonical execution task: NOTE-007 (Obsidian reference). Its acceptance criteria and execution checklist are authoritative; these notes do not duplicate task checkboxes.
+Current execution task: NOTE-008 (Obsidian reference). Its acceptance criteria and execution checklist are authoritative; these notes do not duplicate task checkboxes. NOTE-007 (Obsidian reference) retains the completed local-foundation record.
 
 Repository: [Desktop business-suite](/Users/fabiel/Desktop/business-suite). Start with its [AGENTS.md](/Users/fabiel/Desktop/business-suite/AGENTS.md), [implementation contract](/Users/fabiel/Desktop/business-suite/docs/implementation-contract.md), and [interview snapshot](/Users/fabiel/Desktop/business-suite/docs/interview-snapshot.json).
 
@@ -44,4 +47,6 @@ Repository: [Desktop business-suite](/Users/fabiel/Desktop/business-suite). Star
 ## Specification authority
 Direct later human decisions supersede older notes. [business-suite requirements](<business-suite requirements.md>) distinguishes confirmed requirements from proposed design and bounded engineering defaults. The interview snapshot is historical evidence; its statement that implementation has not started must not overwrite later dated implementation reports. Research documents explain recommendations but are not blanket product approvals.
 
-No deployment, purchases, remote publication, legacy deletion or data migration follows from a proposed architecture or backlog entry. The current authorized local work is recorded in NOTE-007.
+No deployment, purchases, remote publication, legacy deletion or data migration follows from a proposed architecture or backlog entry. The current authorized local work is recorded in NOTE-008; NOTE-007 is historical foundation evidence.
+
+**NOTE-008 local result:** 30 shared/API/native unit scenarios and10 browser flows pass; Android/iOS exports pass. Actual native-device/runtime tests, real authentication and5 high Expo toolchain audit entries remain before release. NOTE-008 2026-10-23 Offline and native foundation report (Obsidian reference).

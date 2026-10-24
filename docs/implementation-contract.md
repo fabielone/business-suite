@@ -1,5 +1,7 @@
 # Initial implementation contract — 2026-10-23
 
+Historical NOTE-007 contract. NOTE-008 supersedes delivery and client-storage assumptions: offline-first Android/iOS and browser clients are now required. Read [current offline contract](offline-contract.md) and [native setup](../apps/mobile/README.md). The HTTP/domain rules below remain unless explicitly updated.
+
 Engineering defaults for the first local slice, not a finalized complete product specification.
 
 ## Structure
@@ -26,3 +28,9 @@ Explicit local demo entry runs the same services against ephemeral PGlite fixtur
 
 ## Ownership and evidence
 Backend owns API/core/migrations/backend tests; frontend owns web; docs agent owns vault project notes. Root integrates and documents actual results. PostgreSQL server and concurrency certification are separate from PGlite checks. No claim of full replacement readiness, real receipts, payments, payroll, tax or deployment.
+
+## NOTE-008 HTTP addition
+
+Demo workspace includes `demoSessionId`, stable for the API process. Clients attach `X-Demo-Session-Id` to commands; a supplied stale value is rejected before mutation with409 `DEMO_SESSION_CHANGED`. Real mode neither returns a demo epoch nor uses demo identity. The client also verifies the workspace epoch before sync. Device queues persist after the ephemeral API stops; they cannot be treated as valid requests for a fresh fixture generation.
+
+NOTE-008 toolchain: TypeScript now6.0.3 to match Expo58; Node22.23.4 used for final native/shared checks. Historical5.9/Node25 observations above are not current native support guidance.

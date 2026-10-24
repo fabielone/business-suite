@@ -49,6 +49,51 @@ describe('Work/Money command API with ephemeral PostgreSQL (PGlite)', () => {
     await db.close();
   });
 
+  test('demo session epoch is stable across requests and identities, and changes for a rebuilt app', async () => {
+    const first = await app.inject({ url: '/v1/workspace', headers: managerHeaders });
+    const epoch = first.json().demoSessionId;
+    assert.match(epoch, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    for (const headers of [managerHeaders, workerHeaders]) {
+      const repeated = await app.inject({ url: '/v1/workspace', headers });
+      assert.equal(repeated.json().demoSessionId, epoch);
+    }
+    const rebuilt = buildApp({ database: db, mode: 'demo' });
+    try {
+      const next = await rebuilt.inject({ url: '/v1/workspace', headers: managerHeaders });
+      assert.notEqual(next.json().demoSessionId, epoch);
+      const key = randomUUID();
+      const stale = await rebuilt.inject({
+        method: 'POST',
+        url: '/v1/jobs',
+        payload: jobBody,
+        headers: { ...managerHeaders, 'idempotency-key': key, 'x-demo-session-id': epoch },
+      });
+      assert.equal(stale.statusCode, 409);
+      assert.equal(stale.json().error.code, 'DEMO_SESSION_CHANGED');
+      assert.equal(
+        (await db.query('SELECT id FROM jobs WHERE title=$1', [jobBody.title])).rows.length,
+        0,
+      );
+      assert.equal(
+        (await db.query('SELECT key FROM command_receipts WHERE key=$1', [key])).rows.length,
+        0,
+      );
+      const current = await rebuilt.inject({
+        method: 'POST',
+        url: '/v1/jobs',
+        payload: jobBody,
+        headers: {
+          ...managerHeaders,
+          'idempotency-key': key,
+          'x-demo-session-id': next.json().demoSessionId,
+        },
+      });
+      assert.equal(current.statusCode, 201);
+    } finally {
+      await rebuilt.close();
+    }
+  });
+
   test('workspace permissions, assignment scope, roster and price redaction come from server data', async () => {
     const manager = await app.inject({ url: '/v1/workspace', headers: managerHeaders });
     assert.equal(manager.statusCode, 200);
@@ -529,6 +574,7 @@ describe('Work/Money command API with ephemeral PostgreSQL (PGlite)', () => {
     const headers = {
       'x-business-id': ids.business,
       'x-demo-user': 'manager',
+      'x-demo-session-id': 'ignored-in-real-mode',
       'x-role': 'manager',
     };
     try {
@@ -540,6 +586,7 @@ describe('Work/Money command API with ephemeral PostgreSQL (PGlite)', () => {
       });
       assert.equal(workspace.statusCode, 200);
       assert.equal(workspace.json().demo, false);
+      assert.equal(Object.hasOwn(workspace.json(), 'demoSessionId'), false);
       assert.equal(workspace.json().user.id, ids.worker);
       assert.equal(workspace.json().members, undefined);
       assert.equal(
@@ -630,6 +677,7 @@ describe('Work/Money command API with ephemeral PostgreSQL (PGlite)', () => {
       headers: { ...managerHeaders, origin: 'http://127.0.0.1:5178' },
     });
     assert.equal(preflight.statusCode, 204);
+    assert.match(String(preflight.headers['access-control-allow-headers']), /X-Demo-Session-Id/);
     const oversized = await app.inject({
       method: 'POST',
       url: '/v1/jobs',

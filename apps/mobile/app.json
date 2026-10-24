@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "Business Suite Preview",
+    "slug": "business-suite-preview",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "platforms": ["ios", "android"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "local.businesssuite.preview",
+      "infoPlist": {
+        "NSAppTransportSecurity": { "NSAllowsLocalNetworking": true }
+      }
+    },
+    "android": { "package": "local.businesssuite.preview" },
+    "plugins": ["expo-sqlite"],
+    "experiments": { "autolinkingModuleResolution": true }
+  }
+}

@@ -34,4 +34,4 @@ Read repository `AGENTS.md` and the Obsidian project hub before working. Product
 
 **Operations reviewer:** versioned migrations, backup/restore, environment/secret separation, runtime DB permissions, real issuer compatibility, exact allowed origins and observability before deployment.
 
-Do not add arbitrary plugins, workflow builders or new services just to satisfy hypothetical future clients. First establish a concrete use case and a bounded extension point. Native/mobile decisions remain driven by offline capture, background location or device needs; trip logs do not imply continuous GPS tracking.
+Do not add arbitrary plugins, workflow builders or new services just to satisfy hypothetical future clients. First establish a concrete use case and a bounded extension point. Offline-first Android/iOS applications plus the browser are required. Exact desktop packaging remains unresolved; trip logs still do not imply continuous GPS tracking. Read `docs/offline-contract.md`; validate local transactions, retry identity, permission loss and device-storage behavior in addition to connected API flows.
