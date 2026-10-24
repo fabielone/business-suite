@@ -109,7 +109,7 @@ The full product includes receipts, customer deposits/partial payments and balan
 
 Copyright (C) 2026 Fabiel ([@fabielone](https://github.com/fabielone)).
 
-Business Suite is licensed under **GNU AGPL version 3 only**
+The [repository is public](https://github.com/fabielone/business-suite). Business Suite is licensed under **GNU AGPL version 3 only**
 (`AGPL-3.0-only`). See [LICENSE](LICENSE) for the complete terms and
 [LICENSING.md](LICENSING.md) for attribution, source-sharing and dependency
 boundaries. This OSI-approved copyleft license permits commercial use and forks;
