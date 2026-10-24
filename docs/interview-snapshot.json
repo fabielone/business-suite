@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "status": "interview_in_progress",
+  "updated_on": "2026-10-23",
+  "confirmed": {
+    "product_direction": "One custom open-source modular business application",
+    "packaging": "One application with different screens and modules according to user permissions; businesses enable the modules they need",
+    "delivery": "One responsive web application first, usable on computers and phones; cross-platform or native clients later as requirements justify",
+    "current_sales_requirement": "Current operation does not require sales; CRM must be optional",
+    "initial_test_group": {"approximate_people": 5, "roles_mentioned": ["manager", "employees", "drivers"], "product_limit": false},
+    "initial_scope": ["receipts", "expenses", "income", "jobs", "trips", "worker assignments", "amounts due"],
+    "prioritization": "User considers every listed area important; do not ask again to reduce these to three outcomes",
+    "access_requirement": "User permissions govern access to modules, screens and features such as uploading expense receipts and tracking trips",
+    "financial_separation": "Business finances only; record who paid and exclude personal portions of mixed purchases. Do not build household accounting in the initial product.",
+    "workflow": {
+      "completion_authority": "Authorized workers can close jobs directly",
+      "time_capture": "Both a start/stop timer and manual entry",
+      "trip_tracking": "Trip log with driver, vehicle, origin/destination, distance, fuel and toll expenses",
+      "expense_approval": "Ordinary submissions receive manager review; authorized users may post directly",
+      "expense_funding": "Mostly personal money, followed by reimbursement"
+    },
+    "money": {
+      "selling_price": "Track expenses to inform quotations; the selling price is the amount agreed for each job",
+      "customer_payments": "Flexible deposits, partial payments and remaining balances",
+      "missing_receipts": "Allow submission with a reason; manager approval required",
+      "reimbursements": "Select several expenses for one payment; allow partial reimbursement and show the remaining amount owed",
+      "household_scope": "Business finances only, with payer recorded and personal portions excluded"
+    }
+  },
+  "pilot_evidence": {
+    "selected_option": "Food / meal delivery first",
+    "subsequent_clarification": "Current work does not require sales; wants a design for physical work and installation businesses, with restaurant use later",
+    "interpretation_status": "Do not assume a restaurant-specific first release or discard the selected food pilot. Exact current workflow remains undescribed."
+  },
+  "working_module_map_not_final_specification": {
+    "crm": ["contacts", "leads", "sales pipeline", "follow-ups", "lead source"],
+    "work": ["quotes", "orders", "jobs", "tasks", "visits", "hours", "trips", "completion evidence"],
+    "resources": ["workers", "skills", "availability", "materials", "equipment", "allocation"],
+    "money": ["receipts", "expenses", "approvals", "job costing", "income", "receivables and payables", "payments"]
+  },
+  "product_structure_decision": {
+    "date": "2026-10-23",
+    "user_direction": "One big app with different screens and modules depending on user permissions or privileges",
+    "effect": "CRM, Work, Resources and Money are modules within one application, not four separately presented applications",
+    "preserved": "Previously confirmed workflows and the outstanding interview questions remain in scope"
+  },
+  "round_two_interpretation": {
+    "expense_approval_original_answer": "1 and 2",
+    "meaning": "Combines the presented options for manager review of worker submissions and direct posting by authorized workers",
+    "authority_limit": "Direct posting does not by itself grant permission to approve reimbursement or record a payment"
+  },
+  "round_three_interpretation": {
+    "pricing": "No automatic repricing from actual costs. Estimated cost, agreed customer price, actual cost and collected payments remain separate.",
+    "approval_exception": "A missing-receipt submission still requires a reason and manager approval; ordinary direct-posting authority does not silently bypass that rule."
+  },
+  "round_four_pending": [
+    {"id": "quote_acceptance", "topic": "Manager-recorded acceptance of shared/PDF quotes, customer web acceptance, or both"},
+    {"id": "job_structure", "topic": "One job with tasks/visits versus projects containing separately tracked jobs"},
+    {"id": "recurring_work", "topic": "Scheduled automatic recurring work versus manual creation or copying"},
+    {"id": "scheduling_conflicts", "topic": "Warnings with authorized override, blocking conflicts, or no warning"},
+    {"id": "materials_depth", "topic": "Purchase/usage costing, stock balances, or stock balances plus job reservations"}
+  ],
+  "financial_rules_still_to_resolve": [
+    "How pending versus approved expenses appear in cost reports",
+    "Mixed funding, company advances and unused money returned",
+    "Separate permissions for expense posting, claim approval, self-approval and recording actual payment"
+  ],
+  "later_interview_topics": [
+    "What creates customer, supplier, worker and advance balances; partial payments and corrections",
+    "Job structure, repeat work, multiple sites, shared trips and multiple workers",
+    "Quotes and commercial orders versus internal work",
+    "Resource availability, scheduling conflicts, purchasing and inventory depth",
+    "Estimated versus actual labor and material costs; overhead allocation",
+    "Business boundaries and resources shared across businesses; household accounting is excluded",
+    "Role templates, individual grants, assigned-job visibility, customer details and sensitive financial fields",
+    "Who may record collected cash, confirm bank payments and record reimbursements",
+    "Receipt entry, connectivity, offline capture and reconciliation",
+    "Existing data, imports, opening balances and professional-service integrations",
+    "Hosting, open-source licensing, updates, backups and launch acceptance criteria"
+  ],
+  "implementation_status": "Application implementation and migration have not started; the requested interview is developing the specification"
+}

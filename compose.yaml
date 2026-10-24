@@ -1,0 +1,20 @@
+# Isolated local development database. Does not join the existing portfolio stack.
+name: business-suite-local
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: business_suite
+      POSTGRES_USER: suite_dev
+      POSTGRES_PASSWORD: ${SUITE_DB_PASSWORD:?Set SUITE_DB_PASSWORD in .env for local PostgreSQL}
+    ports:
+      - '127.0.0.1:5439:5432'
+    volumes:
+      - suite_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U suite_dev -d business_suite']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  suite_pg:

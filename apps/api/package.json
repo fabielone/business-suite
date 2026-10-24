@@ -1,0 +1,28 @@
+{
+  "name": "@suite/api",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:demo": "tsx src/demo.ts",
+    "dev": "tsx src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/server.js",
+    "migrate": "tsx src/migrate.ts",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@suite/core": "0.0.1",
+    "@electric-sql/pglite": "0.5.11",
+    "fastify": "^5.6.0",
+    "jose": "^6.1.0",
+    "pg": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "@types/pg": "^8.15.5",
+    "tsx": "^4.20.6",
+    "typescript": "~5.9.3"
+  }
+}
