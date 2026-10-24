@@ -89,3 +89,19 @@ Host: macOS27.0.1 build26A434, arm64; Node22.23.4. Local work only.
 Desktop runtime previews: [pending work after restart](preview/native-desktop-offline.png) and [after reconnect](preview/native-desktop-reconnected.png). Captured from the actual macOS Electron runtime using fictional records.
 
 Final NOTE-009 requirements export:17 canonical notes,17 verified source hashes and207 resolved wikilinks with zero broken targets. Export time is recorded in `docs/requirements/snapshot.json`.
+
+## NOTE-010 shared Docker backend — 2026-10-24
+
+Deployment target: existing `lean-backend` Docker host, independent `business_suite` database/Auth/API. PostgreSQL17.11, Node22.23.4 production image. Local and public HTTPS health returns `demo:false`. No client login/cutover or production-ready claim.
+
+Actual checks passed:
+- Production Docker build and check-stage image build; nonroot service runs with a read-only root and restricted database login.
+- `npm run check` across all workspaces; `npm test`:38 shared/API/desktop/native tests.
+- `tests/postgres/verify.ts`:9 groups on a disposable real PostgreSQL database, including concurrent replay/version races, restricted grants, RLS, context reset and migration checksums. Temporary database/login/private env removed.
+- `python3 ops/test_deploy_shared.py -v`:7 staged configuration/rollback/token/backup tests. `python3 ops/lean-backend/test_adapter.py --backend /Users/fabiel/Desktop/backend -v`:5 generator/installer tests.
+- `ops/verify_deployed.py`:8 live Auth/API verification groups, including actual password-issued JWTs, denied permissions, CORS, job/expense commands and persistence across an API-only restart. Two fictional accounts and marked test tenant removed; no email sent.
+- Runtime login cannot CONNECT to any of7 peer app databases. All21 prior containers retain their IDs; start times unchanged except shared gateway; prior healthy services remain healthy.
+- Complete pre/post deployment private backups. Suite archive restored into a temporary same-cluster DB with `--no-owner --no-privileges`; table/RLS/migration/count/audit-trigger fingerprint matched. Temp DB removed. This is an empty-data schema restore drill, not fresh-host role or off-site disaster recovery.
+- Configured credential-value scan:127 current source files and187 historical Git blobs checked against32 private values, zero matches. Final pre-push source scan repeated after documentation export.
+
+The public endpoint is `https://api-dev.fabiel.org/apps/business_suite/api/healthz`. Authenticated smoke requests used the local gateway; public health used HTTPS. Web/mobile/desktop real identity, offline local-data security, native-device release, receipt storage, full workflows and legacy migration remain unfinished. No UI change occurred in NOTE-010; prior UI evidence is retained above. GitHub publication/CI evidence is recorded after push in the final task report.

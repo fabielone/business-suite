@@ -10,6 +10,8 @@ The current operation does not need a sales pipeline. CRM is optional. Jobs, rec
 
 **Current delivery — NOTE-009, 2026-10-24:** offline-first Android/iOS, Windows/macOS desktop applications and browser access are in scope. The human explicitly included both desktop platforms now. Electron is the desktop engineering choice; React Native/SQLite remains mobile. NOTE-008 verified a bounded two-command offline foundation, not the full product. Desktop runtime/package evidence and live auth/storage privacy remain separate. [business-suite desktop applications](<business-suite desktop applications.md>) and [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>) define the contracts.
 
+**Current backend work — NOTE-010, 2026-10-24:** the human authorized shared Docker setup and GitHub upload. Independent Suite Auth/database/API are running; real client login remains unfinished. [business-suite deployed backend](<business-suite deployed backend.md>) and NOTE-010 Deploy Business Suite backend and publish repository (Obsidian reference) hold the current deployment boundaries and evidence. Earlier local-only restrictions remain historical.
+
 ## Read in this order
 1. [Confirmed requirements and their provenance](<business-suite requirements.md>).
 2. [Questions that must remain unanswered until resolved](<business-suite open decisions.md>).
@@ -31,6 +33,7 @@ The current operation does not need a sales pipeline. CRM is optional. Jobs, rec
 | Offline persistence, synchronization and native platforms | [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>) |
 | Windows/macOS packaging, local profile, updates and release evidence | [business-suite desktop applications](<business-suite desktop applications.md>) |
 | Initial HTTP contract and future integrations | [business-suite API and integrations](<business-suite API and integrations.md>) |
+| Deployed Docker backend and operator handoff | [business-suite deployed backend](<business-suite deployed backend.md>) |
 | Architecture decisions and engineering defaults | [business-suite architecture](<business-suite architecture.md>) |
 | Security, personal data and operations | [business-suite security privacy and operations](<business-suite security privacy and operations.md>) |
 | Meaningful tests and evidence levels | [business-suite quality and verification](<business-suite quality and verification.md>) |
@@ -48,7 +51,7 @@ Repository: [Desktop business-suite](/Users/fabiel/Desktop/business-suite). Star
 ## Specification authority
 Direct later human decisions supersede older notes. [business-suite requirements](<business-suite requirements.md>) distinguishes confirmed requirements from proposed design and bounded engineering defaults. The interview snapshot is historical evidence; its statement that implementation has not started must not overwrite later dated implementation reports. Research documents explain recommendations but are not blanket product approvals.
 
-No deployment, purchases, remote publication, legacy deletion or data migration follows from a proposed architecture or backlog entry. The current authorized local work is recorded in NOTE-009; NOTE-007/008 preserve historical foundation evidence.
+No deployment, purchases, remote publication, legacy deletion or data migration follows from a proposed architecture or backlog entry. Current explicitly authorized deployment/publication work is recorded in NOTE-010; NOTE-007/008/009 preserve historical foundation evidence.
 
 **NOTE-008 local result:** 30 shared/API/native unit scenarios and10 browser flows pass; Android/iOS exports pass. Actual native-device/runtime tests, real authentication and5 high Expo toolchain audit entries remain before release. NOTE-008 2026-10-23 Offline and native foundation report (Obsidian reference).
 

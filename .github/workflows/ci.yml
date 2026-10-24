@@ -1,10 +1,19 @@
 name: local-foundation-checks
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/requirements/**'
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/requirements/**'
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: python3 ops/test_deploy_shared.py -v
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -17,3 +26,40 @@ jobs:
       - run: npm run test:e2e
       - run: npm run test:offline
       - run: npm run build:mobile
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.11-alpine
+        env:
+          POSTGRES_DB: suite_test_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-disposable-admin
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d suite_test_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace @suite/core
+      - name: Provision isolated CI runtime role
+        env:
+          PG_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker exec -i "$PG_CONTAINER" psql -X -v ON_ERROR_STOP=1 -U postgres -d suite_test_ci <<'SQL'
+          CREATE ROLE suite_test_ci_runtime LOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE PASSWORD 'ci-disposable-runtime';
+          REVOKE CONNECT ON DATABASE suite_test_ci FROM PUBLIC;
+          GRANT CONNECT ON DATABASE suite_test_ci TO suite_test_ci_runtime;
+          REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+          SQL
+      - name: Verify real PostgreSQL concurrency and isolation
+        env:
+          SUITE_TEST_DATABASE_URL: postgres://postgres:ci-disposable-admin@127.0.0.1:5432/suite_test_ci
+          SUITE_TEST_RUNTIME_DATABASE_URL: postgres://suite_test_ci_runtime:ci-disposable-runtime@127.0.0.1:5432/suite_test_ci
+        run: node --import tsx tests/postgres/verify.ts

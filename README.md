@@ -1,6 +1,18 @@
 # Business Suite — working name
 
-One modular application for small business operations: optional CRM, Work, Resources and Money. A business enables what it needs; each person sees and can act on only what their permissions allow. The intended product replaces the separate CRM and CocinaCostos projects. **This repository is the first local foundation, not yet a replacement ready for business data.**
+One modular application for small business operations: optional CRM, Work, Resources and Money. A business enables what it needs; each person sees and can act on only what their permissions allow. The intended product replaces the separate CRM and CocinaCostos projects. **The client foundation and development backend are implemented; this is not yet a replacement ready for business data.**
+
+## Development backend
+
+On 2026-10-24, `NOTE-010` added Business Suite to the existing Docker host: an independent `business_suite` PostgreSQL database and Auth service, plus the authenticated Fastify API. The API uses a restricted database login; it does not expose Suite tables through PostgREST. Existing app databases and services are preserved.
+
+- API base: `https://api-dev.fabiel.org/apps/business_suite/api/v1`
+- Auth base: `https://api-dev.fabiel.org/apps/business_suite/auth/v1`
+- [API health](https://api-dev.fabiel.org/apps/business_suite/api/healthz): verified HTTP 200 with `demo:false`; health is process liveness, not a complete user flow.
+
+**Client sign-in and live synchronization are still unfinished.** Browser/mobile/desktop clients continue to use their explicit fictional demo or setup screen. Deployment does not connect those clients automatically or migrate CRM/CocinaCostos data. Signup and external providers are disabled. The Mac must remain running for this development endpoint to work.
+
+Read [shared-host operations](docs/shared-backend.md), [container construction](docs/container.md), and [database boundaries](db/README.md) before changing the deployment. Nine real-PostgreSQL verification groups passed against a separate disposable database; live Auth and client evidence is recorded separately in [verification](docs/verification.md).
 
 ## Offline-first, multiple platforms
 
@@ -14,7 +26,7 @@ One modular application for small business operations: optional CRM, Work, Resou
 
 The current offline slice supports previously downloaded work, job-completion requests and missing-receipt expense capture. Saved entries survive app/page reopening and retry with the same command key. Pending entries, conflicts and server-confirmed records remain distinct. Job creation and expense review are online-only in the browser for now. Full receipt/time/trip/money offline flows remain on the roadmap. Desktop installation/runtime evidence is recorded separately for each OS in the verification record.
 
-See [the offline contract](docs/offline-contract.md), [native setup](apps/mobile/README.md), [desktop setup](apps/desktop/README.md), and [verification](docs/verification.md). This remains a fictional local prototype; do not enter real business data.
+See [the offline contract](docs/offline-contract.md), [native setup](apps/mobile/README.md), [desktop setup](apps/desktop/README.md), and [verification](docs/verification.md). The current client workflows use fictional demo data; do not enter real business data.
 
 ## Requirements and agent entry point
 
@@ -24,7 +36,7 @@ Canonical product specifications are in the iCloud Obsidian vault:
 
 `/Users/fabiel/Library/Mobile Documents/iCloud~md~obsidian/Documents/obnotes/business-suite/business-suite hub.md`
 
-Initial foundation: `NOTE-007`. Offline/native continuation: `NOTE-008 Offline first and native clients`. Windows/macOS extension: `NOTE-009 Windows and macOS desktop apps`. Requirements distinguish user-confirmed behavior, engineering defaults and open decisions. Snapshot status describes the interview at capture time, not current implementation progress. For handoff from another computer, read the [portable requirements snapshot](docs/requirements/README.md), [implemented source map](docs/source-map.md) and [verification record](docs/verification.md).
+Initial foundation: `NOTE-007`. Offline/native continuation: `NOTE-008 Offline first and native clients`. Windows/macOS extension: `NOTE-009 Windows and macOS desktop apps`. Shared backend and source publication: `NOTE-010 Deploy Business Suite backend and publish repository`. Requirements distinguish user-confirmed behavior, engineering defaults and open decisions. Snapshot status describes the interview at capture time, not current implementation progress. For handoff from another computer, read the [portable requirements snapshot](docs/requirements/README.md), [implemented source map](docs/source-map.md) and [verification record](docs/verification.md).
 
 ## Local demo
 
@@ -47,7 +59,7 @@ Follow [native setup](apps/mobile/README.md) for an iOS simulator or Android emu
 
 For the desktop demo, keep the API running and run `npm run desktop:demo` in another terminal. `npm run desktop` builds the setup-only variant. Desktop screens are bundled; a browser/Vite server is unnecessary. Package commands are `npm run package:desktop:mac` and `npm run package:desktop:win`; append `:demo` for fictional-demo artifacts. A standalone Windows ZIP is available through `package:desktop:win:zip:demo`; this ARM Mac could not execute the NSIS compiler. See the desktop README for profile persistence and exact local-demo limits.
 
-The API is ephemeral and resets on restart; device storage persists. A demo-session guard prevents replay into a restarted server. Inspect any saved entries before using the clearly warned local-demo reset. No real uploads or payments are available.
+The local demo API is ephemeral and resets on restart; device storage persists. A demo-session guard prevents replay into a restarted server. Inspect any saved entries before using the clearly warned local-demo reset. The deployed real API uses persistent PostgreSQL and does not share demo records or identities. No real uploads or payments are available.
 
 ## Check the foundation
 
@@ -62,7 +74,7 @@ npm run test:offline
 npm run build:mobile
 ```
 
-Latest checks and their exact limits are in [verification](docs/verification.md). Real PostgreSQL concurrency, deployed authentication, device runtime and legacy migration require separate verification. Native bundle export is not an installable signed app or an App Store/Play release.
+Latest checks and their exact limits are in [verification](docs/verification.md). [Real PostgreSQL checks](tests/postgres/README.md) cover retry races, permissions and isolation in a disposable database. Auth-provider execution, device runtime and legacy migration are separate evidence. Native bundle export is not an installable signed app or an App Store/Play release.
 
 ## Code map
 
@@ -73,8 +85,11 @@ Latest checks and their exact limits are in [verification](docs/verification.md)
 - `apps/api`: Fastify command/query API, authentication, demo bootstrap and tests.
 - `packages/core`: shared domain and permissions.
 - `db/migrations`: PostgreSQL schema.
+- `Dockerfile`: production-dependency API image with explicit migration entry point.
+- `ops`: reviewed shared-host generator adapter and scoped deployment procedure.
 - `docs`: implementation contracts, interview provenance, operational instructions and handoff.
 - `tests/e2e`: browser checks for the connected local demo.
+- `tests/postgres`: opt-in, disposable real-PostgreSQL integration checks.
 
 This is a modular monolith: one product, one business database boundary, internal module ownership. Clients call authorized APIs; they never receive database credentials. Web and native clients use the same command APIs; no client receives database credentials.
 
@@ -90,4 +105,4 @@ These screenshots contain fictional local-demo data.
 
 The full product includes receipts, customer deposits/partial payments and balances, grouped/partial worker reimbursements, quotes, job/visit management, timer/manual hours, trips, allocations, lightweight CRM, private attachments and professional-service integrations. Early slices do not remove any of those requirements. See the requirements and development queue for dependencies, open questions and migration gates.
 
-User intent is open source. The exact software license and public product name have not been selected; this private local repository is not yet a licensed public release. `private: true` prevents accidental npm publication.
+User intent is open source. The exact software license and public product name have not been selected; this is not yet a licensed public release. The private [GitHub repository](https://github.com/fabielone/business-suite) has been created; source upload and remote verification remain pending in `NOTE-010`. `private: true` prevents accidental npm publication; repository visibility is configured independently.

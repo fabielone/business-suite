@@ -9,7 +9,9 @@ updated: 2026-10-24
 This roadmap sequences implementation without removing confirmed scope. Jobs, assignments, trips, time, receipts, expenses, income, balances, reimbursements, optional CRM/quotes/site visits and professional integrations remain part of the intended product. The exact first pilot remains open; approximately five test users is context, not a technical capacity ceiling.
 
 ## Current authorized work
-NOTE-009 (Obsidian reference) owns the active acceptance criteria, execution checklist and status. The human explicitly included Windows and macOS desktop apps now on 2026-10-24, alongside the offline-first Android/iOS/browser direction. Electron is the desktop engineering choice. This authorizes a local packaged desktop foundation, not remote publication, signing purchases, production deployment, migration, legacy deletion or shared backend changes.
+NOTE-010 (Obsidian reference) owns the current deployment/publication acceptance criteria and status. On2026-10-24 the human explicitly requested use of the existing shared Docker host and a GitHub upload. The additive development backend is running; final verification/publication evidence is tracked in that task and [business-suite deployed backend](<business-suite deployed backend.md>). This does not authorize legacy deletion, operational data migration or an automatic client cutover.
+
+NOTE-009 completed the bounded local Windows/macOS foundation; its historical platform limitations below remain valid.
 
 NOTE-007 completed the bounded local foundation at `/Users/fabiel/Desktop/business-suite`, checkpoint `fd6b5ef`, with evidence preserved below and in its report. NOTE-008 completed the scoped offline/mobile extension; NOTE-009 starts from clean checkpoint `0a71454`. Historical interview delivery/status and NOTE-007/008 results do not certify the new desktop work. Desktop package/runtime/signing evidence must be recorded separately.
 

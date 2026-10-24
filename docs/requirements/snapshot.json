@@ -1,19 +1,23 @@
 {
-  "exportedAt": "2026-10-24T17:32:16.032Z",
+  "exportedAt": "2026-10-24T18:04:34.989Z",
   "sourceDirectory": "/Users/fabiel/Library/Mobile Documents/iCloud~md~obsidian/Documents/obnotes/business-suite",
   "authority": "Obsidian source notes; this directory is a portable snapshot, not an independent specification.",
   "files": [
     {
       "file": "business-suite API and integrations.md",
-      "sha256": "419444fcca4f0bdea7569f70c797e12722e31d63083dcab9bf13e46eaf0aa258"
+      "sha256": "74085ab26171223534688401f4f2b1f297218b3ccd19d18b101767809f41ae7e"
     },
     {
       "file": "business-suite architecture.md",
-      "sha256": "643c1ea38d73d73645d952c2f050e534c9eb3ecac4a1dce1c17c6dafe0d24f48"
+      "sha256": "5b332a85ddd7f5b140b8ec1cc87a6e3861861e0e49351d4e29e46ac6dca3eec6"
     },
     {
       "file": "business-suite data model.md",
       "sha256": "62e7e5c1378488f87ed99671d0a80051e991aed703f15fc4a819439faa495a96"
+    },
+    {
+      "file": "business-suite deployed backend.md",
+      "sha256": "5ee10c39ce778a531670134b60804db1dd9915912394e31924b8dd9cd5f157e2"
     },
     {
       "file": "business-suite desktop applications.md",
@@ -21,7 +25,7 @@
     },
     {
       "file": "business-suite hub.md",
-      "sha256": "d71b21572e9490b3d0f54c13c094709c01052a61b9328910a4caea4d61b8eaf8"
+      "sha256": "040c320aabe407d97ac135efb9c7b2cd5146fe40368b71833456aa83bf6c3de6"
     },
     {
       "file": "business-suite migration.md",
@@ -49,7 +53,7 @@
     },
     {
       "file": "business-suite quality and verification.md",
-      "sha256": "1c1a311786a4334665bb1ebe36ad2f12d02f9b1ab41a6ec690936cae8a59fdd4"
+      "sha256": "16e4c2d23045b7b83f1274d3dbf949a346caf73fe7a0f59ec97360a276f26873"
     },
     {
       "file": "business-suite requirements.md",
@@ -57,7 +61,7 @@
     },
     {
       "file": "business-suite roadmap.md",
-      "sha256": "371f64e5df77d19d96381f46e829e2d198a9bd0cb5e0f7356efa557c6e65766c"
+      "sha256": "455a25c8b4c1ba59d8d35718379cc5daa6b5c5c13251b49818beff83127ec6d8"
     },
     {
       "file": "business-suite screens and flows.md",
@@ -65,11 +69,11 @@
     },
     {
       "file": "business-suite security privacy and operations.md",
-      "sha256": "02a90f0cdb54da85f4103a61bc3c6596b3dba5a76db556dbc201aef22e7b32e8"
+      "sha256": "4354da4ef92cd7705d03d7c6107ec1f7f0dae58ea1f27d75e49401678f31b09b"
     },
     {
       "file": "business-suite sources and agent handoff.md",
-      "sha256": "985cc1e55e8cff686ac1ca96bd7074d5128f0d4ae51b1f69300fad16470fff47"
+      "sha256": "212d4a7f7b51428f4072c1c419cfb4199d1a03f6f4fd2b8395be6476604058db"
     }
   ]
 }
