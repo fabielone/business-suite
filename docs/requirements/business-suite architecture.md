@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, architecture, decisions]
-updated: 2026-10-23
+updated: 2026-10-24
 ---
 # Business Suite architecture
 
@@ -9,7 +9,7 @@ updated: 2026-10-23
 Build one custom application with trusted modules and role-specific views. Reuse commodity infrastructure and libraries rather than rebuilding databases or identity primitives. The human selected greenfield product development, not ERP adoption. Greenfield gives control over product scope and interactions while taking on correctness, migrations, permissions and maintenance; no measured speed or scale advantage is claimed.
 
 ## Offline-first native direction
-The human's later NOTE-008 instruction supersedes web-first/native-later. Offline-first and multiplatform native delivery are required now; Android/iOS/browser are assumed while desktop native priority remains open. Proposed clients use Expo React Native with SQLite, the existing web UI with IndexedDB and a shell service worker, and shared `@suite/offline` command semantics. [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>) defines the bounded implementation and primary documentation sources.
+The human's later NOTE-008 instruction supersedes web-first/native-later. Offline-first and multiplatform delivery are required now. The 2026-10-24 human answer explicitly includes Windows/macOS desktop apps alongside Android/iOS/browser. Clients use React Native/SQLite on mobile, browser IndexedDB with a shell service worker, and Electron desktop with bundled React UI plus persistent-profile IndexedDB, sharing `@suite/offline` command semantics. [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>) defines the bounded implementation and primary documentation sources.
 
 Local storage owns the durable unsent intent and a last-authorized read snapshot; the server owns accepted shared business facts and all consequential permission/version decisions. These are not two independent financial ledgers. The initial client keeps queued intent separate from confirmed snapshots, so pending expense capture never looks approved/paid and pending closure never silently changes authoritative job state. A client command outbox is distinct from a future server integration outbox.
 
@@ -35,6 +35,7 @@ A modular monolith means internally separated modules deployed together initiall
 flowchart LR
   Web[Browser with IndexedDB] --> Sync[Shared command sync]
   Native[Android and iOS with SQLite] --> Sync
+  Desktop[Windows and macOS with IndexedDB] --> Sync
   Sync --> API[Authoritative API]
   API --> Commercial[Commercial and CRM]
   API --> Work[Work and Resources]
@@ -69,9 +70,10 @@ Do not unify order/job/invoice/payment into one object. Keep narrow typed record
 | BS-ADR-009 | One future suite DB/auth boundary — proposed adoption | Separate from existing app boundaries; explicit migration/cutover required |
 | BS-ADR-010 | Trusted modules and versioned packs — proposed later architecture | No general plugin marketplace or workflow engine in first slice |
 | BS-ADR-011 | Preserve all confirmed areas while sequencing delivery — confirmed scope principle | E1 is a foundation, not cancellation of money/time/trips/resources/CRM |
-| BS-ADR-012 | Offline-first multiplatform native delivery — confirmed NOTE-008 direction | Supersedes web-first/native-later; exact desktop native scope pending |
+| BS-ADR-012 | Offline-first multiplatform delivery — confirmed NOTE-008/009 direction | Supersedes web-first/native-later; Windows/macOS inclusion explicitly resolved |
 | BS-ADR-013 | SQLite native, IndexedDB browser, shared durable command outbox — NOTE-008 engineering proposal | Keep server validation and confirmed snapshots separate from pending intent |
 | BS-ADR-014 | Two-command demo allowlist with explicit conflicts — bounded initial slice | Expense submit/job close queued; create/review online; full offline coverage and live privacy pending |
+| BS-ADR-015 | Electron desktop with bundled suite origin and persistent IndexedDB — NOTE-009 engineering choice | Reuse React/shared sync; isolated renderer, narrow main-process transport; release matrix/signing pending |
 
 New decisions record date, human/engineering provenance, alternatives considered, affected requirements, migration implications and verification. Exact software license is unresolved; open-source intent is not a legal compatibility conclusion about reused code.
 
@@ -84,3 +86,11 @@ Hiding a module removes navigation only. Retirement should prevent new commitmen
 Growth includes transaction volume, business/entity/site structure, permission/control depth, availability, recovery and offline operation. These need separate measured acceptance criteria. A five-person demo, two industry pilots or a multi-entity mock-up cannot establish enterprise readiness. Start with tested tenant/record/field isolation, traceable commands, safe migrations and recoverable data; activate deeper scheduling, approvals, inventory and integrations when their workflows are specified.
 
 Avoid microservices, Kafka, Kubernetes, event sourcing, a full workflow builder, arbitrary plugins and a homegrown statutory payroll/tax/general ledger until a demonstrated requirement justifies them. Retain the extension path without making the first worker learn all the future concepts.
+
+## Desktop shell and trust boundary
+The desktop application bundles its React assets and serves only them from controlled `suite://app/`, without requiring a web server for shell launch. Use an isolated sandboxed renderer and a narrow preload/main-process bridge. Initial demo transport is fixed to the loopback API; main-process argument/sender validation and backend business authorization are both required. A desktop main process is not permission to expose arbitrary URLs, files, commands or database credentials.
+
+Persistent app-profile IndexedDB is distinct from browser-origin IndexedDB and mobile SQLite. An update or name/profile change must preserve or deliberately migrate unsynced work. Live/setup has no demo fallback. [business-suite desktop applications](<business-suite desktop applications.md>) supplies lifecycle, source references and release-evidence distinctions; actual NOTE-009 implementation is recorded separately from this engineering choice.
+
+## NOTE-009 implemented desktop boundary
+The local Electron 45/electron-builder 26.18 foundation is implemented and tested on macOS 27.0.1 arm64. The inspected desktop README records persistent setup/demo profiles, a sandboxed renderer with frozen `platform/mode/request` bridge, bundled `suite://app/` shell and fixed loopback transport. Three staged-app runtime tests and a separate packaged-Mac shell smoke passed; Windows x64 ZIP packaging passed but Windows runtime and NSIS installer success did not. These findings validate the bounded host/client cases, not the full target architecture or production privacy/release controls. [business-suite roadmap](<business-suite roadmap.md#note-009-desktop-foundation--2026-10-24>)

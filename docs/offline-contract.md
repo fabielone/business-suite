@@ -1,4 +1,4 @@
-# Offline contract — NOTE-008
+# Offline contract — NOTE-008 / NOTE-009
 
 This is the developer handoff for the current local prototype. The product direction is offline first with web and native clients. The implemented offline slice supports missing-receipt expense capture and job completion; it does not make the whole suite work offline or provide real sign-in yet.
 
@@ -12,12 +12,13 @@ This is the developer handoff for the current local prototype. The product direc
 | [Web transport](../apps/web/src/api.ts) | HTTP requests and typed error status/code; demo session header |
 | [Web UI](../apps/web/src/App.tsx) | Cached workspace, pending entries, explicit sync/reset and local-save wording |
 | [Offline shell generator](../apps/web/offline-shell.ts) | Build-specific static-asset cache; no business-response cache |
+| [Desktop shell](../apps/desktop/README.md) | Bundled renderer, persistent Electron profile/IndexedDB, restricted main-process API bridge |
 | [Native adapter](../apps/mobile/src/sqliteStore.ts) | SQLite transaction and durability boundary |
 | [Native client](../apps/mobile/src/client.ts) | Explicit simulator/emulator mode, loopback API and identity namespace |
 | [Native UI](../apps/mobile/src/App.tsx) | Work, Money and Sync views; foreground/network/manual synchronization |
 | [API](../apps/api/src/app.ts) | Authentication mode, demo epoch, server authorization and command dispatch |
 
-The engine has no browser or React Native storage dependency. Both clients implement the same LocalStore and Transport interfaces. Shared TypeScript DTOs are in [core](../packages/core/src/index.ts); server rules remain authoritative.
+The engine has no browser or React Native storage dependency. Native and browser/desktop clients implement the same LocalStore and Transport interfaces. Shared TypeScript DTOs are in [core](../packages/core/src/index.ts); server rules remain authoritative.
 
 ## State that is persisted
 
@@ -51,6 +52,8 @@ For a linked expense, cached job visibility is only an early usability check. It
 LocalStore.read returns the persisted state. LocalStore.update receives a synchronous transformation of the latest state and resolves only after its atomic commit. The callback must do no network work. Concurrent writers must serialize even if they are separate client instances.
 
 The web adapter opens IndexedDB business-suite-demo-v1, version 1, and the workspaces object store. Its key includes browser origin, explicit demo mode, business and demo identity. Each update reads, transforms and writes in one readwrite transaction and resolves on transaction completion. It must not read first in one transaction and overwrite later in a second transaction. Storage failures keep the form open; no in-memory success substitute is permitted.
+
+Desktop reuses the IndexedDB adapter under `suite://app/` in an Electron persistent session, with separate setup/demo profiles. UI files are bundled, so desktop does not register the web service worker. The isolated renderer calls a narrowly scoped preload bridge; only the main process can contact the fixed loopback API. A desktop restart does not clear the queue. See `apps/desktop/README.md` for profile locations, package modes and security limits.
 
 The native adapter uses a separate SQLite file per loopback endpoint/business/user namespace. It enables WAL, synchronous FULL and a busy timeout. It serializes operations in its JavaScript instance and uses an exclusive SQLite transaction, taking a writer lock before reading the row being changed. The row stores the serialized LocalState. The promise resolves after SQLite commits. Invalid JSON or an unsupported schema produces an explicit error instead of a fresh empty database.
 

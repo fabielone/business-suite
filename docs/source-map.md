@@ -1,14 +1,16 @@
 # Implemented source map and review entry points
 
-This map covers NOTE-007 and NOTE-008 local foundations. It does not replace the full product requirements. Read the canonical Obsidian hub or its portable snapshot in `docs/requirements` before extending behavior.
+This map covers NOTE-007, NOTE-008 and NOTE-009 local foundations. It does not replace the full product requirements. Read the canonical Obsidian hub or its portable snapshot in `docs/requirements` before extending behavior.
 
 | Responsibility | Actual source | Current boundary |
 |---|---|---|
+| Desktop Windows/macOS | `apps/desktop/src/{main,preload,security,bridge}.ts`, `electron-builder.cjs` | Bundled React screens, isolated Electron renderer, narrow loopback transport, persistent profile; setup/demo distinct |
+| Desktop verification | `apps/desktop/test`, `tests/desktop` | Pure bridge/security tests and actual host Electron restart/reconnect checks; packaging is separate from Windows runtime |
 | Native Android/iOS | `apps/mobile/src/{App,client,sqliteStore,money}.ts*` | React Native UI + SQLite; simulator-only fictional demo; live/physical setup-only |
 | Shared offline semantics | `packages/offline/src/index.ts` | Durable intent queue, identity ownership, versions/epoch, conflicts and same-key replay; present engine demo-only |
 | Browser persistence and offline shell | `apps/web/src/offline.ts`, `offline-shell.ts`, `public/` | Atomic IndexedDB, precached build assets; no API service-worker cache |
 | Web shell and role-dependent screens | `apps/web/src/App.tsx`, `styles.css` | Overview, Work, Money; in-app view state at `/`, not a complete route/deep-link system |
-| Web command transport | `apps/web/src/api.ts` | Local demo header only; no stored production credentials; failed requests do not substitute fixture success |
+| Client command transport | `apps/web/src/api.ts`, `platform.ts` | Browser HTTP or isolated desktop bridge; explicit mode/scheme gate; no stored production credentials or fixture-success fallback |
 | Frontend/demo separation | `App.tsx`, `apps/web/vite.config.ts` | Explicit `demo` mode on loopback; default build shows setup screen |
 | HTTP contract and common errors | `apps/api/src/app.ts` | Workspace, jobs/create/close, expenses/submit/review, health; no uploads/payments |
 | Identity verification | `apps/api/src/auth.ts`, `server.ts` | Verified JWT subject, issuer, audience, expiry; server-controlled memberships and privileges; actual provider connection unverified |

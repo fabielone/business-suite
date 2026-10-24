@@ -5,11 +5,11 @@ Working name only. This is a new single modular application replacing CRM and Co
 ## Start here
 - Read README.md, docs/implementation-contract.md, and docs/interview-snapshot.json.
 - Canonical product requirements: `/Users/fabiel/Library/Mobile Documents/iCloud~md~obsidian/Documents/obnotes/business-suite/business-suite hub.md`.
-- Read the vault's `AGENTS.md`, `_management/Agent handbook.md` and the current task. NOTE-007 is the historical initial foundation; NOTE-008 records offline-first/native continuation. Read `docs/offline-contract.md` before changing data access or client code.
+- Read the vault's `AGENTS.md`, `_management/Agent handbook.md` and the current task. NOTE-007 is the historical initial foundation; NOTE-008 records offline-first/native continuation. NOTE-009 records Windows/macOS desktop implementation. Read `docs/offline-contract.md` before changing data access or client code and `apps/desktop/README.md` for shell/bridge boundaries.
 - Interview snapshot is historical evidence. Vault decisions and later human directions supersede it; unresolved answers remain unresolved.
 
 ## Working rules
-- Offline-first and Android/iOS native delivery are confirmed requirements, superseding the historical web-first/native-later snapshot. Platform-specific storage/UI may differ; share domain/sync rules.
+- Offline-first browser, Android/iOS native and Windows/macOS desktop delivery are confirmed requirements, superseding the historical web-first/native-later snapshot. Platform-specific storage/UI may differ; share domain/sync rules.
 - Commit local capture before claiming it is saved. Keep pending intent separate from confirmed records/approval/payment. Never silently discard unsynced work or automatically rebase money/state conflicts.
 - Offline authorization is last-known only; current server checks decide acceptance. The present client engine is demo-only until real session/local-data security is implemented.
 - Enforce business membership, enabled module, action privilege and record scope on the backend. UI hiding is not security.

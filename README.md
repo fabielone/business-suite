@@ -4,16 +4,17 @@ One modular application for small business operations: optional CRM, Work, Resou
 
 ## Offline-first, multiple platforms
 
-**Human direction updated 2026-10-23:** offline operation and native apps are core requirements. This supersedes the earlier web-first/native-later assumption.
+**Human direction updated 2026-10-24:** offline operation, Android/iOS and installable Windows/macOS apps are current requirements, alongside browser access. This supersedes the earlier web-first/native-later assumption.
 
 - **Android and iOS:** `apps/mobile`, React Native with Expo and SQLite. Native application source, not a webview wrapper. Current demo targets simulators; real sign-in and physical-device use are not ready.
+- **Windows and macOS:** `apps/desktop`, Electron with locally bundled screens, persistent IndexedDB and a restricted API bridge. Separate setup and fictional-demo artifacts.
 - **Browser:** `apps/web`, React with IndexedDB and a service worker that saves the built application shell for offline reopening.
 - **Shared behavior:** `packages/core` and `packages/offline`; the same typed commands and sync rules, with platform-specific storage and interfaces.
 - **Server:** Fastify/PostgreSQL remains the authority for permissions, accepted changes and business balances.
 
-The current offline slice supports previously downloaded work, job-completion requests and missing-receipt expense capture. Saved entries survive app/page reopening and retry with the same command key. Pending entries, conflicts and server-confirmed records remain distinct. Job creation and expense review are online-only in the browser for now. Full receipt/time/trip/money offline flows remain on the roadmap. Installable Windows/macOS targets have not been selected or built.
+The current offline slice supports previously downloaded work, job-completion requests and missing-receipt expense capture. Saved entries survive app/page reopening and retry with the same command key. Pending entries, conflicts and server-confirmed records remain distinct. Job creation and expense review are online-only in the browser for now. Full receipt/time/trip/money offline flows remain on the roadmap. Desktop installation/runtime evidence is recorded separately for each OS in the verification record.
 
-See [the offline contract](docs/offline-contract.md), [native setup](apps/mobile/README.md), and [verification](docs/verification.md). This remains a fictional local prototype; do not enter real business data.
+See [the offline contract](docs/offline-contract.md), [native setup](apps/mobile/README.md), [desktop setup](apps/desktop/README.md), and [verification](docs/verification.md). This remains a fictional local prototype; do not enter real business data.
 
 ## Requirements and agent entry point
 
@@ -23,7 +24,7 @@ Canonical product specifications are in the iCloud Obsidian vault:
 
 `/Users/fabiel/Library/Mobile Documents/iCloud~md~obsidian/Documents/obnotes/business-suite/business-suite hub.md`
 
-Initial foundation: `NOTE-007`. Offline/native continuation: `NOTE-008 Offline first and native clients`. Requirements distinguish user-confirmed behavior, engineering defaults and open decisions. Snapshot status describes the interview at capture time, not current implementation progress. For handoff from another computer, read the [portable requirements snapshot](docs/requirements/README.md), [implemented source map](docs/source-map.md) and [verification record](docs/verification.md).
+Initial foundation: `NOTE-007`. Offline/native continuation: `NOTE-008 Offline first and native clients`. Windows/macOS extension: `NOTE-009 Windows and macOS desktop apps`. Requirements distinguish user-confirmed behavior, engineering defaults and open decisions. Snapshot status describes the interview at capture time, not current implementation progress. For handoff from another computer, read the [portable requirements snapshot](docs/requirements/README.md), [implemented source map](docs/source-map.md) and [verification record](docs/verification.md).
 
 ## Local demo
 
@@ -43,6 +44,8 @@ npm run mobile:demo
 ```
 
 Follow [native setup](apps/mobile/README.md) for an iOS simulator or Android emulator (`adb reverse` is required for Android loopback). Real accounts, physical devices and deployed connections remain setup-only. Production builds never silently enable demo identity.
+
+For the desktop demo, keep the API running and run `npm run desktop:demo` in another terminal. `npm run desktop` builds the setup-only variant. Desktop screens are bundled; a browser/Vite server is unnecessary. Package commands are `npm run package:desktop:mac` and `npm run package:desktop:win`; append `:demo` for fictional-demo artifacts. A standalone Windows ZIP is available through `package:desktop:win:zip:demo`; this ARM Mac could not execute the NSIS compiler. See the desktop README for profile persistence and exact local-demo limits.
 
 The API is ephemeral and resets on restart; device storage persists. A demo-session guard prevents replay into a restarted server. Inspect any saved entries before using the clearly warned local-demo reset. No real uploads or payments are available.
 
@@ -64,6 +67,7 @@ Latest checks and their exact limits are in [verification](docs/verification.md)
 ## Code map
 
 - `apps/web`: responsive React + Vite application, IndexedDB adapter and offline build shell.
+- `apps/desktop`: Windows/macOS Electron shell, bundled renderer, restricted transport and packaging.
 - `apps/mobile`: Expo/React Native Android+iOS application and SQLite adapter.
 - `packages/offline`: shared durable queue, identity binding, conflict and retry rules.
 - `apps/api`: Fastify command/query API, authentication, demo bootstrap and tests.
@@ -80,7 +84,7 @@ These screenshots contain fictional local-demo data.
 
 ![Desktop local demo](docs/preview/desktop.png)
 
-[Phone overview](docs/preview/phone-overview.png) · [Phone expense form](docs/preview/phone-expense.png) · [Offline queue](docs/preview/offline-phone.png)
+[Phone overview](docs/preview/phone-overview.png) · [Phone expense form](docs/preview/phone-expense.png) · [Offline queue](docs/preview/offline-phone.png) · [Mac app after offline restart](docs/preview/native-desktop-offline.png)
 
 ## Scope still to build
 

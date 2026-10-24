@@ -1,0 +1,25 @@
+{
+  "name": "@suite/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Business Suite Windows and macOS desktop client. Local unsigned prototype.",
+  "author": "Business Suite contributors",
+  "type": "commonjs",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/stage.cjs setup",
+    "build:demo": "tsc -p tsconfig.json && node scripts/stage.cjs demo",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "electron .",
+    "start:demo": "electron . --demo",
+    "test": "tsx --test test/*.test.ts",
+    "package:mac": "electron-builder --config electron-builder.cjs --mac dmg zip --publish never",
+    "package:win": "electron-builder --config electron-builder.cjs --win nsis --x64 --publish never",
+    "package:win:zip": "electron-builder --config electron-builder.cjs --win zip --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "45.0.0",
+    "electron-builder": "26.18.0",
+    "typescript": "~6.0.3"
+  }
+}

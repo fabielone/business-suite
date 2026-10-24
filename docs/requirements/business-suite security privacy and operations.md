@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, security, privacy, operations]
-updated: 2026-10-23
+updated: 2026-10-24
 ---
 # Business Suite security privacy and operations
 
@@ -56,3 +56,10 @@ The inspected demo client clears its protected snapshot and locks replay on 401/
 A service worker should cache only the intended shell/assets, with explicit version/update policy. Avoid generic caching of authenticated API responses. Browser storage may be removed or unavailable; handle quota/write failure before reporting saved. Native app data, attachments and backups need an explicit protection/retention policy. Future capture permissions for receipts/location must stay within confirmed purposes; offline operation does not authorize continuous driver tracking.
 
 Device loss or uninstall can lose unsynced work. Backups, user-visible sync status, recovery and migration tests must address local as well as server state. Never solve an uncertain delivery by deleting a queued command and resending with a new key. See [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>) for the recovery protocol and [business-suite quality and verification](<business-suite quality and verification.md>) for required tests.
+
+## Electron desktop security and local privacy
+Windows/macOS desktop is confirmed current scope. Electron adds a privileged main process, so renderer isolation, sandboxing, restricted navigation/new windows, CSP and validated narrow IPC are separate controls to inspect and test. Do not expose generic Node, shell, filesystem, raw IPC or unrestricted fetch APIs to the UI. Serve only packaged assets under controlled `suite://app/`; validate host/path and prevent traversal. The demo main-process API destination is fixed to loopback, with no live-to-demo fallback.
+
+An app-controlled persistent profile remains sensitive local storage. Sandbox/context isolation does not encrypt IndexedDB or establish a live session/retention policy. Account/business isolation, offline expiry, known-revocation lock, credentials, diagnostics, queued-payload protection and shared-device policy remain required before real data. Removing an app must not silently delete unsynced work through app-controlled cleanup, while deliberate retention after removal also needs a clear privacy policy.
+
+A signed/notarized artifact is distinct from a secure app implementation, and an unsigned package is not a production release. Keep signing secrets out of source and notes; no credential acquisition, external upload or automatic update service is authorized by this local foundation. Security-source mechanisms and release limits are documented in [business-suite desktop applications](<business-suite desktop applications.md>).

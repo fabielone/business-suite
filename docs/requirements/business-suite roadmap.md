@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, roadmap, status]
-updated: 2026-10-23
+updated: 2026-10-24
 ---
 # Business Suite roadmap
 
@@ -9,9 +9,9 @@ updated: 2026-10-23
 This roadmap sequences implementation without removing confirmed scope. Jobs, assignments, trips, time, receipts, expenses, income, balances, reimbursements, optional CRM/quotes/site visits and professional integrations remain part of the intended product. The exact first pilot remains open; approximately five test users is context, not a technical capacity ceiling.
 
 ## Current authorized work
-NOTE-008 (Obsidian reference) now owns the active acceptance criteria, execution checklist and status. The human requires offline-first operation and multiplatform native clients, superseding web-first/native-later. Android/iOS/browser are assumed while desktop native priority remains open. NOTE-008 authorizes the local offline/native extension, not production deployment, remote publication, purchases, migration, legacy deletion or shared backend changes.
+NOTE-009 (Obsidian reference) owns the active acceptance criteria, execution checklist and status. The human explicitly included Windows and macOS desktop apps now on 2026-10-24, alongside the offline-first Android/iOS/browser direction. Electron is the desktop engineering choice. This authorizes a local packaged desktop foundation, not remote publication, signing purchases, production deployment, migration, legacy deletion or shared backend changes.
 
-NOTE-007 completed the bounded local foundation at `/Users/fabiel/Desktop/business-suite`, checkpoint `fd6b5ef`, with evidence preserved below and in its report. NOTE-008 builds on that baseline. Historical interview delivery/status and NOTE-007 results do not override the later requirement or certify the new offline/native work. Source inspection of the shared offline client is recorded separately from pending runtime/device evidence.
+NOTE-007 completed the bounded local foundation at `/Users/fabiel/Desktop/business-suite`, checkpoint `fd6b5ef`, with evidence preserved below and in its report. NOTE-008 completed the scoped offline/mobile extension; NOTE-009 starts from clean checkpoint `0a71454`. Historical interview delivery/status and NOTE-007/008 results do not certify the new desktop work. Desktop package/runtime/signing evidence must be recorded separately.
 
 ## Historical foundation scope from E1
 The bounded first slice is a React/Vite frontend, Fastify/TypeScript API, shared core, PostgreSQL migrations and a loopback local PGlite demo. It includes authorized job list/create/close, field-level price projection, expense list/submit/review, missing-receipt reason, authenticated payer, conservative self-approval denial, version checks and idempotency contracts. Real API JWT/membership validation is a backend boundary; initial web sign-in UX is not included.
@@ -22,7 +22,8 @@ No real receipt upload, actual reimbursement/payment, timer, trip, full CRM, Res
 | Stage | Outcome | Dependencies and boundary |
 |---|---|---|
 | Foundation | Runnable local slice with meaningful denied/error/retry paths and responsive UI | E1; actual commands and UI checks required; PGlite is not real PostgreSQL certification |
-| Offline and native foundation | Durable supported-command capture/replay, cached work, browser shell/IndexedDB and Android/iOS SQLite clients with shared semantics | Current NOTE-008; expense submit/job close only; create/review online; no full offline-product or device-readiness claim |
+| Offline and native foundation | Durable supported-command capture/replay, cached work, browser shell/IndexedDB and Android/iOS SQLite clients with shared semantics | NOTE-008 historical scoped result; expense submit/job close only; no full offline-product or device-readiness claim |
+| Windows and macOS foundation | Packaged React desktop shell, persistent IndexedDB profile and same sync rules through isolated Electron bridge | Current NOTE-009; exact OS/architecture/runtime and release evidence recorded separately |
 | Real-use safety | Verified real auth UX, offline session/local-data privacy, PostgreSQL roles/isolation/concurrency, durable evidence storage, backup/restore and environment separation | Pilot/data/privacy decisions; no real-money pilot before relevant controls |
 | Complete worker-money loop | Business/personal split, receipt and missing-receipt rules, privileged direct posting, employee balances, grouped partial reimbursement, customer receipts/remaining due | Self-approval/payment authority, advances, balance creation, cash/transfer policies; preserve agreed price |
 | Work and Resources depth | Assignments, timers/manual time, man-hours, trips, vehicles/equipment, meaningful completion/correction history | Conflict, time review, resource availability and location/privacy decisions |
@@ -66,7 +67,7 @@ Source inventory: [docs/source-map.md](/Users/fabiel/Desktop/business-suite/docs
 
 **Meaningful failure coverage:** save-before-send; lost server response and local acknowledgement failure retain the same key; concurrent captures; account/business isolation; malformed persisted paths/bodies cannot replay arbitrary commands; stale versions remain conflicts; denial clears protected snapshots and locks replay; new demo generation blocks old requests; late acknowledgements cannot repopulate reset local state. Browser tests disconnect, reload, save, reload again and reconnect to exactly one server expense; pending completion does not show as confirmed. Service-worker cache contains no API responses.
 
-**Limits:** Shared engine tests use a serialized JSON adapter; API uses PGlite, not real PostgreSQL concurrency. Native source/type/bundles are verified, but no Expo Go/development client was installed on a simulator and no native UI, actual SQLite runtime, OS termination, physical device, Xcode/Gradle binary, signing or store distribution was tested. Native setup is deliberately simulator-only fictional demo; actual devices/live mode remain setup-only until real auth/service configuration/local privacy controls exist. Browser storage is subject to browser eviction; offline onboarding, encryption/retention, durable receipt blobs, full sync recovery/migrations and all remaining workflows require implementation. Windows/macOS installable clients remain an unanswered packaging priority. No deployment, legacy migration, remote push or shared-backend changes.
+**Limits:** Shared engine tests use a serialized JSON adapter; API uses PGlite, not real PostgreSQL concurrency. Native source/type/bundles are verified, but no Expo Go/development client was installed on a simulator and no native UI, actual SQLite runtime, OS termination, physical device, Xcode/Gradle binary, signing or store distribution was tested. Native setup is deliberately simulator-only fictional demo; actual devices/live mode remain setup-only until real auth/service configuration/local privacy controls exist. Browser storage is subject to browser eviction; offline onboarding, encryption/retention, durable receipt blobs, full sync recovery/migrations and all remaining workflows require implementation. At the NOTE-008 handoff desktop priority was unanswered; NOTE-009 subsequently confirmed Windows/macOS for current delivery. No deployment, legacy migration, remote push or shared-backend changes.
 
 **Dependency finding:** `npm audit` reports5 high entries in the Expo development-toolchain dependency tree, driven by [node-forge signature verification](https://github.com/advisories/GHSA-86w9-cpqp-85rv) and [Zod oversized collections](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5). Registry inspection found node-forge1.4.0 still latest; Expo CLI uses Zod3.25.76 while the advisory's fixed version is4.6.6+. No forced major downgrade/override was applied. Resolve/review these before release or enabling signing/update workflows; passing functional checks is not release security clearance. The initial Node25 unsupported-engine warnings were resolved for final checks by using supported Node22; the initial TypeScript5.9 compatibility recommendation was resolved by aligning all workspaces to6.0.3. One npm-exec wrapper invocation failed with usage help and was corrected; the actual Expo dependency check passed.
 
@@ -74,5 +75,34 @@ Run `npm run demo:offline` for the built browser demo; run `npm run mobile:demo`
 
 Report: NOTE-008 2026-10-23 Offline and native foundation report (Obsidian reference). Portable repository requirements are refreshed from the canonical notes after these edits.
 
+## NOTE-009 desktop foundation — 2026-10-24
+The coordinating agent reports the following verified local results on **macOS 27.0.1 arm64**, with Electron **45.0.0** and electron-builder **26.18.0**. These results describe the supported-host foundation, not a Windows installer/runtime pass or a production release. [business-suite desktop applications](<business-suite desktop applications.md>) defines the full contract; [desktop README](/Users/fabiel/Desktop/business-suite/apps/desktop/README.md) records source paths and local modes.
+
+| Evidence | Result and practical limit |
+|---|---|
+| Workspace checks | All-workspace type checking passes; **38 unit/API scenarios** pass: 16 offline, 12 API, 2 mobile parsing and 8 desktop bridge/security |
+| Actual macOS Electron runtime | **3 tests pass** against the staged app: bundled UI, offline persistence/reconnect and setup-mode isolation |
+| Renderer/bridge | Sandboxed/context-isolated renderer; frozen three-field bridge (`platform`, `mode`, `request`); no Node globals; invalid IPC, CSP, windows/navigation checks pass |
+| Mode isolation | Setup artifact refuses API use even with `--demo`; explicit fictional demo is separate; no live fallback |
+| Offline lifecycle | Two queued intents survive actual app quit/relaunch with the same IDs, API generation and account isolation; reconnection produces one accepted server effect per intent in the tested flow |
+| Navigation correction | Same-document skip-link hash is allowed without widening permitted origin/path/frame access; focused runtime checks pass |
+| macOS package artifacts | arm64 demo DMG and ZIP generated under `apps/desktop/artifacts/demo`; unsigned and not notarized |
+| Packaged macOS launch | Actual demo `.app` launches with no API/web server; `isPackaged=true`, `suite://app/`, demo mode, no Node globals; correctly shows connect-once empty-offline state. This is not a DMG installation walkthrough |
+| Windows package target | x64 application and ZIP produced; ZIP CRC verified and executable identified as PE32+ x86-64. No actual Windows runtime tested |
+| Windows NSIS installer | **Build failed** with `spawn error -86`: the bundled `makensis` is a Mach-O x86_64 executable that cannot run on this ARM host as configured. No Rosetta/system installation was performed. NSIS target and manual Windows CI workflow are provided; workflow has not run |
+| Browser regression/build | All 8 connected plus 2 built-shell offline regressions pass; format check, build and default/demo builds pass. These are the final NOTE-009 runs |
+| Release/lifecycle gaps | Real auth/local privacy, full workflows, Windows runtime, signing/notarization, upgrades, uninstall/profile recovery and public distribution remain unverified |
+| Artifact integrity | macOS DMG checksum and both macOS/Windows ZIP CRC checks pass; integrity checks do not establish signing or runtime compatibility |
+| Dependency audit | Five known high Expo development-toolchain findings remain, as in NOTE-008; no release-security clearance implied |
+| Portable requirements | Root exported17 finalized canonical notes into `docs/requirements`; source hashes and export time recorded in `snapshot.json` |
+
+The application bundles React assets at `suite://app/` and uses persistent app-controlled IndexedDB plus the existing shared offline engine. The main-process bridge is fixed to loopback demo transport. Mobile remains React Native/SQLite; no mobile runtime claim is added here. Existing NOTE-007/008 reports stay historical.
+
+**Built fictional-demo artifacts:** [macOS arm64 DMG](</Users/fabiel/Desktop/business-suite/apps/desktop/artifacts/demo/Business Suite Demo-0.1.0-mac-arm64.dmg>), [macOS arm64 ZIP](</Users/fabiel/Desktop/business-suite/apps/desktop/artifacts/demo/Business Suite Demo-0.1.0-mac-arm64.zip>), [Windows x64 ZIP](</Users/fabiel/Desktop/business-suite/apps/desktop/artifacts/demo/Business Suite Demo-0.1.0-win-x64.zip>). They are unsigned local artifacts, not public releases.
+
+The evidence supports the scoped local desktop foundation on the supported Mac host. It does **not** establish a working NSIS installer, Windows runtime, macOS DMG installation walkthrough, signing/notarization or full product readiness. Delivery remains idempotent retry with reconciliation; the tested one-effect-per-intent behavior is not a general exactly-once network guarantee.
+
 ## Completion and future handoff
-The foundation is complete only to the extent supported by NOTE-007 acceptance evidence. Larger product completion remains outstanding. A successor agent reads [business-suite sources and agent handoff](<business-suite sources and agent handoff.md>), chooses an authorized task, inspects current code and fills the relevant feature contract before changing behavior. No feature is deemed finished merely because it appears in this roadmap.
+The local foundation is complete only to the extent supported by the separate NOTE-007, NOTE-008 and NOTE-009 acceptance evidence. Larger product completion remains outstanding. A successor agent reads [business-suite sources and agent handoff](<business-suite sources and agent handoff.md>), chooses an authorized task, inspects current code and fills the relevant feature contract before changing behavior. No feature is deemed finished merely because it appears in this roadmap.
+
+NOTE-009 final report: NOTE-009 2026-10-24 Desktop application foundation report (Obsidian reference). Its scoped local completion includes explicit Windows installer/runtime and release gaps; it does not certify the full suite.

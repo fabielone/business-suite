@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, decisions, discovery]
-updated: 2026-10-23
+updated: 2026-10-24
 ---
 # Business Suite open decisions
 
@@ -8,7 +8,7 @@ updated: 2026-10-23
 
 **This is the decision queue, not an instruction to stop independent authorized work.** Do not invent answers or ask again for choices already confirmed. Each item needs a dated human answer or a clearly bounded engineering default. Current implementation defaults do not close these questions.
 
-| ID | Unanswered decision | What depends on it | Safe current position |
+| ID | Decision and status | What depends on it | Safe current position |
 |---|---|---|---|
 | BS-DEC-001 | Final brand and product name | Public identity, domains, copy | Business Suite is provisional |
 | BS-DEC-002 | Exact open-source license and reciprocity/contribution policy | Distribution, external contributions | Intent confirmed; no license claim until selected and added |
@@ -34,13 +34,18 @@ updated: 2026-10-23
 | BS-DEC-022 | Accountant, payroll/fiscal/payment providers and authoritative books | Connectors and legal mappings | No provider selected or live connector claimed |
 | BS-DEC-023 | Hosting, operational ownership, backups and launch targets | Production rollout | Local task only; Docker unavailable at initial task inspection |
 | BS-DEC-024 | UI language, locale defaults, currencies beyond MXN | Copy, timestamps, number input | E1 MXN; broader policy unconfirmed |
-| BS-DEC-025 | Native desktop platforms and priority | Windows/macOS/Linux clients, packaging and device testing | Android/iOS/browser assumed; do not claim desktop native delivery |
+| BS-DEC-025 | Resolved 2026-10-24: Windows and macOS desktop apps now | Current desktop delivery under NOTE-009 | Human selected both; Linux not added; release details move to BS-DEC-029/030/031 |
 | BS-DEC-026 | Offline access after token expiry, logout, revocation or device loss | Cache lock, queue retention, shared-device behavior and authentication recovery | Fictional demo only until live auth/storage privacy is designed and tested |
 | BS-DEC-027 | Local storage retention, capacity, recovery and encryption policy | Cached records, receipt blobs, backups and unsynced loss risk | No promise that browser eviction/reinstall/device loss preserves unsynced work |
 | BS-DEC-028 | Full offline workflow and conflict resolution policy | Receipt/time/trip/assignment/money workflows beyond initial allowlist | Preserve requirements; no automatic financial merge or silent server-version rebase |
+| BS-DEC-029 | Desktop minimum OS versions and processor architectures | Windows/macOS compatibility and test matrix | Packaging targets are bounded evidence, not support promises |
+| BS-DEC-030 | Desktop distribution, signing/notarization and update policy | Installer format, credentials, release channel and rollback | Local packages only unless separately authorized; no automatic updater or signing claim |
+| BS-DEC-031 | Desktop profile, installation/removal and local-data recovery policy | Branding changes, updates, uninstall, retention and shared devices | No app-controlled silent deletion of unsynced work; exact paths/behavior require verification |
 
 ## Confirmed delivery correction
 On 2026-10-23 the human required offline-first operation and native multiplatform apps. BS-PROD-003/010 now state the current requirement. BS-DEC-020 retains its ID for unresolved policy detail; whether offline is needed is no longer unanswered. Historical reports and the interview snapshot remain unchanged as dated evidence.
+
+On 2026-10-24 the human answered BS-DEC-025: include Windows and macOS now. The current platform question is resolved; only the release/support details above remain open. See [business-suite desktop applications](<business-suite desktop applications.md>).
 
 ## Preserve these interpretations
 The interview's current-work clarification does not cancel the earlier food-pilot selection, and that selection does not require a restaurant-specific first release. Confirm the actual job/trip/expense workflow before choosing industry defaults. Approximately five test participants is not a capacity ceiling or proof of organization structure.
@@ -51,4 +56,4 @@ Both expense review and privileged direct posting were selected. The missing-rec
 Use: decision ID; date; human wording or source; selected policy; affected requirement IDs; data/API/UI/test consequences; migration effect; implementation evidence link. Keep rejected options only where they explain a consequential tradeoff. A later technical implementation report records what was built, not a new human answer.
 
 ## Current execution
-Current acceptance and task status live in NOTE-008 (Obsidian reference); NOTE-007 (Obsidian reference) preserves the completed foundation evidence. The first local job/expense slice can progress without resolving every item above. A dependent feature must either wait for its answer or clearly expose the bounded default and limitation.
+Current acceptance and task status live in NOTE-009 (Obsidian reference); NOTE-008 preserves the completed offline/mobile foundation; NOTE-007 (Obsidian reference) preserves the completed foundation evidence. The first local job/expense slice can progress without resolving every item above. A dependent feature must either wait for its answer or clearly expose the bounded default and limitation.

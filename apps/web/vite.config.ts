@@ -3,8 +3,8 @@ import react from '@vitejs/plugin-react';
 import { offlineShell } from './offline-shell';
 
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), offlineShell()],
-  build: { outDir: mode === 'demo' ? 'dist-demo' : 'dist' },
+  plugins: [react(), ...(['desktop', 'desktop-demo'].includes(mode) ? [] : [offlineShell()])],
+  build: { outDir: ['demo', 'desktop', 'desktop-demo'].includes(mode) ? `dist-${mode}` : 'dist' },
   server: {
     host: '127.0.0.1',
     port: 5178,

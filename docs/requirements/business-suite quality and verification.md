@@ -1,12 +1,12 @@
 ---
 tags: [business-suite, quality, testing]
-updated: 2026-10-23
+updated: 2026-10-24
 ---
 # Business Suite quality and verification
 
 ← [business-suite hub](<business-suite hub.md>) · [business-suite roadmap](<business-suite roadmap.md>) · [business-suite security privacy and operations](<business-suite security privacy and operations.md>)
 
-The current canonical execution checklist is in NOTE-008 (Obsidian reference); NOTE-007 (Obsidian reference) preserves the completed foundation checklist. This note specifies meaningful verification and evidence levels; it is not a second completion checklist. Final bounded implementation evidence was added by the coordinating agent on 2026-10-23; the broader test catalog below remains future requirements where the feature is absent.
+The current canonical execution checklist is in NOTE-009 (Obsidian reference); NOTE-008 preserves its completed offline/mobile checklist; NOTE-007 (Obsidian reference) preserves the completed foundation checklist. This note specifies meaningful verification and evidence levels; it is not a second completion checklist. Final bounded implementation evidence was added by the coordinating agent on 2026-10-23; the broader test catalog below remains future requirements where the feature is absent.
 
 ## Evidence levels
 A requirement is a human need. A contract is intended behavior. Source inspection identifies an implementation mechanism. An automated test demonstrates a specific controlled case. A manual UI check demonstrates an observed interaction/viewport. A real PostgreSQL integration/concurrency test checks server behavior. A restore drill checks a particular recovery procedure. A supervised operational pilot checks the tested workflow with actual operators under approved conditions. None alone establishes all other levels or universal business fit.
@@ -83,3 +83,29 @@ These are intended verification gates, not a claim of passing tests. “Initial�
 A JS bundle or type check is useful native evidence but is not an installed Android/iOS test, signed build, store release or secure-storage audit. Browser offline tests do not certify native SQLite behavior. The shared client source was inspected, but its adapter and runtime behavior require the corresponding actual tests. Root should record which gates were run, failed or deferred and why.
 
 **NOTE-008 evidence:** NOTE-008 2026-10-23 Offline and native foundation report (Obsidian reference).16 shared-engine,12 API,2 native parsing,8 connected browser and2 built-shell offline scenarios pass; type/build/export/compatibility/format checks pass. Native runtime/UI/SQLite lifecycle, real auth, live PostgreSQL and signed distribution are unverified. Five high Expo toolchain audit entries remain release follow-up work. The requirement is full offline-first multiplatform operation; this verified subset remains only a foundation.
+
+## Desktop scenario catalog
+NOTE-009 owns the current execution checklist. These scenario IDs describe intended evidence; root must record which actual operating system/architecture and artifact were exercised. A check unavailable in the environment remains unrun, not implicitly passed through another platform's build.
+
+| ID | Gate | Scenario and observable result |
+|---|---|---|
+| BS-TEST-301 | Local package/runtime | Bundled desktop shell launches from `suite://app/` with no Vite/web server; no remote shell dependency |
+| BS-TEST-302 | Local runtime per platform | Save supported intent, quit/relaunch with same profile offline, and observe intact confirmed snapshot/pending command |
+| BS-TEST-303 | Local runtime | Reconnect after transport loss without API generation reset; same key yields one server mutation; queued status resolves correctly |
+| BS-TEST-304 | Bridge security | Untrusted sender/frame, unsupported route/method/body, arbitrary URL/redirect and filesystem/shell requests are denied |
+| BS-TEST-305 | Renderer security | Context isolation/sandbox/no Node exposure, navigation/new-window restriction and asset-path traversal controls are inspected/tested |
+| BS-TEST-306 | Mode isolation | Default/live setup cannot activate fictional demo on auth/network failure; demo remains explicit and bounded to loopback |
+| BS-TEST-307 | Package evidence | Record generated macOS/Windows artifacts, architecture and build commands separately from observed OS runtime |
+| BS-TEST-308 | Upgrade readiness | Update app/local schema with pending and conflicted work; preserve IDs/data or safely block without resetting |
+| BS-TEST-309 | Installation/removal readiness | Inspect installer/uninstaller profile behavior and warnings; app-controlled cleanup never silently deletes unsynced work |
+| BS-TEST-310 | Release readiness | Verify selected Windows signing and macOS signing/notarization, actual supported OS/architecture and update channel; no build-only inference |
+| BS-TEST-311 | Live-data readiness | Validate real auth/profile access, retained queued payloads, lock/revocation and recovery; fictional demo is insufficient |
+
+Source checks, unit/bridge tests, package generation, actual application runtime, signing/notarization and update/recovery are separate evidence levels. Initial local work may produce limited artifacts without satisfying release gates. Root's NOTE-009 report must name limitations explicitly. No existing NOTE-007/008 result certifies these new desktop gates.
+
+## NOTE-009 observed local results
+Root reports all-workspace type checking and **38 unit/API tests** passing (16 offline + 12 API + 2 mobile parsing + 8 desktop). **Three actual staged Electron runtime tests pass on macOS 27.0.1 arm64** with Electron 45: bundled shell, sandbox/isolation/frozen minimal bridge/no Node globals, invalid IPC/CSP/window/navigation checks, setup refusal even with `--demo`, repaired skip-link fragment behavior, account isolation and two durable intents across quit/relaunch/reconnect. The flow observes one accepted server mutation per original key; it does not prove exactly-once distributed delivery.
+
+macOS demo DMG/ZIP generation passed without signing/notarization. Windows x64 `win-unpacked` generation passed, but **NSIS installer creation failed** (`spawn error -86`, incompatible x86_64 Mach-O `makensis` on this ARM host). No Windows runtime or Windows CI execution occurred. Windows x64 ZIP CRC and PE32+ x86-64 identity are verified. The actual packaged macOS demo `.app` launches without API/web server with `isPackaged=true`, correct local origin/demo mode/no Node globals and empty-offline setup behavior. DMG checksum and both ZIP CRC checks pass. All 8 connected and 2 built-shell offline browser regressions plus formatting/default/demo builds pass. The packaged-shell smoke is separate from the three staged-app runtime tests; neither is a macOS DMG installation walkthrough, Windows runtime or signed release test. Five known high Expo development-toolchain findings remain unresolved release work.
+
+Upgrade/uninstall/recovery, actual Windows runtime, signing/notarization and live identity/local privacy gates remain open. [business-suite roadmap](<business-suite roadmap.md#note-009-desktop-foundation--2026-10-24>) records the evolving final evidence; preserve the older NOTE-007/008 results separately.

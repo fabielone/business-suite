@@ -1,20 +1,20 @@
 ---
 tags: [business-suite, offline, mobile, architecture, requirements]
-updated: 2026-10-23
+updated: 2026-10-24
 ---
 # Business Suite offline and multiplatform
 
 ← [business-suite hub](<business-suite hub.md>) · [business-suite requirements](<business-suite requirements.md>) · [business-suite architecture](<business-suite architecture.md>)
 
 ## Confirmed direction and bounded delivery
-On 2026-10-23 the human required **offline-first operation because connectivity is unreliable, and multiplatform native applications rather than only a web app**. This supersedes web-first/native-later sequencing and the earlier unanswered question of whether offline support is needed. Android, iOS and browser are the current implementation assumption; native desktop platforms and priority remain unanswered. NOTE-008 (Obsidian reference) is the active authorized task.
+On 2026-10-23 the human required **offline-first operation because connectivity is unreliable, and multiplatform native applications rather than only a web app**. This supersedes web-first/native-later sequencing and the earlier unanswered question of whether offline support is needed. On 2026-10-24 the human explicitly added Windows and macOS desktop apps now, alongside Android/iOS/browser. Desktop inclusion is resolved. NOTE-009 (Obsidian reference) is active; NOTE-008 remains the dated offline/mobile foundation record.
 
 Offline-first means supported work is saved to durable local storage before a network attempt and remains available through a connection interruption or normal client restart. It does not mean every financial action is final without server validation, every record is downloaded, or all workflows are already implemented. Local save, server acceptance, manager approval and actual payment are distinct outcomes.
 
 The initial NOTE-008 slice queues **missing-receipt expense submission and job closure**. Job creation and expense review/approval remain online initially. Reading previously authorized cached work is included; first-time sign-in, first-time download and unavailable records need connectivity. Receipts, timers/manual time, trips, assignments, customer money and reimbursements remain full product requirements with offline behavior to be designed and implemented. This small allowlist is sequencing, not cancellation.
 
 ## Implementation proposal and evidence boundary
-Use Expo React Native clients with local SQLite for Android/iOS, the existing web UI with IndexedDB plus a shell service worker, and a shared `@suite/offline` package for queue semantics. Keep platform storage and presentation adapters separate from the shared command protocol. Existing backend authorization, business rules and PostgreSQL commands remain authoritative. Do not replace the suite server with independently authoritative device balances.
+Use Expo React Native clients with local SQLite for Android/iOS, the existing browser UI with IndexedDB plus a shell service worker, and Electron desktop applications with bundled React UI and IndexedDB in an application-controlled persistent profile. All use shared `@suite/offline` queue semantics. [business-suite desktop applications](<business-suite desktop applications.md>) specifies the secure local shell and narrow main-process API bridge. Keep platform storage and presentation adapters separate from the shared command protocol. Existing backend authorization, business rules and PostgreSQL commands remain authoritative. Do not replace the suite server with independently authoritative device balances.
 
 Expo describes local-first applications as reading and writing locally while also noting that remote actions still need explicit queued/accepted/failed states and that synchronization and permission handling remain design work. Its SQLite library persists the database across app restarts. These mechanisms support the proposal; they do not verify this repository's implementation or device security. [Expo local-first guide](https://docs.expo.dev/guides/local-first/), [Expo SQLite](https://docs.expo.dev/versions/latest/sdk/sqlite/)
 
@@ -27,6 +27,8 @@ flowchart LR
   Web[Browser UI] --> IDB[(IndexedDB)]
   Shell[Shell service worker] --> Web
   Mobile[Android and iOS UI] --> SQLite[(Device SQLite)]
+  Desktop[Windows and macOS app] --> Profile[(Desktop IndexedDB profile)]
+  Profile --> Sync
   IDB --> Sync[Shared sync contract]
   SQLite --> Sync
   Sync --> API[Authorized command API]
@@ -77,7 +79,7 @@ Browser eviction, disk capacity, local corruption, device loss and reinstall can
 Future receipt capture needs durable local file/blob references, capacity checks, retryable uploads and a verified link from file to expense; missing upload is not equivalent to missing-receipt approval. Timers/manual time need durable start/stop facts and explicit clock/overlap correction; trips need the existing privacy and cost-allocation rules. Assignments and capacity may be stale offline. Customer payments and reimbursements need separate recorded-event, pending-validation and reconciled-balance semantics. None of these are fulfilled merely by adding generic queue methods.
 
 ## Verification and handoff
-[business-suite quality and verification](<business-suite quality and verification.md>) owns scenario IDs for save-before-send, restart, cached launch, reconnect/lost response, stale close, revocation, identity isolation, capacity failure and schema upgrade. NOTE-008 owns the execution checklist. Root should append actual package/source paths, browser checks, Android/iOS build/device evidence and unrun checks in [business-suite roadmap](<business-suite roadmap.md>), preserving NOTE-007's historical results. The requirement is confirmed; platform adapters and complete native/web execution evidence await root. The shared client's mechanism above was read in source on 2026-10-23; that inspection is not a passing test, secure storage certification or complete offline product claim.
+[business-suite quality and verification](<business-suite quality and verification.md>) owns scenario IDs for save-before-send, restart, cached launch, reconnect/lost response, stale close, revocation, identity isolation, capacity failure and schema upgrade. NOTE-009 owns the current desktop execution checklist; NOTE-008 preserves its historical checklist. Root should append actual package/source paths, browser checks, Android/iOS build/device evidence and unrun checks in [business-suite roadmap](<business-suite roadmap.md>), preserving NOTE-007's historical results. The requirement is confirmed; NOTE-008 evidence is summarized below, while complete device/live-user verification remains open. NOTE-009 desktop results are recorded in [business-suite roadmap](<business-suite roadmap.md#note-009-desktop-foundation--2026-10-24>), with Mac runtime versus Windows package/release limits explicit. The shared client's mechanism above was read in source on 2026-10-23; that inspection is not a passing test, secure storage certification or complete offline product claim.
 
 ## Inspected initial shared types
 `Snapshot` contains `workspace`, confirmed `jobs`, confirmed `expenses`, and `fetchedAt`. `LocalState` contains `schemaVersion: 1`, persistent nullable `owner` (business/user), nullable `snapshot`, `commands`, nullable `blockedReason` and `lastSyncAt`. `PendingCommand` contains `id`, `kind` (`expense.submit` or `job.close`), `path`, `body`, `createdAt`, `status` and optional message. Business/user scope is supplied to the client and must also scope the adapter's physical store; the current command object does not repeat all conceptual envelope metadata described above.

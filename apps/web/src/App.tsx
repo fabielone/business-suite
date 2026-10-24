@@ -1,4 +1,5 @@
 import { offlineClient } from './offline';
+import { demoEnabled, desktopBridge } from './platform';
 import { statusOf, type LocalState } from '@suite/offline';
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
@@ -231,8 +232,7 @@ function useCommand(role: DemoRole, businessId: string) {
 }
 
 export function App() {
-  const loopback = ['127.0.0.1', 'localhost', '[::1]'].includes(window.location.hostname);
-  if (import.meta.env.MODE !== 'demo' || !loopback)
+  if (!demoEnabled())
     return (
       <div className="setup-page">
         <div className="brand-mark" aria-hidden="true">
@@ -252,9 +252,9 @@ export function App() {
             Run the documented demo command on this computer to explore Work and Money with
             temporary example data.
           </p>
-          <code>npm run demo</code>
+          <code>{desktopBridge() ? 'npm run desktop:demo' : 'npm run demo:offline'}</code>
           <p className="muted">
-            Demo identity is restricted to the explicit loopback demo mode. No live credentials are
+            Demo identity is available only in an explicit local demo build. No live credentials are
             stored in this frontend.
           </p>
         </div>

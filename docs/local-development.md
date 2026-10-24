@@ -13,6 +13,12 @@ Demo roles are an inspection tool. They do not implement real account login. Nev
 
 For native setup and simulator/emulator commands read `apps/mobile/README.md`; use `npm run mobile:demo` alongside the API. Bundle checks: `npm run build:mobile` and `npm run build:mobile:demo`. Neither produces signed installable binaries.
 
+## Desktop development and local packages
+
+Keep the demo API running (`npm run dev:demo --workspace @suite/api`, after shared builds) and run `npm run desktop:demo` in another terminal. Screens are bundled locally, so the desktop shell does not need Vite. `npm run desktop` opens the separate setup-only variant. Default packaging commands: `npm run package:desktop:mac` and `npm run package:desktop:win`; append `:demo` for explicit fictional-demo packages. Outputs are ignored under `apps/desktop/artifacts/<mode>`. These local packages are unsigned and not notarized.
+
+Run `npm run build:desktop:renderer` then `npm run build:desktop:demo` before `npm run test:desktop`; tests need both renderer variants and the staged demo shell. The test-only API models network loss without resetting its database. Tests use isolated temporary profiles; packaged apps ignore test profile overrides. Read `apps/desktop/README.md` before changing profiles, API transport or packaging.
+
 ## Real PostgreSQL development path (not yet live-verified)
 
 `compose.yaml` creates a separate local database on loopback port 5439. It does not modify the existing Mac mini backend, domains or tunnels. Docker must be running; it was unavailable during initial inspection on 2026-10-23.

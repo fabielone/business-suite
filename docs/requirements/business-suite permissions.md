@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, permissions, security]
-updated: 2026-10-23
+updated: 2026-10-24
 ---
 # Business Suite permissions
 
@@ -58,9 +58,12 @@ Exports must exclude fields the caller cannot read. Signed receipt URLs must be 
 ## Changes and revocation
 The grant editor, invitations and member disabling are future screens. Define who may change grants, invitation expiry, self-escalation protection, revocation latency and session invalidation. Re-evaluate effective grants server-side on consequential actions. Navigation can be cached for presentation, but must not become the authority.
 
-Negative scenarios and evidence destinations are in [business-suite quality and verification](<business-suite quality and verification.md>); current task checkboxes remain only in NOTE-008 (Obsidian reference); NOTE-007 preserves historical foundation evidence.
+Negative scenarios and evidence destinations are in [business-suite quality and verification](<business-suite quality and verification.md>); current task checkboxes remain only in NOTE-009 (Obsidian reference); NOTE-007/008 preserve historical foundation evidence.
 
 ## Offline permission boundary
 NOTE-008 requires offline capture, but cached module/grant information is only a local eligibility snapshot. Server replay checks current membership/action/record/field scope before accepting or returning a command result. A stale grant cannot authorize an expense or closure. Cached data must be scoped to the identity/business that was permitted to fetch it, and only authorized fields should have been downloaded.
 
 Known denial locks the initial demo queue and removes its confirmed snapshot; real offline session expiry, shared-device visibility, retained-payload access and purge policy are still unresolved. Do not replay old work under a new account to get around revocation. Full details are in [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>) and BS-DEC-026.
+
+## Desktop does not add business authority
+The Electron main process and preload bridge are technical trust boundaries, not extra business roles. Validate IPC sender and bounded request shape, then apply the same server membership/action/record/field checks. An operating-system administrator or a local app profile does not automatically become a suite manager. Live/default desktop must fail closed rather than select a demo identity. Cached desktop snapshots and queued payloads need the same scope isolation and unresolved offline-session privacy policy as other clients.

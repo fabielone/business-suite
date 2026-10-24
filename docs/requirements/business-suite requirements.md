@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, requirements, product]
-updated: 2026-10-23
+updated: 2026-10-24
 ---
 # Business Suite requirements
 
@@ -9,14 +9,14 @@ updated: 2026-10-23
 ## Status and provenance vocabulary
 **Confirmed** means the current human request or interview explicitly supports the requirement. **Proposed** means a recommended design, not a user-selected policy. **Engineering default** means the bounded initial contract needs a choice to implement safely; it must not settle a wider open question. **Unanswered** means no answer should be inferred. **Deferred implementation** means the requirement remains in the product scope.
 
-Sources: `H-OFF-20261023` is the later offline-first/native-app requirement recorded in NOTE-008; `H-PRIOR` is earlier direct human direction from this conversation; `H-20261023` is the earlier NOTE-007 human authorization; `I1` is the canonical discovery record; `I2` is its repository snapshot; `E1` is the initial implementation contract; `R1` is supporting architecture research. Exact links and precedence are in [business-suite sources and agent handoff](<business-suite sources and agent handoff.md>). IDs below remain stable if wording evolves; retain superseded text in a dated decision rather than recycling an ID.
+Sources: `H-DESK-20261024` confirms Windows/macOS desktop now in NOTE-009; `H-OFF-20261023` is the later offline-first/native-app requirement recorded in NOTE-008; `H-PRIOR` is earlier direct human direction from this conversation; `H-20261023` is the earlier NOTE-007 human authorization; `I1` is the canonical discovery record; `I2` is its repository snapshot; `E1` is the initial implementation contract; `R1` is supporting architecture research. Exact links and precedence are in [business-suite sources and agent handoff](<business-suite sources and agent handoff.md>). IDs below remain stable if wording evolves; retain superseded text in a dated decision rather than recycling an ID.
 
 ## Confirmed product requirements
 | ID | Requirement | Evidence | Specification owner |
 |---|---|---|---|
 | BS-PROD-001 | Build one custom open-source modular business application | I1 `confirmed.product_direction`, `product_structure_decision` | [business-suite architecture](<business-suite architecture.md>) |
 | BS-PROD-002 | Businesses enable needed modules; users see permitted screens and features within one app | I1 `confirmed.packaging`, `access_requirement` | [business-suite permissions](<business-suite permissions.md>) |
-| BS-PROD-003 | Deliver multiplatform native applications alongside browser access; native delivery is part of current scope, not conditional on web-first completion | H-OFF-20261023 supersedes I1 delivery sequencing; Android/iOS/browser assumed, desktop native priority open | [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>) |
+| BS-PROD-003 | Deliver Android/iOS and Windows/macOS applications alongside browser access; app delivery is part of current scope, not conditional on web-first completion | H-OFF-20261023 supersedes I1 sequencing; H-DESK-20261024 explicitly confirms both desktop platforms now | [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>) |
 | BS-PROD-004 | Current operation need not use sales; CRM must be optional | I1 `current_sales_requirement` | [business-suite modules and workflows](<business-suite modules and workflows.md>) |
 | BS-PROD-005 | Eventually replace CRM and CocinaCostos and cover additional operations | H-20261023 / NOTE-007 authorization | [business-suite migration](<business-suite migration.md>) |
 | BS-PROD-006 | Preserve all listed important areas; do not repeatedly ask the user to reduce them to three priorities | I1 `initial_scope`, `prioritization` | [business-suite roadmap](<business-suite roadmap.md>) |
@@ -24,6 +24,7 @@ Sources: `H-OFF-20261023` is the later offline-first/native-app requirement reco
 | BS-PROD-008 | Serve small operators in Mexico first, then support international expansion | H-PRIOR; exact locales/currencies and legal adapters unresolved | [business-suite architecture](<business-suite architecture.md>) |
 | BS-PROD-009 | Preserve a growth path toward larger businesses without forcing small operators into complex workflows | H-PRIOR; readiness criteria must be tested, not assumed | [business-suite roadmap](<business-suite roadmap.md>) |
 | BS-PROD-010 | Make the application offline first because reliable connectivity cannot be assumed | H-OFF-20261023; full scope required, delivered in tested slices | [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>) |
+| BS-PROD-011 | Include Windows and macOS desktop applications now | H-DESK-20261024; platform inclusion resolved, release support/signing details pending | [business-suite desktop applications](<business-suite desktop applications.md>) |
 
 Open-source intent is confirmed, but no exact license is selected. Working name, commercial positioning, final branding, initial pilot, language policy and broader market promise remain in [business-suite open decisions](<business-suite open decisions.md>). Earlier six-person food examples are architecture fixtures, not evidence that the current five-person test group has a settled food workflow.
 
@@ -65,7 +66,7 @@ Confirmation does not imply full implementation. Timer, trips, real receipt uplo
 | BS-DES-008 | Default one business/entity/site while retaining explicit ownership for growth | R1; shared-resource/multi-entity policies pending |
 
 ## Offline and native requirement supersession
-H-OFF-20261023 changes delivery architecture, not the business/finance requirements above. Earlier web-first/native-later wording and an unanswered offline need are historical. Android, iOS and browser are the bounded platform assumption while native desktop priority is awaited. Full required workflows—including receipt capture, time, trips, assignments and money—need deliberate offline behavior; queuing two initial commands does not fulfill all of them.
+H-OFF-20261023 changes delivery architecture, not the business/finance requirements above. Earlier web-first/native-later wording and an unanswered offline need are historical. Windows and macOS desktop applications were explicitly added for current delivery on 2026-10-24, alongside Android/iOS/browser. Desktop is no longer an unanswered priority; OS versions, architectures and release policy remain open. Full required workflows—including receipt capture, time, trips, assignments and money—need deliberate offline behavior; queuing two initial commands does not fulfill all of them.
 
 The following are derived design requirements for the confirmed direction, not additional verbatim user policies:
 
@@ -77,7 +78,7 @@ The following are derived design requirements for the confirmed direction, not a
 | BS-OFF-004 | Revalidate current server authorization and expected versions at synchronization | Cached grants cannot authorize a server mutation |
 | BS-OFF-005 | Preserve pending work across supported client/schema updates with explicit recovery | No automatic financial merge or queue deletion |
 | BS-OFF-006 | Keep protected local data and credentials isolated with explicit retention/lock policy | Live auth/privacy implementation remains incomplete |
-| BS-OFF-007 | Share command semantics across browser and native clients while using appropriate device storage | Initial proposal: web IndexedDB/shell cache, Expo SQLite, shared package |
+| BS-OFF-007 | Share command semantics across browser/mobile/desktop while using appropriate local storage | Browser IndexedDB/shell cache; mobile Expo SQLite; desktop Electron persistent profile/IndexedDB; shared engine |
 | BS-OFF-008 | Test connectivity loss, restart, lost acknowledgements, conflicts and revocation per client | Source/build success does not certify a physical device or all offline workflows |
 
 The exact current allowlist and state contract are in [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>). NOTE-008 queues missing-receipt expense submission and job closure; job creation and expense review remain online initially. This is an engineering slice, not a reduction of BS-PROD-010.
@@ -90,3 +91,17 @@ Measure owner/worker task completion without assistance, duplicate entry, unreso
 
 ## Change procedure
 Record a later human answer under its decision ID, date and provenance; update the related requirement and dependent specifications. Preserve historical sources. A research suggestion, implementer's shortcut or demo behavior cannot silently change a confirmed requirement.
+
+## Desktop derived delivery requirements
+BS-PROD-011 confirms the platforms; the following are engineering requirements for that delivery, not claims of implementation:
+
+| ID | Requirement | Evidence boundary |
+|---|---|---|
+| BS-DESKTOP-001 | Bundle the desktop UI so the shell starts without a development web server | Prepared work/sync still follows the offline contract |
+| BS-DESKTOP-002 | Preserve pending intent and confirmed snapshots in an application-controlled profile across ordinary restart/update | Actual persistence must be tested on each supported platform |
+| BS-DESKTOP-003 | Isolate renderer privileges and expose only a validated narrow API bridge | Backend still enforces business authority |
+| BS-DESKTOP-004 | Keep live/setup mode separate from explicit fictional demo with no fallback | Real desktop authentication/privacy remains incomplete |
+| BS-DESKTOP-005 | Do not silently delete unsynced work during app-controlled update/uninstall/reset flows | Detailed installation/retention/recovery policy pending |
+| BS-DESKTOP-006 | Report package, runtime, signing/notarization and update evidence separately | A built target is not a verified release |
+
+[business-suite desktop applications](<business-suite desktop applications.md>) owns platform lifecycle and verification details. No existing financial or offline requirement is removed by adding desktop clients.

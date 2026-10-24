@@ -1,4 +1,4 @@
-# Verification records — 2026-10-23
+# Verification records — through 2026-10-24
 
 The initial NOTE-007 record below is historical. See the NOTE-008 offline/native section later in this file for the current extension; its evidence supersedes earlier no-offline/no-native assumptions.
 
@@ -59,3 +59,33 @@ Browser checks include manager assignment → worker completion → worker expen
 **Dependency finding:** `npm audit` reports5 high entries in the Expo development-toolchain dependency tree, driven by [node-forge signature verification](https://github.com/advisories/GHSA-86w9-cpqp-85rv) and [Zod oversized collections](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5). Registry inspection found node-forge1.4.0 still latest; Expo CLI uses Zod3.25.76 while the advisory's fixed version is4.6.6+. No forced major downgrade/override was applied. Resolve/review these before release or enabling signing/update workflows; passing functional checks is not release security clearance. The initial Node25 unsupported-engine warnings were resolved for final checks by using supported Node22; the initial TypeScript5.9 compatibility recommendation was resolved by aligning all workspaces to6.0.3. One npm-exec wrapper invocation failed with usage help and was corrected; the actual Expo dependency check passed.
 
 Run `npm run demo:offline` for the built browser demo; run `npm run mobile:demo` alongside the API for the native development entry. Read [offline contract](/Users/fabiel/Desktop/business-suite/docs/offline-contract.md) and [native instructions](/Users/fabiel/Desktop/business-suite/apps/mobile/README.md). These results complete the scoped local extension, not the full business replacement.
+
+## NOTE-009 Windows/macOS desktop foundation — 2026-10-24
+
+**Implemented:** `apps/desktop` bundles the React interface in Electron45.0.0/electron-builder26.18.0, sharing IndexedDB and the existing offline engine. Separate immutable setup/demo build metadata, profiles, application IDs and titles prevent silent demo fallback. The sandboxed isolated renderer has no Node globals and only a three-field preload API; validated main-process requests use a fixed loopback origin, a64KiB cap, ten-second deadline, no credentials/redirects and a direct proxy setting. The server still decides permissions and acceptance. Browser mode ignores an injected desktop-shaped object. Windows/macOS are now current canonical requirements.
+
+Host: macOS27.0.1 build26A434, arm64; Node22.23.4. Local work only.
+
+| Check actually executed | Result and boundary |
+|---|---|
+| Workspace type checks | Passed for core/offline/API/web/mobile/desktop |
+| Unit/API checks | 38 passed in aggregate:16 shared offline,12 API,2 mobile parsing and8 desktop security/bridge; PGlite remains embedded |
+| Desktop runtime | All3 Playwright Electron scenarios passed on macOS: isolation/CSP/IPC/navigation, setup refusal despite `--demo`, two-intent outage/quit/reopen/account-isolation/stable-ID/exactly-once sync |
+| Packaged Mac smoke | Generated `.app` launched with `isPackaged=true`, arm64, `suite://app/`, demo bridge/no renderer Node; no Vite/API running; expected connect-once empty/offline state |
+| Renderer/builds | Setup+demo desktop renderers and shell compile/stage; default+demo browser and API builds passed |
+| Browser regressions | 8 connected flows and2 built-shell offline flows passed |
+| macOS packages | Demo arm64 DMG and ZIP built; DMG checksum and ZIP CRC passed; signing deliberately skipped/not notarized |
+| Windows package | Demo x64 ZIP built; CRC passed and executable identified as PE32+ x86-64. No Windows execution |
+| Windows NSIS | Failed cross-build: downloaded macOS `makensis` is x86_64 and cannot spawn on this ARM host (error -86). Native Windows build command/manual CI is prepared, not executed |
+| Formatting/whitespace | Prettier and `git diff --check` passed |
+| Dependency audit | Still5 high entries in Expo development-toolchain tree (node-forge/Zod); no forced incompatible downgrade/override |
+
+**Issues resolved:** exact-document IPC validation originally rejected `#main` after the accessibility skip link. It now permits same-document fragments while refusing query/other document/frame/origin. Regression verified in pure tests and actual Electron. Test assertions were corrected for Electron cancelling external navigation (Playwright's pending URL could be blank despite unchanged committed document) and the fictional role picker resetting its session on restart; the correct worker queue remained durable. The first packaged cold-start assertion incorrectly expected a downloaded workspace without an API; it was corrected to require the honest connect-once screen. An initial full unit run raced the new skip-link regression before its source fix; the desktop eight-test rerun passed.
+
+**Artifacts:** ignored under `apps/desktop/artifacts/demo`: `Business Suite Demo-0.1.0-mac-arm64.dmg`, `Business Suite Demo-0.1.0-mac-arm64.zip`, `Business Suite Demo-0.1.0-win-x64.zip`. Hashes/sizes are in the NOTE-009 vault report. The desktop demo still needs the local ephemeral API for first preparation/synchronization; no backend is packaged into the app. Screens themselves launch offline. Artifact generation does not prove an installed updater/uninstaller.
+
+**Still unverified/unimplemented:** Windows runtime/installer; Intel Mac/Windows ARM; minimum supported OS matrix; signing, notarization, OS trust/install/uninstall walkthrough; upgrades/downgrades/crash recovery; real login/device provisioning/local encryption and privacy; full receipt/money/time/trip/CRM/Resources flows. Android/iOS source and exports were verified in NOTE-008, not rerun or newly device-tested here. No remote CI run, push, deployment, old-app removal or migration. The local desktop foundation is ready for continued development, not live business use.
+
+Desktop runtime previews: [pending work after restart](preview/native-desktop-offline.png) and [after reconnect](preview/native-desktop-reconnected.png). Captured from the actual macOS Electron runtime using fictional records.
+
+Final NOTE-009 requirements export:17 canonical notes,17 verified source hashes and207 resolved wikilinks with zero broken targets. Export time is recorded in `docs/requirements/snapshot.json`.

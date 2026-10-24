@@ -1,3 +1,4 @@
+import { desktopBridge } from './platform';
 export type DemoRole = 'manager' | 'worker';
 export type JobStatus = 'draft' | 'scheduled' | 'in_progress' | 'completed';
 export type ExpenseStatus = 'submitted' | 'approved' | 'rejected';
@@ -58,6 +59,41 @@ export async function request<T>(
     demoSessionId?: string;
   } = {},
 ): Promise<T> {
+  const desktop = desktopBridge();
+  if (desktop) {
+    // Only structured command fields cross the isolated preload bridge. No URL or generic IPC.
+    let result: { status: number; data: unknown };
+    try {
+      result = await desktop.request({
+        path,
+        role,
+        ...(options.businessId ? { businessId: options.businessId } : {}),
+        ...(options.body !== undefined ? { body: options.body } : {}),
+        ...(options.idempotencyKey ? { idempotencyKey: options.idempotencyKey } : {}),
+        ...(options.demoSessionId ? { demoSessionId: options.demoSessionId } : {}),
+      });
+    } catch {
+      throw new ApiError(
+        0,
+        'desktop_connection_failed',
+        'The desktop connection could not complete. Saved entries remain on this computer.',
+      );
+    }
+    const data = result.data as { error?: { code?: string; message?: string } } | null;
+    if (result.status < 200 || result.status >= 300)
+      throw new ApiError(
+        result.status,
+        data?.error?.code ?? 'request_failed',
+        data?.error?.message ?? 'The desktop request could not be completed.',
+      );
+    if (!data)
+      throw new ApiError(
+        502,
+        'invalid_response',
+        'The server returned an unreadable response. Saved entries remain queued.',
+      );
+    return result.data as T;
+  }
   const headers: Record<string, string> = { Accept: 'application/json', 'x-demo-user': role };
   if (options.businessId) headers['x-business-id'] = options.businessId;
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';

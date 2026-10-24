@@ -9,7 +9,12 @@ createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 );
 
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+// Desktop binaries bundle the shell; their persistent profile stores the queue independently.
+if (
+  import.meta.env.PROD &&
+  ['http:', 'https:'].includes(location.protocol) &&
+  'serviceWorker' in navigator
+) {
   window.addEventListener('load', () => {
     void navigator.serviceWorker.register('/sw.js').catch(() => {
       console.warn(

@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, architecture, api, integrations]
-updated: 2026-10-23
+updated: 2026-10-24
 ---
 # Business Suite API and integrations
 
@@ -73,3 +73,11 @@ The initial offline client reuses the existing expense-submit and job-close API 
 Uncertain transport/server outcomes keep the same key. Terminal conflict is not rebased automatically. Authorization denial locks replay and clears the snapshot, while the pending store remains isolated. Job creation and review/approval stay online in the initial slice. Other endpoints and future receipt/time/trip/payment behavior need explicit sync semantics before being enabled offline. [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>) contains the exact inspected state classifications and recovery limits.
 
 A **client outbox** sends user intent to this API. A future **server outbox** sends committed business events to external services. NOTE-007's statement that no server outbox/inbox existed remains historical and must not be misread as forbidding the new client queue. Actual NOTE-008 endpoint changes and test results await root's report.
+
+## Desktop transport boundary from NOTE-009
+Electron desktop reuses the same command/query contract and shared offline engine. A narrow preload bridge forwards allowed application requests to a main-process transport, initially fixed to the explicit loopback demo API. The renderer cannot choose arbitrary destinations, follow arbitrary redirects, execute shell/file operations or obtain database access through this bridge. Validate frame/origin plus method/path/body/context; preserve idempotency and demo generation on every supported command.
+
+The `suite://app/` handler serves bundled UI assets, not a replacement business API and not a generic file server. Live/default desktop mode stays setup-only without real authenticated configuration; network/auth failure must not select demo. Backend identity/business/action/record checks still apply even when a request originates in Electron's main process. Exact IPC names and implemented route allowlist require inspected NOTE-009 source/evidence from root. [business-suite desktop applications](<business-suite desktop applications.md>) defines the intended boundary.
+
+## NOTE-009 actual bridge evidence
+The desktop bridge now exposes only `platform`, `mode` and `request`; setup mode refuses requests even with `--demo`. The implementation verifies the exact window/main frame/local document (allowing a same-document skip-link hash), accepts only bounded existing routes/fields, uses direct `127.0.0.1:4310/v1` transport, rejects redirects and limits requests/responses to 64 KiB with a ten-second deadline. It supplies the existing business/key/demo-generation context. Main-process and runtime denial tests passed on the Mac host; real desktop authentication remains unimplemented. See [desktop README](/Users/fabiel/Desktop/business-suite/apps/desktop/README.md) and [business-suite roadmap](<business-suite roadmap.md#note-009-desktop-foundation--2026-10-24>).

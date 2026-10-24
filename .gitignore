@@ -17,3 +17,6 @@ dist-demo/
 .expo/
 apps/mobile/ios/
 apps/mobile/android/
+
+dist-desktop/
+dist-desktop-demo/

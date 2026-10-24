@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, architecture, data]
-updated: 2026-10-23
+updated: 2026-10-24
 ---
 # Business Suite data model
 
@@ -85,3 +85,10 @@ The inspected shared client has `Snapshot{workspace,jobs,expenses,fetchedAt}` an
 Proposed constraints: atomic local enqueue before send; serialized local updates; schema migration without dropping pending work; no tokens in payloads; confirmed snapshot separate from unsent intent; acknowledgement/result merge plus queue removal atomic. A local row is not a submitted/approved/paid server expense. Device capture time cannot establish authoritative ordering or accounting recognition.
 
 Native SQLite and browser IndexedDB require distinct adapters implementing the same storage contract. A shell service worker stores app assets, not unrestricted business API responses. Future receipt blobs need private local references, capacity/retention and upload lifecycle; time/trip records need their own typed sync contracts. Exact live-user cache expiry, encryption and purge policies remain unresolved; current work is fictional demo only. These local structures do not alter NOTE-007's historical PostgreSQL table inventory.
+
+## Desktop storage and lifecycle
+NOTE-009 adds Windows/macOS clients using the shared confirmed-snapshot/pending-command types in IndexedDB under an application-controlled persistent Electron profile. This is separate storage from the browser origin and mobile SQLite; it is not another authoritative business database or a shared-filesystem synchronization system.
+
+Profile identity, environment and tenant/actor scope must remain stable and explicit. Keep application assets/executable separate from the mutable profile. A package update, product rename or signing/distribution change must not accidentally select a blank profile and strand pending work. An explicit profile migration needs source/target identity, supported schema, atomic/recoverable transfer and verification of queued command IDs/versions. Never merge two account queues because their customers have the same name.
+
+Record schema version and last synchronization; preserve confirmed amounts and pending intent separately. No desktop installation/uninstall routine should silently clear unsynced records. The implementation documents separate `Business Suite Desktop/setup` and `/demo` profile roots under platform application data, with persistent Electron sessions. Installer/uninstaller retention behavior, encryption/backup and profile-migration recovery remain unverified; see BS-DEC-029/030/031 and [business-suite desktop applications](<business-suite desktop applications.md>).
