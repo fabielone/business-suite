@@ -105,3 +105,9 @@ Actual checks passed:
 - Configured credential-value scan:127 current source files and187 historical Git blobs checked against32 private values, zero matches. Final pre-push source scan repeated after documentation export.
 
 The public endpoint is `https://api-dev.fabiel.org/apps/business_suite/api/healthz`. Authenticated smoke requests used the local gateway; public health used HTTPS. Web/mobile/desktop real identity, offline local-data security, native-device release, receipt storage, full workflows and legacy migration remain unfinished. No UI change occurred in NOTE-010; prior UI evidence is retained above. GitHub publication/CI evidence is recorded after push in the final task report.
+
+### GitHub publication and CI outcome
+
+Source commit `25d2acd1592998af3d8a88fa9616524ac11de394` was pushed to private [fabielone/business-suite](https://github.com/fabielone/business-suite), branch main, and matched `git ls-remote`. The first push required the user to authorize GitHub CLI's workflow scope; that authorization was completed. Commit `ca329c4631bc51df5980c0ec2ee7f16317e3763a` adds a manual workflow trigger without changing deployed application code.
+
+The initial push run40119290812 and subsequent push/manual runs40119507838/40119507706 all reported `startup_failure` before creating jobs. [Manual run details](https://github.com/fabielone/business-suite/actions/runs/40119507706). GitHub Actions is enabled for the repository, both workflows are registered, and actionlint1.7.12 validates both without diagnostics. GitHub API/CLI returns no specific annotation; the exact startup cause remains unresolved. **No hosted CI test pass is claimed.** The successful local and deployed checks above are independent evidence. A documentation-only final commit records the handoff and is excluded by CI path filters.

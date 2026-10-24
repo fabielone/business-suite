@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2026-10-24T18:04:34.989Z",
+  "exportedAt": "2026-10-24T18:12:42.545Z",
   "sourceDirectory": "/Users/fabiel/Library/Mobile Documents/iCloud~md~obsidian/Documents/obnotes/business-suite",
   "authority": "Obsidian source notes; this directory is a portable snapshot, not an independent specification.",
   "files": [
@@ -17,7 +17,7 @@
     },
     {
       "file": "business-suite deployed backend.md",
-      "sha256": "5ee10c39ce778a531670134b60804db1dd9915912394e31924b8dd9cd5f157e2"
+      "sha256": "5e9ff2b130351a59a393d5a3ae3533ba29cc28dec4d114fa08c8f8c98ca66d87"
     },
     {
       "file": "business-suite desktop applications.md",
@@ -25,7 +25,7 @@
     },
     {
       "file": "business-suite hub.md",
-      "sha256": "040c320aabe407d97ac135efb9c7b2cd5146fe40368b71833456aa83bf6c3de6"
+      "sha256": "95c6fcb7e6f7e0fda88d8895d264dd3af6821b3da882261fc8329fc899f1d57f"
     },
     {
       "file": "business-suite migration.md",
@@ -61,7 +61,7 @@
     },
     {
       "file": "business-suite roadmap.md",
-      "sha256": "455a25c8b4c1ba59d8d35718379cc5daa6b5c5c13251b49818beff83127ec6d8"
+      "sha256": "197510888cec3ee82fbc56a79ba6f8ae62be79f455e8ea71229cdcefb84f9333"
     },
     {
       "file": "business-suite screens and flows.md",
