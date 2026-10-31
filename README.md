@@ -1,4 +1,4 @@
-# Business Suite — working name
+# Zut CRM
 
 One modular application for small business operations: optional CRM, Work, Resources and Money. A business enables what it needs; each person sees and can act on only what their permissions allow. The intended product replaces the separate CRM and CocinaCostos projects. **The client foundation and development backend are implemented; this is not yet a replacement ready for business data.**
 
