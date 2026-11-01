@@ -17,3 +17,20 @@
 !db/
 !db/migrations/
 !db/migrations/*.sql
+
+# Public client source only; private environment files stay excluded.
+!packages/offline/
+!packages/offline/package.json
+!packages/offline/tsconfig.json
+!packages/offline/src/
+!packages/offline/src/**
+!apps/web/
+!apps/web/package.json
+!apps/web/tsconfig.json
+!apps/web/vite.config.ts
+!apps/web/offline-shell.ts
+!apps/web/index.html
+!apps/web/src/
+!apps/web/src/**
+!apps/web/public/
+!apps/web/public/**

@@ -1,5 +1,8 @@
 # Zut CRM
 
+**Local shared browser release — 2026-10-30:** [set up the isolated Docker profile](docs/local-shared-setup.md) for authenticated Insignia, Household and Referrals workspaces, with Wi-Fi HTTPS, member invitations, operational money tracking, message drafts and encrypted browser offline capture. This new profile does not update the Mac mini deployment. Owner activation and trust on each physical device remain explicit setup steps; native clients and broader ERP scope remain unfinished.
+
+
 One modular application for small business operations: optional CRM, Work, Resources and Money. A business enables what it needs; each person sees and can act on only what their permissions allow. The intended product replaces the separate CRM and CocinaCostos projects. **The client foundation and development backend are implemented; this is not yet a replacement ready for business data.**
 
 ## Development backend

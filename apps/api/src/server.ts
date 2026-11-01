@@ -1,6 +1,7 @@
 import { PostgresDatabase } from './database.js';
 import { authConfig } from './auth.js';
 import { buildApp } from './app.js';
+import { registerStaticApp } from './static-app.js';
 
 // Read/validate authentication before attempting any connection. No fixture
 // initialization or auth-failure fallback can start the demo process.
@@ -14,7 +15,11 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('API_PO
 const database = new PostgresDatabase(process.env.DATABASE_URL);
 try {
   const role = (
-    await database.query<{ rolsuper: boolean; rolbypassrls: boolean; owns_tables: boolean }>(
+    await database.query<{
+      rolsuper: boolean;
+      rolbypassrls: boolean;
+      owns_tables: boolean;
+    }>(
       'SELECT r.rolsuper,r.rolbypassrls,EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace ' +
         "WHERE pg_has_role(current_user,c.relowner,'USAGE') AND n.nspname='public' AND c.relkind IN ('r','p')) AS owns_tables " +
         'FROM pg_roles r WHERE r.rolname=current_user',
@@ -35,6 +40,7 @@ try {
       .filter(Boolean),
   });
   app.addHook('onClose', () => database.close());
+  if (process.env.SUITE_WEB_DIRECTORY) registerStaticApp(app, process.env.SUITE_WEB_DIRECTORY);
   for (const signal of ['SIGINT', 'SIGTERM'])
     process.once(signal, () => {
       void app.close();

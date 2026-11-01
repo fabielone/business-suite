@@ -12,6 +12,7 @@ import {
   Text,
   TextInput,
   View,
+  useColorScheme,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as Network from 'expo-network';
@@ -25,6 +26,7 @@ import {
 } from '@suite/offline';
 import { createClient, demoRequested, simulatorDemoAllowed, type DemoRole } from './client';
 import { formatMoney, parsePesos } from './money';
+import { ThemeContext, dark, light, makeStyles, useTheme } from './theme';
 
 type Tab = 'work' | 'money' | 'sync';
 type Notice = { text: string; kind: 'info' | 'error' | 'success' } | null;
@@ -46,6 +48,7 @@ function Button({
   testID?: string;
   label?: string;
 }) {
+  const { s } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -55,19 +58,15 @@ function Button({
       testID={testID}
       onPress={onPress}
       style={({ pressed }) => [
-        styles.button,
-        secondary && styles.secondaryButton,
-        destructive && styles.destructiveButton,
-        disabled && styles.disabled,
-        pressed && styles.pressed,
+        s.button,
+        secondary && s.secondaryButton,
+        destructive && s.destructiveButton,
+        disabled && s.disabled,
+        pressed && s.pressed,
       ]}
     >
       <Text
-        style={[
-          styles.buttonText,
-          secondary && styles.secondaryButtonText,
-          destructive && styles.destructiveText,
-        ]}
+        style={[s.buttonText, secondary && s.secondaryButtonText, destructive && s.destructiveText]}
       >
         {children}
       </Text>
@@ -76,28 +75,71 @@ function Button({
 }
 
 function Card({ children }: { children: ReactNode }) {
-  return <View style={styles.card}>{children}</View>;
+  const { s } = useTheme();
+  return <View style={s.card}>{children}</View>;
 }
-function Eyebrow({ children }: { children: ReactNode }) {
-  return <Text style={styles.eyebrow}>{children}</Text>;
+function Label({ children }: { children: ReactNode }) {
+  const { s } = useTheme();
+  return <Text style={s.label}>{children}</Text>;
 }
-function Stamp({ children, warning = false }: { children: ReactNode; warning?: boolean }) {
+type StampTone = 'neutral' | 'good' | 'warning' | 'danger';
+function Stamp({
+  children,
+  tone = 'neutral',
+  warning = false,
+}: {
+  children: ReactNode;
+  tone?: StampTone;
+  warning?: boolean;
+}) {
+  const { s, c } = useTheme();
+  const kind: StampTone = warning ? 'warning' : tone;
+  const box =
+    kind === 'good'
+      ? s.stampGood
+      : kind === 'warning'
+        ? s.stampWarning
+        : kind === 'danger'
+          ? s.stampDanger
+          : undefined;
+  const text =
+    kind === 'good'
+      ? s.stampGoodText
+      : kind === 'warning'
+        ? s.stampWarningText
+        : kind === 'danger'
+          ? s.stampDangerText
+          : undefined;
+  const dot =
+    kind === 'good'
+      ? c.success
+      : kind === 'warning'
+        ? c.warning
+        : kind === 'danger'
+          ? c.danger
+          : c.text3;
   return (
-    <View style={[styles.stamp, warning && styles.warningStamp]}>
-      <Text style={[styles.stampText, warning && styles.warningStampText]}>{children}</Text>
+    <View style={[s.stamp, box]}>
+      <View style={[s.stampDot, { backgroundColor: dot }]} />
+      <Text style={[s.stampText, text]}>{children}</Text>
     </View>
   );
 }
 function Note({ notice }: { notice: Notice }) {
+  const { s } = useTheme();
   return notice ? (
     <View
       accessibilityRole="alert"
       accessibilityLiveRegion="polite"
-      style={[styles.notice, notice.kind === 'error' && styles.errorNotice]}
+      style={[s.notice, notice.kind === 'error' && s.errorNotice]}
     >
-      <Text style={[styles.noticeText, notice.kind === 'error' && styles.errorText]}>
-        {notice.text}
-      </Text>
+      <View
+        style={[
+          s.noticeBar,
+          notice.kind === 'error' ? s.errorBar : notice.kind === 'info' ? s.infoBar : undefined,
+        ]}
+      />
+      <Text style={s.noticeText}>{notice.text}</Text>
     </View>
   ) : null;
 }
@@ -105,48 +147,71 @@ function formatDate(value: string | null | undefined) {
   return value ? new Date(value).toLocaleString() : 'Not yet';
 }
 function statusLabel(value: string) {
-  return value === 'in_progress' ? 'In progress' : value.charAt(0).toUpperCase() + value.slice(1);
+  return value === 'in_progress'
+    ? 'In progress'
+    : value === 'submitted'
+      ? 'Awaiting review'
+      : value.charAt(0).toUpperCase() + value.slice(1);
+}
+function expenseTone(status: string): StampTone {
+  return status === 'approved'
+    ? 'good'
+    : status === 'rejected'
+      ? 'danger'
+      : status === 'submitted'
+        ? 'warning'
+        : 'neutral';
 }
 
 export default function App() {
   const [role, setRole] = useState<DemoRole>('worker');
+  const scheme: 'light' | 'dark' = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const theme = useMemo(() => {
+    const c = scheme === 'dark' ? dark : light;
+    return { c, s: makeStyles(c), scheme };
+  }, [scheme]);
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']}>
-        <StatusBar barStyle="dark-content" />
-        {simulatorDemoAllowed ? (
-          <DemoApp key={role} role={role} onRoleChange={setRole} />
-        ) : (
-          <SetupScreen />
-        )}
-      </SafeAreaView>
-    </SafeAreaProvider>
+    <ThemeContext.Provider value={theme}>
+      <SafeAreaProvider>
+        <SafeAreaView style={theme.s.safe} edges={['top', 'left', 'right', 'bottom']}>
+          <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
+          {simulatorDemoAllowed ? (
+            <DemoApp key={role} role={role} onRoleChange={setRole} />
+          ) : (
+            <SetupScreen />
+          )}
+        </SafeAreaView>
+      </SafeAreaProvider>
+    </ThemeContext.Provider>
   );
 }
 
 function SetupScreen() {
+  const { s } = useTheme();
   return (
-    <ScrollView contentContainerStyle={styles.setup}>
-      <View style={styles.brandMark}>
-        <Text style={styles.brandMarkText}>B</Text>
+    <ScrollView contentContainerStyle={s.setup}>
+      <View style={s.brandRow}>
+        <View style={s.brandMark}>
+          <Text style={s.brandMarkText}>B</Text>
+        </View>
+        <Text style={s.brandName}>Business Suite</Text>
       </View>
-      <Eyebrow>Business Suite · Native preview</Eyebrow>
-      <Text style={styles.setupTitle}>Your work,\nready for the field.</Text>
-      <Text style={styles.body}>
+      <Text style={s.setupTitle}>Setup required</Text>
+      <Text style={s.body}>
         {demoRequested
-          ? 'This fictional demo is limited to an iOS simulator or Android emulator on your computer.'
-          : 'Real business access needs setup before this app can connect.'}
+          ? 'The fictional demo only runs in an iOS simulator or Android emulator on your computer.'
+          : 'This app needs a configured business service and sign-in before it can connect.'}
       </Text>
       <Card>
-        <Text style={styles.cardTitle}>Setup required</Text>
-        <Text style={styles.body}>
+        <Text style={s.cardTitle}>Nothing is loaded</Text>
+        <Text style={s.body}>
           Secure sign-in and a configured business service are not available in this preview. No
-          business records have been loaded.
+          business records are stored on this device.
         </Text>
       </Card>
-      <Text style={styles.caption}>
-        The local simulator demo is enabled explicitly by the development command. Physical devices
-        and LAN demo access are disabled.
+      <Text style={s.caption}>
+        The simulator demo is enabled explicitly by the development command. Physical devices and
+        LAN demo access are disabled.
       </Text>
     </ScrollView>
   );
@@ -159,6 +224,7 @@ function DemoApp({
   role: DemoRole;
   onRoleChange: (role: DemoRole) => void;
 }) {
+  const { s, c } = useTheme();
   const client = useMemo(() => createClient(role), [role]);
   const [state, setState] = useState<LocalState>(emptyState);
   const [tab, setTab] = useState<Tab>('work');
@@ -355,21 +421,21 @@ function DemoApp({
   }, [pendingCount, state.blockedReason, sync]);
 
   return (
-    <View style={styles.app}>
-      <View style={styles.demoBanner}>
-        <Text style={styles.demoBannerText}>FICTIONAL DEMO · Simulator only</Text>
-        <Text style={styles.demoBannerDetail}>
-          Server data is temporary. Local saves stay on this device.
+    <View style={s.app}>
+      <View style={s.banner}>
+        <Text style={s.bannerText}>
+          <Text style={s.bannerStrong}>Fictional demo · simulator only.</Text> Server data is
+          temporary; local saves stay on this device.
         </Text>
       </View>
-      <View style={styles.header}>
-        <View style={styles.headerTitle}>
-          <Eyebrow>Business Suite</Eyebrow>
-          <Text style={styles.screenTitle}>
-            {tab === 'work' ? 'Work' : tab === 'money' ? 'Money' : 'Sync & device'}
+      <View style={s.header}>
+        <View style={s.headerTitle}>
+          <Text style={s.product}>Business Suite</Text>
+          <Text style={s.screenTitle}>
+            {tab === 'work' ? 'Work' : tab === 'money' ? 'Money' : 'Device sync'}
           </Text>
         </View>
-        <View style={styles.roleGroup} accessibilityLabel="Fictional demo identity">
+        <View style={s.segment} accessibilityLabel="Fictional demo identity">
           {(['worker', 'manager'] as DemoRole[]).map((value) => (
             <Pressable
               key={value}
@@ -379,49 +445,46 @@ function DemoApp({
               disabled={saving || syncing}
               onPress={() => onRoleChange(value)}
               testID={`role-${value}`}
-              style={[styles.roleButton, role === value && styles.roleSelected]}
+              style={[s.segmentButton, role === value && s.segmentSelected]}
             >
-              <Text style={[styles.roleText, role === value && styles.roleTextSelected]}>
+              <Text style={[s.segmentText, role === value && s.segmentTextSelected]}>
                 {statusLabel(value)}
               </Text>
             </Pressable>
           ))}
         </View>
       </View>
-      <View style={styles.connectionBar}>
+      <View style={s.statusBar}>
         <View
-          style={[
-            styles.dot,
-            connection === 'connected' && !state.blockedReason && styles.dotConnected,
-          ]}
+          style={[s.dot, connection === 'connected' && !state.blockedReason && s.dotConnected]}
         />
-        <Text style={styles.connectionText}>{connectionText}</Text>
-        <Text style={styles.queueCount}>
-          {pendingCount} pending · {issueCount} issues
+        <Text style={s.statusText}>{connectionText}</Text>
+        <Text style={s.queueCount}>
+          {pendingCount} pending · {issueCount} {issueCount === 1 ? 'issue' : 'issues'}
         </Text>
       </View>
       <KeyboardAvoidingView
-        style={styles.content}
+        style={s.content}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={s.scrollContent}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
           <Note notice={notice} />
           {!loaded && (
-            <View style={styles.loading}>
-              <ActivityIndicator color={colors.green} />
-              <Text style={styles.body}>Opening your local workspace…</Text>
+            <View style={s.loading}>
+              <ActivityIndicator color={c.accent} />
+              <Text style={s.body}>Opening your local workspace…</Text>
             </View>
           )}
           {loaded && !snapshot && tab !== 'sync' && (
             <Card>
-              <Text style={styles.cardTitle}>
+              <Text style={s.cardTitle}>
                 {state.blockedReason ? 'Workspace locked' : 'Prepare this device online'}
               </Text>
-              <Text style={styles.body}>
+              <Text style={s.body}>
                 {state.blockedReason ??
                   'Connect to the local demo server once to cache the jobs and permissions for this fictional account.'}
               </Text>
@@ -433,12 +496,12 @@ function DemoApp({
                 {syncing ? 'Connecting…' : 'Connect to demo server'}
               </Button>
               <Button secondary onPress={() => setTab('sync')}>
-                Open Sync & device
+                Open device sync
               </Button>
             </Card>
           )}
           {snapshot && tab !== 'sync' && (
-            <Text style={styles.caption}>
+            <Text style={s.caption}>
               Server-confirmed copy · Updated {formatDate(snapshot.fetchedAt)}
               {connection !== 'connected'
                 ? '\nThis copy may be out of date. New actions are saved for checking.'
@@ -447,18 +510,18 @@ function DemoApp({
           )}
           {snapshot && tab === 'work' && (
             <>
-              <View style={styles.sectionHeading}>
-                <Text style={styles.sectionTitle}>
+              <View style={s.sectionHeading}>
+                <Text style={s.sectionTitle}>
                   {role === 'worker' ? 'Your assigned jobs' : 'Business jobs'}
                 </Text>
-                <Text style={styles.caption}>{snapshot.jobs.length} records</Text>
+                <Text style={s.caption}>{snapshot.jobs.length} records</Text>
               </View>
               {!enabled('work', 'work.jobs.read') ? (
-                <Text style={styles.body}>Job access is unavailable for this account.</Text>
+                <Text style={s.body}>Job access is unavailable for this account.</Text>
               ) : snapshot.jobs.length === 0 ? (
                 <Card>
-                  <Text style={styles.cardTitle}>No jobs here yet</Text>
-                  <Text style={styles.body}>
+                  <Text style={s.cardTitle}>No jobs here yet</Text>
+                  <Text style={s.body}>
                     Jobs appear here after they are created or assigned in the web app and synced.
                   </Text>
                 </Card>
@@ -489,15 +552,15 @@ function DemoApp({
                   onSubmit={(input) => save('expense.submit', input)}
                 />
               )}
-              <View style={styles.sectionHeading}>
-                <Text style={styles.sectionTitle}>Confirmed expenses</Text>
-                <Text style={styles.caption}>{snapshot.expenses.length} records</Text>
+              <View style={s.sectionHeading}>
+                <Text style={s.sectionTitle}>Confirmed expenses</Text>
+                <Text style={s.caption}>{snapshot.expenses.length} records</Text>
               </View>
               {!enabled('money', 'money.expenses.read') ? (
-                <Text style={styles.body}>Expense access is unavailable for this account.</Text>
+                <Text style={s.body}>Expense access is unavailable for this account.</Text>
               ) : snapshot.expenses.length === 0 ? (
                 <Card>
-                  <Text style={styles.body}>
+                  <Text style={s.body}>
                     No confirmed expenses yet. Local submissions appear in Sync until the server
                     accepts them.
                   </Text>
@@ -505,26 +568,24 @@ function DemoApp({
               ) : (
                 snapshot.expenses.map((expense) => (
                   <Card key={expense.id}>
-                    <View style={styles.row}>
-                      <Text style={styles.cardTitle}>{expense.description}</Text>
-                      <Stamp warning={expense.status === 'submitted'}>
+                    <View style={s.row}>
+                      <Text style={s.cardTitle}>{expense.description}</Text>
+                      <Stamp tone={expenseTone(expense.status)}>
                         {statusLabel(expense.status)}
                       </Stamp>
                     </View>
-                    <Text style={styles.amount}>{formatMoney(expense.amountMinor)}</Text>
-                    <Text style={styles.body}>
+                    <Text style={s.amount}>{formatMoney(expense.amountMinor)}</Text>
+                    <Text style={s.body}>
                       {expense.jobId
                         ? (snapshot.jobs.find((job) => job.id === expense.jobId)?.title ??
                           'Linked job')
                         : 'General business expense'}
                     </Text>
-                    <Text style={styles.caption}>
-                      Missing receipt: {expense.missingReceiptReason}
-                    </Text>
+                    <Text style={s.caption}>Missing receipt: {expense.missingReceiptReason}</Text>
                     {expense.reviewReason ? (
-                      <Text style={styles.caption}>Review note: {expense.reviewReason}</Text>
+                      <Text style={s.caption}>Review note: {expense.reviewReason}</Text>
                     ) : null}
-                    <Text style={styles.caption}>
+                    <Text style={s.caption}>
                       Expense status is separate from reimbursement or payment.
                     </Text>
                   </Card>
@@ -535,17 +596,17 @@ function DemoApp({
           {tab === 'sync' && (
             <>
               <Card>
-                <Eyebrow>Saved on this device</Eyebrow>
-                <Text style={styles.syncTitle}>
+                <Label>Saved on this device</Label>
+                <Text style={s.syncTitle}>
                   {state.commands.length === 0
-                    ? 'Nothing waiting to send.'
-                    : `${pendingCount} pending · ${issueCount} issues`}
+                    ? 'Nothing waiting to send'
+                    : `${pendingCount} pending · ${issueCount} ${issueCount === 1 ? 'issue' : 'issues'}`}
                 </Text>
-                <Text style={styles.body}>
+                <Text style={s.body}>
                   Local entries are requests. Job completion and expense submission are confirmed
                   only after the server accepts them.
                 </Text>
-                <Text style={styles.caption}>
+                <Text style={s.caption}>
                   Last server check: {formatDate(snapshot?.fetchedAt)}
                   {snapshot ? `\nAccount: ${snapshot.workspace.user.name}` : ''}
                 </Text>
@@ -570,20 +631,20 @@ function DemoApp({
                 />
               ))}
               <Card>
-                <Text style={styles.cardTitle}>About this preview</Text>
-                <Text style={styles.body}>
+                <Text style={s.cardTitle}>About this preview</Text>
+                <Text style={s.body}>
                   Switching fictional accounts keeps their local records and queues separate. Sync
                   runs when the app opens, returns to the foreground, reconnects, or when you choose
                   Sync now. Pending entries retry every 30 seconds while the app is open.
                 </Text>
-                <Text style={styles.caption}>
+                <Text style={s.caption}>
                   Receipt uploads, expense approval, reimbursements, payments and real sign-in are
                   not available in this native slice. Use only fictional entries.
                 </Text>
               </Card>
               <Card>
-                <Text style={styles.cardTitle}>Reset local demo data</Text>
-                <Text style={styles.body}>
+                <Text style={s.cardTitle}>Reset local demo data</Text>
+                <Text style={s.body}>
                   A restarted demo server has a new session. Old pending entries stay here for
                   inspection and are never replayed into the new session.
                 </Text>
@@ -601,29 +662,36 @@ function DemoApp({
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-      <View style={styles.tabs} accessibilityRole="tablist">
-        {(['work', 'money', 'sync'] as Tab[]).map((item) => (
-          <Pressable
-            key={item}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: tab === item }}
-            accessibilityLabel={
-              item === 'sync'
-                ? `Sync, ${pendingCount} pending, ${issueCount} issues`
-                : statusLabel(item)
-            }
-            onPress={() => setTab(item)}
-            style={[styles.tab, tab === item && styles.activeTab]}
-            testID={`tab-${item}`}
-          >
-            <Text style={[styles.tabSymbol, tab === item && styles.activeTabText]}>
-              {item === 'work' ? '▤' : item === 'money' ? '$' : '↻'}
-            </Text>
-            <Text style={[styles.tabText, tab === item && styles.activeTabText]}>
-              {statusLabel(item)}
-            </Text>
-          </Pressable>
-        ))}
+      <View style={s.tabs} accessibilityRole="tablist">
+        {(['work', 'money', 'sync'] as Tab[]).map((item) => {
+          const active = tab === item;
+          const title = item === 'sync' ? 'Sync' : statusLabel(item);
+          return (
+            <Pressable
+              key={item}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={
+                item === 'sync' ? `Sync, ${pendingCount} pending, ${issueCount} issues` : title
+              }
+              onPress={() => setTab(item)}
+              style={s.tab}
+              testID={`tab-${item}`}
+            >
+              <View style={[s.tabGlyph, active && s.tabGlyphActive]}>
+                <Text style={[s.tabGlyphText, active && s.activeTabText]}>
+                  {item === 'work' ? 'W' : item === 'money' ? '$' : '↻'}
+                </Text>
+              </View>
+              <Text style={[s.tabText, active && s.activeTabText]}>{title}</Text>
+              {item === 'sync' && state.commands.length > 0 && (
+                <View style={s.tabBadge}>
+                  <Text style={s.tabBadgeText}>{state.commands.length}</Text>
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );
@@ -644,23 +712,26 @@ function JobCard({
   saving: boolean;
   onClose: () => void;
 }) {
+  const { s } = useTheme();
   return (
     <Card>
-      <View style={styles.row}>
-        <Stamp>{statusLabel(job.status)}</Stamp>
+      <View style={s.row}>
+        <Stamp tone={job.status === 'completed' ? 'good' : 'neutral'}>
+          {statusLabel(job.status)}
+        </Stamp>
         {pending && (
-          <Stamp warning>
+          <Stamp tone={pending.status === 'queued' ? 'warning' : 'danger'}>
             {pending.status === 'queued' ? 'Completion pending' : 'Needs attention'}
           </Stamp>
         )}
       </View>
-      <Text style={styles.jobTitle}>{job.title}</Text>
-      <Text style={styles.body}>{job.customerName}</Text>
+      <Text style={s.jobTitle}>{job.title}</Text>
+      <Text style={s.body}>{job.customerName}</Text>
       {canSeePrice && job.agreedPriceMinor !== undefined ? (
-        <Text style={styles.caption}>Agreed price · {formatMoney(job.agreedPriceMinor)}</Text>
+        <Text style={s.caption}>Agreed price · {formatMoney(job.agreedPriceMinor)}</Text>
       ) : null}
       {pending ? (
-        <Text style={styles.pendingNote}>
+        <Text style={s.pendingNote}>
           {pending.message ?? 'Saved locally. The status above is the last server-confirmed state.'}
         </Text>
       ) : null}
@@ -692,6 +763,7 @@ function ExpenseForm({
   const [reason, setReason] = useState('');
   const [jobId, setJobId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { s, c } = useTheme();
   const submit = async () => {
     try {
       setError(null);
@@ -716,14 +788,13 @@ function ExpenseForm({
   };
   return (
     <Card>
-      <Eyebrow>Paid from your own money</Eyebrow>
-      <Text style={styles.cardTitle}>Record an expense</Text>
-      <Text style={styles.body}>
-        Save a fictional expense without a receipt. It will need review after sync; this does not
+      <Text style={s.cardTitle}>Record expense</Text>
+      <Text style={s.body}>
+        Paid from your own money, without a receipt. It is reviewed after sync; saving does not
         reimburse you.
       </Text>
-      <View style={styles.field}>
-        <Text style={styles.label}>What did you pay for?</Text>
+      <View style={s.field}>
+        <Label>Description</Label>
         <TextInput
           accessibilityLabel="Expense description"
           testID="expense-description"
@@ -731,13 +802,13 @@ function ExpenseForm({
           onChangeText={setDescription}
           maxLength={240}
           editable={!saving}
-          style={styles.input}
+          style={s.input}
           placeholder="For example, materials or parking"
-          placeholderTextColor={colors.muted}
+          placeholderTextColor={c.text3}
         />
       </View>
-      <View style={styles.field}>
-        <Text style={styles.label}>Amount in MXN</Text>
+      <View style={s.field}>
+        <Label>Amount (MXN)</Label>
         <TextInput
           accessibilityLabel="Amount in MXN"
           testID="expense-amount"
@@ -746,14 +817,14 @@ function ExpenseForm({
           keyboardType="decimal-pad"
           maxLength={16}
           editable={!saving}
-          style={styles.input}
+          style={s.input}
           placeholder="0.00"
-          placeholderTextColor={colors.muted}
+          placeholderTextColor={c.text3}
         />
       </View>
-      <View style={styles.field}>
-        <Text style={styles.label}>Related to</Text>
-        <View style={styles.choices}>
+      <View style={s.field}>
+        <Label>Related work</Label>
+        <View style={s.choices}>
           {[{ id: null, title: 'General business expense' }, ...jobs].map((job) => (
             <Pressable
               key={job.id ?? 'general'}
@@ -762,18 +833,20 @@ function ExpenseForm({
               accessibilityState={{ selected: jobId === job.id, disabled: saving }}
               disabled={saving}
               onPress={() => setJobId(job.id)}
-              style={[styles.choice, jobId === job.id && styles.choiceSelected]}
+              style={[s.choice, jobId === job.id && s.choiceSelected]}
             >
-              <Text style={[styles.choiceText, jobId === job.id && styles.choiceSelectedText]}>
-                {jobId === job.id ? '●  ' : '○  '}
+              <View style={[s.radio, jobId === job.id && s.radioSelected]}>
+                {jobId === job.id && <View style={s.radioDot} />}
+              </View>
+              <Text style={[s.choiceText, jobId === job.id && s.choiceSelectedText]}>
                 {job.title}
               </Text>
             </Pressable>
           ))}
         </View>
       </View>
-      <View style={styles.field}>
-        <Text style={styles.label}>Why is the receipt missing?</Text>
+      <View style={s.field}>
+        <Label>Missing receipt reason</Label>
         <TextInput
           accessibilityLabel="Missing receipt reason"
           testID="expense-reason"
@@ -783,14 +856,14 @@ function ExpenseForm({
           editable={!saving}
           multiline
           numberOfLines={3}
-          style={[styles.input, styles.textarea]}
+          style={[s.input, s.textarea]}
           placeholder="A reason is required for review"
-          placeholderTextColor={colors.muted}
+          placeholderTextColor={c.text3}
         />
       </View>
       {error && <Note notice={{ kind: 'error', text: error }} />}
       <Button onPress={() => void submit()} disabled={saving} testID="save-expense">
-        {saving ? 'Saving on device…' : 'Save expense on device'}
+        {saving ? 'Saving…' : 'Save on this device'}
       </Button>
     </Card>
   );
@@ -812,32 +885,31 @@ function QueueCard({
     command.kind === 'expense.submit'
       ? String(command.body.description)
       : (jobs.find((job) => job.id === jobId)?.title ?? 'Job completion');
+  const { s } = useTheme();
   return (
     <Card>
-      <View style={styles.row}>
-        <Eyebrow>
-          {command.kind === 'expense.submit' ? 'Expense submission' : 'Job completion'}
-        </Eyebrow>
-        <Stamp warning>
+      <View style={s.row}>
+        <Label>{command.kind === 'expense.submit' ? 'Expense submission' : 'Job completion'}</Label>
+        <Stamp tone={command.status === 'queued' ? 'warning' : 'danger'}>
           {command.status === 'queued' ? 'Pending' : statusLabel(command.status)}
         </Stamp>
       </View>
-      <Text style={styles.cardTitle}>{title}</Text>
+      <Text style={s.cardTitle}>{title}</Text>
       {command.kind === 'expense.submit' && (
         <>
-          <Text style={styles.amount}>{formatMoney(Number(command.body.amountMinor))}</Text>
-          <Text style={styles.caption}>
+          <Text style={s.amount}>{formatMoney(Number(command.body.amountMinor))}</Text>
+          <Text style={s.caption}>
             Missing receipt: {String(command.body.missingReceiptReason)}
           </Text>
         </>
       )}
-      <Text style={styles.caption}>Saved {formatDate(command.createdAt)}</Text>
-      <Text style={styles.body}>
+      <Text style={s.caption}>Saved {formatDate(command.createdAt)}</Text>
+      <Text style={s.body}>
         {command.message ?? 'Waiting for server confirmation. A retry uses the same saved request.'}
       </Text>
       {command.status !== 'queued' && (
         <>
-          <Text style={styles.caption}>
+          <Text style={s.caption}>
             Review the current record before entering a replacement. This entry is not retried
             automatically.
           </Text>
@@ -854,240 +926,3 @@ function QueueCard({
     </Card>
   );
 }
-
-const colors = {
-  background: '#F4F5EE',
-  paper: '#FFFFFF',
-  ink: '#21342E',
-  muted: '#63736B',
-  line: '#DCE3D9',
-  green: '#285C48',
-  paleGreen: '#E5EEDF',
-  amber: '#79571B',
-  paleAmber: '#F9EFCF',
-  red: '#8E3D36',
-  paleRed: '#F9E9E5',
-};
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  app: { flex: 1 },
-  content: { flex: 1 },
-  demoBanner: {
-    paddingHorizontal: 20,
-    paddingVertical: 9,
-    backgroundColor: colors.paleAmber,
-    gap: 3,
-  },
-  demoBannerText: { color: colors.amber, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
-  demoBannerDetail: { color: colors.amber, fontSize: 12, lineHeight: 17 },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 19,
-    paddingBottom: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  headerTitle: { flexShrink: 1, gap: 5 },
-  eyebrow: {
-    color: colors.muted,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.3,
-    textTransform: 'uppercase',
-  },
-  screenTitle: { color: colors.ink, fontSize: 28, fontWeight: '700', letterSpacing: -0.8 },
-  roleGroup: { flexDirection: 'row', backgroundColor: '#E9EDE4', padding: 3, borderRadius: 12 },
-  roleButton: {
-    minHeight: 44,
-    paddingHorizontal: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 9,
-  },
-  roleSelected: { backgroundColor: colors.paper },
-  roleText: { color: colors.muted, fontSize: 12, fontWeight: '600' },
-  roleTextSelected: { color: colors.green },
-  connectionBar: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: colors.line,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.amber },
-  dotConnected: { backgroundColor: colors.green },
-  connectionText: { flex: 1, fontSize: 12, color: colors.muted },
-  queueCount: { fontSize: 12, color: colors.ink, fontWeight: '600' },
-  scrollContent: {
-    padding: 20,
-    gap: 15,
-    paddingBottom: 32,
-    width: '100%',
-    maxWidth: 760,
-    alignSelf: 'center',
-  },
-  loading: { padding: 30, gap: 12, alignItems: 'center' },
-  card: {
-    padding: 20,
-    backgroundColor: colors.paper,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: 18,
-    gap: 12,
-  },
-  cardTitle: { fontSize: 19, lineHeight: 25, fontWeight: '700', color: colors.ink, flexShrink: 1 },
-  jobTitle: {
-    color: colors.ink,
-    fontSize: 24,
-    lineHeight: 30,
-    letterSpacing: -0.5,
-    fontWeight: '600',
-  },
-  body: { color: colors.muted, fontSize: 15, lineHeight: 23 },
-  caption: { color: colors.muted, fontSize: 12, lineHeight: 18 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  sectionHeading: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: 10,
-    marginTop: 6,
-  },
-  sectionTitle: { color: colors.ink, fontSize: 17, fontWeight: '700', flexShrink: 1 },
-  amount: {
-    fontSize: 24,
-    lineHeight: 30,
-    color: colors.ink,
-    fontWeight: '600',
-    letterSpacing: -0.4,
-  },
-  stamp: {
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 6,
-    backgroundColor: colors.paleGreen,
-    alignSelf: 'flex-start',
-  },
-  stampText: { color: colors.green, fontSize: 11, fontWeight: '700' },
-  warningStamp: { backgroundColor: colors.paleAmber },
-  warningStampText: { color: colors.amber },
-  pendingNote: { fontSize: 13, lineHeight: 20, color: colors.amber },
-  button: {
-    minHeight: 48,
-    paddingHorizontal: 15,
-    paddingVertical: 13,
-    backgroundColor: colors.green,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '700',
-    color: colors.paper,
-    textAlign: 'center',
-  },
-  secondaryButton: { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.line },
-  secondaryButtonText: { color: colors.green },
-  destructiveButton: { borderColor: '#E6C5BE' },
-  destructiveText: { color: colors.red },
-  disabled: { opacity: 0.45 },
-  pressed: { opacity: 0.7 },
-  notice: { borderRadius: 12, padding: 14, backgroundColor: colors.paleGreen },
-  noticeText: { color: colors.green, fontSize: 13, lineHeight: 20 },
-  errorNotice: { backgroundColor: colors.paleRed },
-  errorText: { color: colors.red },
-  field: { gap: 7 },
-  label: { fontSize: 13, fontWeight: '600', color: colors.ink },
-  input: {
-    minHeight: 49,
-    borderWidth: 1,
-    borderColor: '#BAC9BC',
-    borderRadius: 9,
-    backgroundColor: '#FCFDF9',
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    fontSize: 16,
-    color: colors.ink,
-  },
-  textarea: { minHeight: 88, textAlignVertical: 'top' },
-  choices: { gap: 7 },
-  choice: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.line,
-  },
-  choiceSelected: { backgroundColor: colors.paleGreen, borderColor: '#A0B89F' },
-  choiceText: { fontSize: 13, lineHeight: 20, color: colors.muted },
-  choiceSelectedText: { color: colors.green, fontWeight: '600' },
-  syncTitle: {
-    fontSize: 25,
-    lineHeight: 31,
-    color: colors.ink,
-    fontWeight: '600',
-    letterSpacing: -0.5,
-  },
-  tabs: {
-    borderTopWidth: 1,
-    borderColor: colors.line,
-    flexDirection: 'row',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    backgroundColor: colors.paper,
-    gap: 7,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 3,
-    minHeight: 55,
-  },
-  activeTab: { backgroundColor: colors.paleGreen },
-  tabText: { fontSize: 12, fontWeight: '700', color: colors.muted },
-  tabSymbol: { color: colors.muted, fontSize: 20, lineHeight: 24, fontWeight: '600' },
-  activeTabText: { color: colors.green },
-  setup: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 28,
-    gap: 22,
-    maxWidth: 640,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  setupTitle: {
-    fontSize: 40,
-    lineHeight: 45,
-    color: colors.ink,
-    fontWeight: '600',
-    letterSpacing: -1.4,
-  },
-  brandMark: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: colors.green,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  brandMarkText: { fontSize: 28, fontWeight: '700', color: colors.paper },
-});

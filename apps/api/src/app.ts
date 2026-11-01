@@ -7,6 +7,8 @@ import { listJobs, createJob, closeJob } from './jobs.js';
 import { listExpenses, submitExpense, reviewExpense } from './expenses.js';
 import { type AuthConfig, createJwtVerifier } from './auth.js';
 import { DEMO_IDS } from './demo-fixtures.js';
+import { registerOperations } from './operations.js';
+import { OperationError } from '@suite/core/operations';
 
 type Options = { database: Database } & (
   { mode: 'demo' } | { mode: 'real'; auth: AuthConfig; allowedOrigins?: string[] }
@@ -19,7 +21,11 @@ const DEMO_ORIGINS = new Set([
 ]);
 export function buildApp(options: Options) {
   const demoSessionId = options.mode === 'demo' ? randomUUID() : undefined;
-  const app = Fastify({ logger: false, bodyLimit: 64 * 1024, trustProxy: false });
+  const app = Fastify({
+    logger: false,
+    bodyLimit: 64 * 1024,
+    trustProxy: false,
+  });
   const verify = options.mode === 'real' ? createJwtVerifier(options.auth) : undefined;
   const origins = options.mode === 'demo' ? DEMO_ORIGINS : new Set(options.allowedOrigins ?? []);
   app.addHook('onRequest', async (request, reply) => {
@@ -55,6 +61,7 @@ export function buildApp(options: Options) {
     if (origin) {
       reply.header('Access-Control-Allow-Origin', origin);
       reply.header('Vary', 'Origin');
+      reply.header('Access-Control-Allow-Credentials', 'true');
       reply.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
       reply.header(
         'Access-Control-Allow-Headers',
@@ -67,12 +74,25 @@ export function buildApp(options: Options) {
     if (request.method === 'OPTIONS') return reply.code(204).send();
   });
   app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof OperationError)
+      return reply
+        .code(
+          error.code === 'CONFLICT' || error.code === 'IDEMPOTENCY_CONFLICT'
+            ? 409
+            : error.code === 'MODULE_DISABLED'
+              ? 403
+              : 400,
+        )
+        .send({ error: { code: error.code, message: error.message } });
     if (error instanceof DomainError)
       return reply.code(error.status).send({ error: { code: error.code, message: error.message } });
     const sqlCode = (error as { code?: string }).code;
     if (['23503', '23514', '22003', '22P02'].includes(sqlCode ?? '')) {
       return reply.code(400).send({
-        error: { code: 'INVALID_INPUT', message: 'The data violates a record constraint.' },
+        error: {
+          code: 'INVALID_INPUT',
+          message: 'The data violates a record constraint.',
+        },
       });
     }
     if (['40001', '40P01', '23505'].includes(sqlCode ?? '')) {
@@ -86,22 +106,31 @@ export function buildApp(options: Options) {
     const statusCode = (error as { statusCode?: number }).statusCode;
     if (statusCode === 413) {
       return reply.code(413).send({
-        error: { code: 'REQUEST_TOO_LARGE', message: 'The request exceeds the 64 KiB limit.' },
+        error: {
+          code: 'REQUEST_TOO_LARGE',
+          message: 'The request exceeds the 64 KiB limit.',
+        },
       });
     }
     if (statusCode === 415) {
       return reply.code(415).send({
-        error: { code: 'UNSUPPORTED_MEDIA_TYPE', message: 'Send commands as application/json.' },
+        error: {
+          code: 'UNSUPPORTED_MEDIA_TYPE',
+          message: 'Send commands as application/json.',
+        },
       });
     }
     if (statusCode && statusCode >= 400 && statusCode < 500) {
-      return reply
-        .code(statusCode)
-        .send({ error: { code: 'INVALID_INPUT', message: 'The request is invalid.' } });
+      return reply.code(statusCode).send({
+        error: { code: 'INVALID_INPUT', message: 'The request is invalid.' },
+      });
     }
-    return reply
-      .code(500)
-      .send({ error: { code: 'INTERNAL_ERROR', message: 'The command could not be completed.' } });
+    return reply.code(500).send({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'The command could not be completed.',
+      },
+    });
   });
   app.setNotFoundHandler((_request, reply) =>
     reply.code(404).send({
@@ -129,14 +158,21 @@ export function buildApp(options: Options) {
     const businessId = uuid(rawBusiness, 'Business');
     return inContext(options.database, actorId, businessId, operation);
   }
-  app.get('/healthz', async () => ({ status: 'ok', demo: options.mode === 'demo' }));
+  app.get('/healthz', async () => ({
+    status: 'ok',
+    demo: options.mode === 'demo',
+  }));
   app.get('/v1/workspace', async (request) =>
     run(request, async (tx, context): Promise<Workspace> => {
       const permissions = [...context.grants.keys()]
         .filter((permission) => scope(context, permission))
         .sort();
       const result: Workspace = {
-        business: { id: context.businessId, name: context.businessName, currency: 'MXN' },
+        business: {
+          id: context.businessId,
+          name: context.businessName,
+          currency: 'MXN',
+        },
         user: { id: context.actorId, name: context.userName },
         modules: context.modules,
         permissions,
@@ -185,6 +221,13 @@ export function buildApp(options: Options) {
       ),
     ),
   );
+  if (options.mode === 'real')
+    registerOperations(
+      app,
+      options.database,
+      options.auth,
+      process.env.SUITE_SECURE_COOKIES !== 'false',
+    );
   app.options('/*', async (_request, reply) => reply.code(204).send());
   return app;
 }

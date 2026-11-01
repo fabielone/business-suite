@@ -24,8 +24,22 @@ FROM manifests AS production-dependencies
 RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund \
     --workspace @suite/core --workspace @suite/api --include-workspace-root=false
 
+FROM ${NODE_IMAGE} AS web-build
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY packages/core/package.json ./packages/core/package.json
+COPY packages/offline/package.json ./packages/offline/package.json
+COPY apps/web/package.json ./apps/web/package.json
+RUN npm ci --include=dev --ignore-scripts --no-audit --no-fund \
+    --workspace @suite/core --workspace @suite/offline --workspace @suite/web --include-workspace-root=false
+COPY packages/core ./packages/core
+COPY packages/offline ./packages/offline
+COPY apps/web ./apps/web
+ENV VITE_SUITE_BASE=/apps/business_suite/api/app/ VITE_SUITE_API_BASE=/apps/business_suite/api
+RUN npm run build -w @suite/core && npm run build -w @suite/offline && npm run build -w @suite/web -- --mode operations
+
 FROM ${NODE_IMAGE} AS runtime
-ENV NODE_ENV=production API_HOST=0.0.0.0 API_PORT=4310
+ENV NODE_ENV=production API_HOST=0.0.0.0 API_PORT=4310 SUITE_WEB_DIRECTORY=/app/web
 WORKDIR /app
 COPY --from=production-dependencies /app/node_modules ./node_modules
 COPY --from=manifests /app/apps/api/package.json ./apps/api/package.json
@@ -33,6 +47,7 @@ COPY --from=manifests /app/packages/core/package.json ./packages/core/package.js
 COPY --from=build /app/packages/core/dist ./packages/core/dist
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY db/migrations ./db/migrations
+COPY --from=web-build /app/apps/web/dist-operations ./web
 # Files are root-owned/read-only to the process. The Node image supplies uid/gid1000.
 USER 1000:1000
 EXPOSE 4310
