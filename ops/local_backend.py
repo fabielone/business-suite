@@ -21,7 +21,7 @@ import webbrowser
 APP = 'business_suite'
 IMAGE = 'business-suite-api:local-operations-20261030'
 WEB = '/apps/business_suite/api/app/'
-TABLES = ['suite_contacts', 'suite_deals', 'suite_projects', 'suite_expense_entries', 'suite_payments', 'suite_tasks', 'suite_referrals', 'suite_message_templates', 'suite_message_drafts']
+TABLES = ['suite_contacts', 'suite_deals', 'suite_projects', 'suite_expense_entries', 'suite_payments', 'suite_tasks', 'suite_referrals', 'suite_message_templates', 'suite_message_drafts', 'suite_automations', 'suite_automation_runs', 'suite_notifications']
 
 
 def profile(root, port, lan_ip, tls_port):
@@ -120,6 +120,7 @@ GRANT INSERT ON audit_events TO business_suite_runtime;
 GRANT SELECT,INSERT,UPDATE ON suite_spaces,suite_space_members,suite_invitations TO business_suite_runtime;
 GRANT SELECT,INSERT,UPDATE,DELETE ON suite_sessions TO business_suite_runtime;
 GRANT SELECT,INSERT ON suite_space_commands,suite_space_audit TO business_suite_runtime;
+GRANT SELECT,INSERT,UPDATE,DELETE ON suite_automation_schedule TO business_suite_runtime;
 GRANT SELECT,INSERT,UPDATE ON ''' + ','.join(TABLES) + ' TO business_suite_runtime;', APP)
     b.dc('up', '-d', '--wait', '--no-deps', APP + '-business', 'gateway')
     b.dc('restart', 'gateway')

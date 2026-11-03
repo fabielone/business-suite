@@ -128,6 +128,16 @@ A workflow template bundles pipeline stages, production stages, stage checklists
 ## Implementation status — NOTE-015, 2026-11-03
 A first slice is implemented locally (uncommitted at writing): Project terms in the pipeline, several numbered Orders per Project, release by deposit or manager with reason, Jobs split per team member with "Order / Job" cards and one colour per Order, `lead` and `production` roles with assigned-only visibility and no prices, the task completion rule, and decision maker/position on Person. Unit tests and a browser example-mode check pass; the real local backend was not exercised. Remaining gaps are listed in NOTE-015 (Obsidian reference).
 
+## Implementation status — automations, 2026-11-03
+Implemented locally (uncommitted at writing), with the human's choice of scope: When/If/Wait/Then rules, waits and time-based triggers included, and a small fixed If list.
+- Triggers: project stage changed (also "quote sent", using the Quote sent stage), job production stage changed, task completed, all tasks of an Order done, a date reached (project follow-up, job or task due date, with days before/after), and no project activity for N days.
+- If: nobody worked on the record during the wait, project still at a stage, a job at a production stage, job unassigned.
+- Then: create a task, assign the job, notify someone in the app, move a stage, add an activity note. Prepare-a-message is not implemented, because message templates belong to the referrals module.
+- Guardrails: rules can only issue task, job, project-stage, notification and note changes, and those changes keep their own checks. Won and lost stay a person's decision; Awaiting release cannot be targeted, so an automation never releases an Order. Every run applies all of its actions or none and is logged as done, skipped, failed or cancelled. Automations that trigger each other stop after three steps. Each person's command still advances the workspace revision only once.
+- Only owners and managers can see and manage rules and runs (`automations.manage`). Each person sees only the notifications addressed to them.
+- Waits and timers run on the server (once a minute, under the workspace lock) and in the browser in example mode. Time-based triggers count from when a rule is turned on, so turning one on cannot flood the workspace. Dates use UTC until workspaces have a time zone.
+- Gaps: Projects have no owner, so "the owner" cannot be a task assignee; teams do not exist, so assignments go to one member; notifications are in the app only. Migration 003 also allows the lead and production roles in the database. The shared-host runtime grants for the new tables and the API scheduler were not exercised against real PostgreSQL.
+
 ## Relation to the NOTE-013 implementation
 Checked 2026-11-03 in `packages/core/src/operations`. The code's names map to these terms as follows:
 - Code `deals` (UI "opportunity") = this note's **Project**.

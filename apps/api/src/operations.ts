@@ -4,6 +4,8 @@ import { DomainError, uuid } from '@suite/core';
 import {
   emptyData,
   executeCommand,
+  runDueAutomations,
+  nextAutomationCheck,
   ROLE_GRANTS,
   authorizeCommand,
   projectForActor,
@@ -28,7 +30,13 @@ const TABLES = {
   referrals: 'suite_referrals',
   templates: 'suite_message_templates',
   drafts: 'suite_message_drafts',
+  automations: 'suite_automations',
+  automationRuns: 'suite_automation_runs',
+  notifications: 'suite_notifications',
 } as const;
+/** Audit actor for changes the scheduler makes; no person has this ID. */
+const AUTOMATION_ACTOR = '00000000-0000-0000-0000-000000000000';
+const SCHEDULER_INTERVAL_MS = 60_000;
 const permitted = (grants: Access[], grant: Access) => {
   if (!grants.includes(grant))
     throw new DomainError(
@@ -111,8 +119,7 @@ export function registerOperations(
     before: SuiteData,
     after: SuiteData,
     actor: string,
-    command: Command,
-    fingerprint: string,
+    receipt?: { command: Command; fingerprint: string },
   ) {
     const ws = after.workspaces[0]!;
     await tx.query('UPDATE suite_spaces SET config=$2::jsonb,revision=$3 WHERE id=$1', [
@@ -129,16 +136,75 @@ export function registerOperations(
             [ws.id, row.id, row.version, JSON.stringify(row)],
           );
     }
-    const audit = after.audit.at(-1)!;
-    await tx.query(
-      'INSERT INTO suite_space_audit(space_id,id,actor_id,payload) VALUES($1,$2,$3,$4::jsonb)',
-      [ws.id, audit.id, actor, JSON.stringify(audit)],
-    );
-    await tx.query(
-      'INSERT INTO suite_space_commands(space_id,id,actor_id,fingerprint) VALUES($1,$2,$3,$4)',
-      [ws.id, command.id, actor, fingerprint],
-    );
+    // A command can add several entries: its own and those of the automations it set off.
+    const logged = new Set(before.audit.map((a) => a.id));
+    for (const audit of after.audit.filter((a) => !logged.has(a.id)))
+      await tx.query(
+        'INSERT INTO suite_space_audit(space_id,id,actor_id,payload) VALUES($1,$2,$3,$4::jsonb)',
+        [ws.id, audit.id, actor, JSON.stringify(audit)],
+      );
+    if (receipt)
+      await tx.query(
+        'INSERT INTO suite_space_commands(space_id,id,actor_id,fingerprint) VALUES($1,$2,$3,$4)',
+        [ws.id, receipt.command.id, actor, receipt.fingerprint],
+      );
+    await schedule(tx, after, ws.id);
   }
+  async function schedule(tx: Sql, data: SuiteData, spaceId: string) {
+    const next = nextAutomationCheck(data, spaceId, new Date().toISOString());
+    if (next)
+      await tx.query(
+        'INSERT INTO suite_automation_schedule(space_id,next_check_at) VALUES($1,$2) ON CONFLICT(space_id) DO UPDATE SET next_check_at=EXCLUDED.next_check_at',
+        [spaceId, next],
+      );
+    else await tx.query('DELETE FROM suite_automation_schedule WHERE space_id=$1', [spaceId]);
+  }
+  /**
+   * Runs due waits and time-based triggers. The workspace row lock serializes this with
+   * commands and with other API processes, and a run leaves `waiting` in the same
+   * transaction that applies it, so each run happens at most once.
+   */
+  async function runAutomationSchedule() {
+    const due = (
+      await db.query<{ space_id: string }>(
+        'SELECT space_id FROM suite_automation_schedule WHERE next_check_at<=now() ORDER BY next_check_at LIMIT 20',
+      )
+    ).rows;
+    for (const { space_id: spaceId } of due)
+      try {
+        await db.transaction(async (tx) => {
+          await tx.query("SELECT set_config('suite.space_id',$1,true)", [spaceId]);
+          const before = await read(tx, spaceId, true);
+          const after = runDueAutomations(
+            before,
+            spaceId,
+            new Date().toISOString(),
+            'tick-' + randomUUID(),
+          );
+          if (after === before) await schedule(tx, before, spaceId);
+          else await save(tx, before, after, AUTOMATION_ACTOR);
+        });
+      } catch (error) {
+        // Back off so one broken workspace cannot block the others; the error stays visible.
+        app.log.error({ err: error, spaceId }, 'Automation schedule failed');
+        await db.query(
+          "UPDATE suite_automation_schedule SET next_check_at=now()+interval '15 minutes' WHERE space_id=$1",
+          [spaceId],
+        );
+      }
+  }
+  let scheduling = false;
+  const timer = setInterval(() => {
+    if (scheduling) return;
+    scheduling = true;
+    void runAutomationSchedule()
+      .catch((error) => app.log.error({ err: error }, 'Automation scheduler failed'))
+      .finally(() => {
+        scheduling = false;
+      });
+  }, SCHEDULER_INTERVAL_MS);
+  timer.unref();
+  app.addHook('onClose', async () => clearInterval(timer));
   app.get('/v2/workspaces', async (request) => {
     const user = await authenticate(request);
     const memberships = await db.transaction(async (tx) => {
@@ -278,7 +344,7 @@ export function registerOperations(
         }
         authorizeCommand(before, command, { grants, email: member.email });
         const after = executeCommand(before, command);
-        await save(tx, before, after, user.id, command, fingerprint);
+        await save(tx, before, after, user.id, { command, fingerprint });
         return { data: project(after, grants, member), grants, role: member.role };
       });
     },
@@ -400,6 +466,13 @@ export function registerOperations(
       for (const row of restored[key]) row.workspaceId = spaceId;
     restored.commands = [];
     restored.audit = [];
+    // A restored copy must not act on its own: rules start off and pending waits are dropped.
+    for (const rule of restored.automations) rule.enabled = false;
+    for (const run of restored.automationRuns)
+      if (run.status === 'waiting') {
+        run.status = 'cancelled';
+        run.outcome = 'Cancelled when the backup was restored.';
+      }
     restored.revision = 1;
     return db.transaction(async (tx) => {
       await tx.query(

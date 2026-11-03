@@ -164,6 +164,61 @@ export type Audit = {
   action: string;
   recordId: string;
   summary: string;
+  /** Set when an automation, not a person, made the change. */
+  automationId?: string;
+};
+/** Fixed lists only: automations are not a general workflow engine. */
+export type AutomationTrigger =
+  | { type: 'deal.stage'; stageId: string }
+  | { type: 'job.stage'; stage: ProductionStage }
+  | { type: 'task.completed' }
+  | { type: 'order.tasks.done' }
+  | { type: 'date.reached'; field: 'deal.due' | 'job.due' | 'task.due'; offsetDays: number }
+  | { type: 'deal.inactive'; days: number };
+export type AutomationCondition =
+  | { type: 'no.activity' }
+  | { type: 'deal.stage.is'; stageId: string }
+  | { type: 'job.stage.is'; stage: ProductionStage }
+  | { type: 'job.unassigned' };
+/** `memberId` is a member contact, `assignee` (the record's assignee) or empty for nobody. */
+export type AutomationAction =
+  | { type: 'task.create'; title: string; memberId: string; dueInDays: number }
+  | { type: 'job.assign'; memberId: string }
+  | { type: 'notify'; memberId: string; message: string }
+  | { type: 'stage.move'; stage: string }
+  | { type: 'note.add'; text: string };
+export type Automation = Row & {
+  name: string;
+  enabled: boolean;
+  /** Time-based triggers only count from this moment, so turning a rule on never floods. */
+  activeSince: string;
+  trigger: AutomationTrigger;
+  conditions: AutomationCondition[];
+  wait: { amount: number; unit: 'hours' | 'days' };
+  actions: AutomationAction[];
+};
+export type AutomationSubject = {
+  kind: 'deal' | 'order' | 'task';
+  id: string;
+  /** Set when the subject is one Job of an Order. */
+  jobId: string;
+};
+export type AutomationRun = Row & {
+  automationId: string;
+  subject: AutomationSubject;
+  /** Prevents the same trigger firing twice for the same record. */
+  key: string;
+  triggeredAt: string;
+  dueAt: string;
+  status: 'waiting' | 'done' | 'skipped' | 'failed' | 'cancelled';
+  outcome: string;
+};
+export type Notification = Row & {
+  recipientId: string;
+  message: string;
+  subject: AutomationSubject;
+  automationId: string;
+  read: boolean;
 };
 export type SuiteData = {
   schemaVersion: 1;
@@ -178,6 +233,9 @@ export type SuiteData = {
   referrals: Referral[];
   templates: MessageTemplate[];
   drafts: Draft[];
+  automations: Automation[];
+  automationRuns: AutomationRun[];
+  notifications: Notification[];
   audit: Audit[];
   commands: { id: string; fingerprint: string }[];
 };
@@ -263,6 +321,9 @@ export const emptyData = (): SuiteData => ({
   referrals: [],
   templates: [],
   drafts: [],
+  automations: [],
+  automationRuns: [],
+  notifications: [],
   audit: [],
   commands: [],
 });

@@ -106,6 +106,7 @@ export function Icon({ name, size = 20 }: { name: string; size?: number }) {
         <path d="M3 12h4l3-8 4 16 3-8h4" />
       </>
     ),
+    automations: <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" />,
     more: (
       <>
         <circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none" />

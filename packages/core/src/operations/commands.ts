@@ -19,6 +19,15 @@ import {
 } from './types.js';
 import { orderJobs, isReleased } from './production.js';
 import {
+  parseAutomation,
+  runAutomations,
+  tickAutomations,
+  cancelWaiting,
+  pipelineStages,
+  withAutomationCollections,
+  MAX_AUTOMATION_DEPTH,
+} from './automations.js';
+import {
   ensure,
   sum,
   allocate,
@@ -225,6 +234,20 @@ export function executeCommand(
   command: Command,
   now = new Date().toISOString(),
 ): SuiteData {
+  return apply(original, command, now, 0);
+}
+/** Waits that are due and time-based triggers; the same object back when nothing ran. */
+export function runDueAutomations(
+  data: SuiteData,
+  workspaceId: string,
+  now: string,
+  tickId: string,
+): SuiteData {
+  id(tickId);
+  return tickAutomations(data, workspaceId, now, tickId, apply);
+}
+/** `depth` > 0 means an automation issued the command, not a person. */
+function apply(original: SuiteData, command: Command, now: string, depth: number): SuiteData {
   ensure(
     original.schemaVersion === 1,
     'This data version needs a newer application.',
@@ -252,7 +275,8 @@ export function executeCommand(
       'This workspace changed in another tab. Your form is preserved; reload the latest data and review it before saving.',
       'CONFLICT',
     );
-  const data = structuredClone(original);
+  const data = withAutomationCollections(structuredClone(original));
+  const before = withAutomationCollections({ ...original });
   const p = command.payload;
   const wsId = command.workspaceId;
   ensure(p && typeof p === 'object' && !Array.isArray(p), 'Invalid command.');
@@ -306,6 +330,9 @@ export function executeCommand(
     notes,
   });
   let summary = command.type.replaceAll('.', ' ');
+  let auditRecordId = recordId;
+  const systemOnly = () =>
+    ensure(depth > 0, 'This operation is not supported by this application version.');
   switch (command.type) {
     case 'workspace.create': {
       ensure(!data.workspaces.some((w) => w.id === wsId), 'Workspace already exists.');
@@ -352,6 +379,13 @@ export function executeCommand(
           .filter((d) => d.workspaceId === wsId)
           .every((d) => parsed.some((s) => s.id === d.stageId)),
         'Move existing opportunities before removing their stage.',
+      );
+      ensure(
+        data.automations
+          .filter((a) => a.workspaceId === wsId && !a.archived)
+          .flatMap(pipelineStages)
+          .every((stageId) => parsed.some((s) => s.id === stageId)),
+        'An automation uses this stage. Change or archive the automation first.',
       );
       ws!.stages = parsed;
       const referralStages = list(p.referralStages ?? ws!.referralStages, 'Referral stages');
@@ -527,6 +561,7 @@ export function executeCommand(
       }
       order.jobs = jobs;
       touch(order);
+      auditRecordId = order.id;
       summary = `Saved job ${fields.name} for ${order.title}`;
       break;
     }
@@ -545,6 +580,7 @@ export function executeCommand(
       );
       job.stage = stage;
       order.jobs = jobs;
+      auditRecordId = order.id;
       const allClosed = jobs.every((j) => j.stage === 'Closed');
       order.status = allClosed ? 'completed' : 'active';
       touch(order);
@@ -892,14 +928,100 @@ export function executeCommand(
       summary = 'Saved email draft (not sent)';
       break;
     }
+    case 'automation.save': {
+      const existing = p.id ? own(data.automations, p.id, wsId) : undefined;
+      const fields = parseAutomation(p, data, ws!, true);
+      if (existing) {
+        const changed =
+          JSON.stringify([existing.trigger, existing.conditions, existing.wait]) !==
+          JSON.stringify([fields.trigger, fields.conditions, fields.wait]);
+        if (changed || !fields.enabled)
+          cancelWaiting(
+            data,
+            existing.id,
+            now,
+            fields.enabled ? 'The automation was changed.' : 'The automation was switched off.',
+          );
+        const activeSince = fields.enabled && !existing.enabled ? now : existing.activeSince;
+        Object.assign(existing, fields, { activeSince });
+        touch(existing);
+      } else {
+        newRecord(data.automations);
+        data.automations.push({ ...base(recordId), ...fields, activeSince: now });
+      }
+      summary = `Saved automation ${fields.name}`;
+      break;
+    }
+    case 'automation.enable': {
+      const rule = own(data.automations, p.id, wsId);
+      ensure(typeof p.enabled === 'boolean', 'Choose whether the automation is on.');
+      if (p.enabled) {
+        // Re-check against current stages, members and modules before switching on.
+        parseAutomation({ ...rule, enabled: true }, data, ws!, true);
+        if (!rule.enabled) rule.activeSince = now;
+      } else cancelWaiting(data, rule.id, now, 'The automation was switched off.');
+      rule.enabled = p.enabled;
+      touch(rule);
+      summary = `${rule.enabled ? 'Turned on' : 'Turned off'} automation ${rule.name}`;
+      break;
+    }
+    case 'notification.create': {
+      systemOnly();
+      newRecord(data.notifications);
+      const recipientId = member(data, p.recipientId, wsId);
+      ensure(recipientId !== 'pool', 'Choose a workspace member.');
+      const subject = p.subject as Record<string, unknown>;
+      ensure(
+        subject && ['deal', 'order', 'task'].includes(String(subject.kind)),
+        'Invalid notification subject.',
+      );
+      data.notifications.push({
+        ...base(recordId),
+        recipientId,
+        message: string(p, 'message', 500, true),
+        subject: {
+          kind: subject.kind as 'deal' | 'order' | 'task',
+          id: id(subject.id),
+          jobId: subject.jobId ? text(subject.jobId, 'Job', 300) : '',
+        },
+        automationId: id(p.automationId),
+        read: false,
+      });
+      summary = `Notified ${data.contacts.find((c) => c.id === recipientId)!.name}`;
+      break;
+    }
+    case 'notification.read': {
+      const note = own(data.notifications, p.id, wsId);
+      if (!note.read) {
+        note.read = true;
+        touch(note);
+      }
+      summary = 'Read a notification';
+      break;
+    }
+    case 'automation.note': {
+      systemOnly();
+      auditRecordId = id(p.recordId);
+      summary = `Note: ${string(p, 'text', 500, true)}`;
+      break;
+    }
     case 'record.archive':
     case 'record.restore': {
       const key = choice(
         p.collection,
-        ['contacts', 'deals', 'projects', 'tasks', 'referrals', 'templates', 'drafts'] as const,
+        [
+          'contacts',
+          'deals',
+          'projects',
+          'tasks',
+          'referrals',
+          'templates',
+          'drafts',
+          'automations',
+        ] as const,
         'record collection',
       );
-      if (key !== 'contacts')
+      if (key !== 'contacts' && key !== 'automations')
         requireModule(
           (
             {
@@ -923,6 +1045,8 @@ export function executeCommand(
           (householdBalances(data, ws!).find((b) => b.member.id === row.id)?.balance ?? 0) === 0,
           'Settle this member’s balance before archiving them.',
         );
+      if (key === 'automations' && archived)
+        cancelWaiting(data, row.id, now, 'The automation was archived.');
       row.archived = archived;
       touch(row);
       summary = `${archived ? 'Archived' : 'Restored'} ${key} record (history retained)`;
@@ -931,18 +1055,23 @@ export function executeCommand(
     default:
       throw new Error('This operation is not supported by this application version.');
   }
-  data.revision++;
   data.audit.push({
     id: command.id,
     workspaceId: wsId,
     at: now,
     action: command.type,
-    recordId,
+    recordId: auditRecordId,
     summary,
   });
   // Receipts intentionally persist: pruning them could turn a delayed retry into a duplicate.
   data.commands.push({ id: command.id, fingerprint });
-  return data;
+  const result =
+    depth < MAX_AUTOMATION_DEPTH
+      ? runAutomations(before, data, wsId, now, command.id, depth, apply)
+      : data;
+  // One revision per person's command, including whatever its automations changed.
+  result.revision = original.revision + 1;
+  return result;
 }
 
 export { receipt as validateReceipt, date as validateDate };

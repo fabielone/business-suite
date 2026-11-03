@@ -76,6 +76,14 @@ export function authorizeCommand(data: SuiteData, command: Command, actor: Actor
       deny('Only the assigned person, their team lead or a manager can complete this task.');
     return;
   }
+  if (command.type === 'notification.read') {
+    const note = data.notifications?.find(
+      (n) => n.id === p.id && n.workspaceId === command.workspaceId,
+    );
+    if (!note || !mine.includes(note.recipientId))
+      deny('This notification is not addressed to you.');
+    return;
+  }
   has(commandAccess(command.type, p.collection));
   if (command.type === 'deal.convert') has('work.write');
   if (command.type === 'order.release' && p.basis === 'manager') has('work.assign');
@@ -137,6 +145,13 @@ export function projectForActor(data: SuiteData, actor: Actor): SuiteData {
       r.rewardMinor = 0;
     });
   }
+  if (!grants.includes('automations.manage')) {
+    copy.automations = [];
+    copy.automationRuns = [];
+  }
+  // Each person reads only the notifications addressed to them.
+  const recipients = ws ? actorMemberIds(data, ws.id, actor.email) : [];
+  copy.notifications = (copy.notifications ?? []).filter((n) => recipients.includes(n.recipientId));
   if (!grants.includes('workspace.manage')) copy.audit = [];
   copy.commands = [];
   return copy;

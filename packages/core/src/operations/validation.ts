@@ -10,6 +10,7 @@ import {
 } from './types.js';
 import { ensure, sum } from './calculations.js';
 import { validateReceipt, validateDate } from './commands.js';
+import { parseAutomation, withAutomationCollections } from './automations.js';
 
 const text = (v: unknown, limit = 20000) =>
   typeof v === 'string' && v.length <= limit && !v.includes('\u0000');
@@ -21,7 +22,8 @@ export function validateData(value: unknown): SuiteData {
     value !== null && typeof value === 'object' && !Array.isArray(value),
     'Backup is not a valid Suite document.',
   );
-  const d = value as SuiteData;
+  // Documents saved before automations existed lack those collections.
+  const d = withAutomationCollections({ ...(value as SuiteData) });
   ensure(
     d.schemaVersion === 1,
     'Unsupported backup version. Keep the original file and use a compatible app.',
@@ -95,6 +97,9 @@ export function validateData(value: unknown): SuiteData {
     'referrals',
     'templates',
     'drafts',
+    'automations',
+    'automationRuns',
+    'notifications',
   ] as const;
   for (const key of keys)
     for (const r of d[key] as Row[]) {
@@ -339,6 +344,37 @@ export function validateData(value: unknown): SuiteData {
       'Invalid draft recipient.',
     );
   }
+  for (const rule of d.automations) {
+    const ws = d.workspaces.find((w) => w.id === rule.workspaceId)!;
+    parseAutomation(rule as unknown as Record<string, unknown>, d, ws, false);
+    ensure(dateTime(rule.activeSince), 'Invalid automation start.');
+  }
+  const subject = (s: { kind: string; id: string; jobId: string }) =>
+    s && ['deal', 'order', 'task'].includes(s.kind) && text(s.id, 120) && text(s.jobId, 300);
+  for (const run of d.automationRuns) {
+    link(d.automations, run.automationId, run.workspaceId, false);
+    ensure(
+      subject(run.subject) &&
+        text(run.key, 1000) &&
+        dateTime(run.triggeredAt) &&
+        dateTime(run.dueAt) &&
+        ['waiting', 'done', 'skipped', 'failed', 'cancelled'].includes(run.status) &&
+        text(run.outcome, 1000),
+      'Invalid automation run.',
+    );
+  }
+  for (const n of d.notifications) {
+    member(n.recipientId, n.workspaceId);
+    ensure(
+      n.recipientId !== 'pool' &&
+        text(n.message, 500) &&
+        n.message.trim() &&
+        subject(n.subject) &&
+        text(n.automationId, 120) &&
+        typeof n.read === 'boolean',
+      'Invalid notification.',
+    );
+  }
   for (const a of d.audit)
     ensure(
       a &&
@@ -347,7 +383,8 @@ export function validateData(value: unknown): SuiteData {
         dateTime(a.at) &&
         text(a.action, 100) &&
         text(a.recordId, 120) &&
-        text(a.summary, 3000),
+        text(a.summary, 3000) &&
+        (a.automationId === undefined || text(a.automationId, 120)),
       'Invalid audit entry.',
     );
   ensure(
@@ -371,9 +408,14 @@ export function workspaceData(data: SuiteData, ws: Workspace): SuiteData {
     'referrals',
     'templates',
     'drafts',
+    'automations',
+    'automationRuns',
+    'notifications',
     'audit',
   ] as const)
-    (next[key] as unknown[]) = structuredClone(data[key].filter((r) => r.workspaceId === ws.id));
+    (next[key] as unknown[]) = structuredClone(
+      (data[key] ?? []).filter((r) => r.workspaceId === ws.id),
+    );
   next.commands = structuredClone(data.commands);
   return next;
 }

@@ -111,6 +111,50 @@ export function sampleData(now = new Date().toISOString()): SuiteData {
     due,
     recurrence: 'none',
   });
+  // The Insignia examples from the CRM workflow note; projects have no owner yet.
+  run('insignia', 'automation.save', {
+    name: 'Follow up a sent quote',
+    enabled: true,
+    trigger: { type: 'deal.stage', stageId: 'quoted' },
+    conditions: [{ type: 'no.activity' }, { type: 'deal.stage.is', stageId: 'quoted' }],
+    wait: { amount: 3, unit: 'days' },
+    actions: [
+      {
+        type: 'task.create',
+        title: 'Follow up on the quote: {record}',
+        memberId: '',
+        dueInDays: 0,
+      },
+    ],
+  });
+  run('insignia', 'automation.save', {
+    name: 'Fabrication goes to the shop',
+    enabled: true,
+    trigger: { type: 'job.stage', stage: 'Fabrication' },
+    conditions: [],
+    wait: { amount: 0, unit: 'days' },
+    actions: [
+      { type: 'job.assign', memberId: shop },
+      {
+        type: 'task.create',
+        title: 'Prepare materials for {record}',
+        memberId: 'assignee',
+        dueInDays: 1,
+      },
+      { type: 'notify', memberId: 'assignee', message: '{record} is ready for fabrication.' },
+    ],
+  });
+  run('insignia', 'automation.save', {
+    name: 'Installation done, mark delivered',
+    enabled: true,
+    trigger: { type: 'order.tasks.done' },
+    conditions: [{ type: 'job.stage.is', stage: 'Installation' }],
+    wait: { amount: 0, unit: 'days' },
+    actions: [
+      { type: 'stage.move', stage: 'Delivered' },
+      { type: 'notify', memberId: shop, message: '{record} was installed and marked delivered.' },
+    ],
+  });
   const ana = member('household', 'Ana · example', 2);
   const sam = member('household', 'Sam · example', 1);
   const jo = member('household', 'Jo · example', 1);

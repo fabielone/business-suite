@@ -1,6 +1,7 @@
 import {
   emptyData,
   executeCommand,
+  runDueAutomations,
   sampleData,
   ROLE_GRANTS,
   validateData,
@@ -152,6 +153,15 @@ export async function sampleCommand(command: Command): Promise<SuiteData> {
       reject(error ?? tx.error ?? new Error('Nothing was saved. Please retry.'));
     };
   });
+}
+/** Example mode runs due waits and timers in the browser; a server does this for shared data. */
+export async function sampleTick(now = new Date().toISOString()): Promise<SuiteData> {
+  return updateSamples((current) =>
+    current.workspaces.reduce(
+      (data, ws) => runDueAutomations(data, ws.id, now, 'tick-' + crypto.randomUUID()),
+      current,
+    ),
+  );
 }
 export type Pending = {
   command: Command;

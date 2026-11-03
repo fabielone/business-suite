@@ -1429,6 +1429,163 @@ body:has(> #root > .operations[data-theme='dark']) {
   display: grid;
   gap: 2px;
 }
+/* ---------- Automations ---------- */
+.op-automation-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.op-automation {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  min-width: 0;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-md);
+}
+.op-automation.off {
+  border-left-color: var(--border-strong);
+}
+.op-automation.off .op-automation-steps {
+  color: var(--text-3);
+}
+.op-automation header,
+.op-automation footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+.op-automation h2 {
+  margin: 0;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.op-automation footer small {
+  color: var(--text-3);
+}
+.op-automation-steps {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.op-automation-steps li {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+.op-automation-steps b,
+.op-automation-preview b {
+  display: inline-block;
+  min-width: 42px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.op-automation-preview b {
+  min-width: 0;
+}
+.operations .op-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  font-size: 13px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.operations .op-switch input {
+  appearance: none;
+  position: relative;
+  width: 34px;
+  height: 20px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease);
+}
+.operations .op-switch input::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(10, 12, 20, 0.25);
+  transition: transform var(--t-fast) var(--ease);
+}
+.operations .op-switch input:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.operations .op-switch input:checked::after {
+  transform: translateX(14px);
+}
+.operations .op-switch input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.op-automation-form {
+  display: grid;
+  gap: 16px;
+}
+.op-automation-form fieldset {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.op-automation-form legend {
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+}
+.op-automation-form .op-module-options select {
+  margin-top: 6px;
+  max-width: 100%;
+}
+.op-automation-action {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--border);
+}
+.op-automation-action > .op-form-grid {
+  width: 100%;
+}
+.op-automation-preview {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  font-size: 13.5px;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
 .op-stage-settings {
   display: grid;
   gap: 8px;

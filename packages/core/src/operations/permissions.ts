@@ -20,6 +20,7 @@ export const PERMISSIONS = [
   'referrals.read',
   'referrals.write',
   'backup.export',
+  'automations.manage',
 ] as const;
 export type Access = (typeof PERMISSIONS)[number];
 export const ROLE_GRANTS: Record<string, Access[]> = {
@@ -55,6 +56,7 @@ export const ROLE_GRANTS: Record<string, Access[]> = {
 };
 export function commandAccess(type: string, collection?: unknown): Access {
   if (type === 'workspace.settings') return 'workspace.manage';
+  if (type.startsWith('automation.')) return 'automations.manage';
   if (type.startsWith('contact.')) return 'contacts.write';
   if (type.startsWith('deal.')) return 'crm.write';
   if (type === 'job.save') return 'work.assign';
@@ -74,6 +76,7 @@ export function commandAccess(type: string, collection?: unknown): Access {
       referrals: 'referrals.write',
       templates: 'referrals.write',
       drafts: 'referrals.write',
+      automations: 'automations.manage',
     };
     return access[String(collection)] ?? 'workspace.manage';
   }

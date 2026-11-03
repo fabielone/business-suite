@@ -45,6 +45,7 @@ import {
   type Field,
 } from './components';
 import { download, eml } from './client';
+import { Notifications } from './Automations';
 
 export interface PageProps {
   data: SuiteData;
@@ -1577,6 +1578,7 @@ export function Overview(p: PageProps) {
               : 'Open projects, orders in production, balances due and expenses to review.'
         }
       />
+      <Notifications {...p} />
       <Stats
         values={
           household

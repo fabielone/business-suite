@@ -18,6 +18,7 @@ import {
   samples,
   sampleCommand,
   sampleEntries,
+  sampleTick,
   OfflineVault,
   download,
   RequestError,
@@ -49,6 +50,7 @@ import {
   type PageProps,
 } from './pages';
 import { Settings } from './Settings';
+import { Automations } from './Automations';
 import './operations.css';
 
 const OFFLINE_COMMANDS = new Set([
@@ -70,6 +72,7 @@ const PAGE_NAMES: Record<string, string> = {
   money: 'Money',
   chores: 'Tasks',
   referrals: 'Referrals',
+  automations: 'Automations',
   settings: 'Settings',
   activity: 'Activity',
   sync: 'Device sync',
@@ -297,6 +300,17 @@ export function OperationsApp() {
       window.removeEventListener('offline', offlineEvent);
     };
   }, []);
+  // Example mode has no server, so the browser runs due waits and timers itself.
+  useEffect(() => {
+    if (!example || loading) return;
+    const tick = () =>
+      void sampleTick()
+        .then((next) => setData((current) => (next.revision === current.revision ? current : next)))
+        .catch(() => undefined);
+    tick();
+    const id = setInterval(tick, 30000);
+    return () => clearInterval(id);
+  }, [example, loading]);
   useEffect(() => {
     if (example || !user || !entry) return;
     const id = setInterval(() => {
@@ -803,6 +817,7 @@ export function OperationsApp() {
         (grants.includes((m + '.read') as Access) ||
           (m === 'work' && grants.includes('work.read.assigned'))),
     ),
+    ...(grants.includes('automations.manage') && ws?.preset !== 'household' ? ['automations'] : []),
     'sync',
     ...(grants.includes('workspace.manage') ? ['activity'] : []),
     'settings',
@@ -822,6 +837,16 @@ export function OperationsApp() {
           chores: <Tasks {...props} />,
           referrals: <Referrals {...props} />,
           activity: <Activity {...props} />,
+          automations: (
+            <Automations
+              {...props}
+              example={example}
+              fastForward={async (until) => {
+                setData(await sampleTick(until));
+                notify('Example time moved forward to the next wait.');
+              }}
+            />
+          ),
           settings: (
             <Settings
               key={ws!.id}
