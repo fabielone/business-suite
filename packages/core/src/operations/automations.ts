@@ -37,6 +37,7 @@ export const TRIGGERS = [
   'order.tasks.done',
   'date.reached',
   'deal.inactive',
+  'contact.created',
 ] as const;
 export const CONDITIONS = [
   'no.activity',
@@ -45,7 +46,8 @@ export const CONDITIONS = [
   'job.unassigned',
 ] as const;
 export const ACTIONS = ['task.create', 'job.assign', 'notify', 'stage.move', 'note.add'] as const;
-export type SubjectKind = 'deal' | 'job' | 'order' | 'task';
+export type SubjectKind = 'deal' | 'job' | 'order' | 'task' | 'contact';
+export const CONTACT_KINDS = ['customer', 'supplier', 'member', 'candidate', 'employer'] as const;
 /** What each trigger is about decides which conditions and actions make sense. */
 export const ALLOWED: Record<
   SubjectKind,
@@ -64,6 +66,7 @@ export const ALLOWED: Record<
     actions: ['task.create', 'notify', 'stage.move', 'note.add'],
   },
   task: { conditions: ['no.activity'], actions: ['task.create', 'notify', 'note.add'] },
+  contact: { conditions: ['no.activity'], actions: ['task.create', 'notify', 'note.add'] },
 };
 export function triggerSubject(trigger: AutomationTrigger): SubjectKind {
   switch (trigger.type) {
@@ -76,6 +79,8 @@ export function triggerSubject(trigger: AutomationTrigger): SubjectKind {
       return 'task';
     case 'order.tasks.done':
       return 'order';
+    case 'contact.created':
+      return 'contact';
     case 'date.reached':
       return trigger.field === 'deal.due' ? 'deal' : trigger.field === 'job.due' ? 'job' : 'task';
   }
@@ -152,9 +157,15 @@ export function parseAutomation(
       field: oneOf(t.field, ['deal.due', 'job.due', 'task.due'] as const, 'date'),
       offsetDays: int(t.offsetDays ?? 0, 'Days before or after the date', -60, 60),
     };
+  else if (type === 'contact.created')
+    trigger = {
+      type,
+      kind: t.kind ? oneOf(t.kind, CONTACT_KINDS, 'contact type') : '',
+    };
   else trigger = { type, days: int(t.days, 'Days without activity', 1, 365) };
   const kind = triggerSubject(trigger);
-  if (live) {
+  // People and companies belong to every workspace; the other subjects need their module.
+  if (live && kind !== 'contact') {
     const module = { deal: 'crm', job: 'work', order: 'work', task: 'chores' } as const;
     ensure(
       ws.modules.includes(module[kind]),
@@ -309,13 +320,15 @@ function find(data: SuiteData, s: AutomationSubject) {
   const order = s.kind === 'order' ? data.projects.find((o) => o.id === s.id) : undefined;
   const job = order && s.jobId ? orderJobs(order).find((j) => j.id === s.jobId) : undefined;
   const task = s.kind === 'task' ? data.tasks.find((t) => t.id === s.id) : undefined;
-  const record = deal ?? order ?? task;
+  const contact = s.kind === 'contact' ? data.contacts.find((c) => c.id === s.id) : undefined;
+  const record = deal ?? order ?? task ?? contact;
   const available = Boolean(record && !record.archived && (!s.jobId || job));
-  return { deal, order, job, task, available };
+  return { deal, order, job, task, contact, available };
 }
 export function subjectLabel(data: SuiteData, s: AutomationSubject): string {
-  const { deal, order, job, task } = find(data, s);
+  const { deal, order, job, task, contact } = find(data, s);
   if (deal) return deal.title;
+  if (contact) return contact.company ? `${contact.name} (${contact.company})` : contact.name;
   if (order)
     return `Order ${orderNumber(data, order)} ${order.title}${job ? ' / ' + job.name : ''}`;
   return task?.title ?? 'Removed record';
@@ -369,6 +382,13 @@ export function detectEvents(before: SuiteData, after: SuiteData, workspaceId: s
         stage: '',
       });
   }
+  for (const contact of inWs(after.contacts))
+    if (!before.contacts.some((c) => c.id === contact.id))
+      events.push({
+        type: 'contact.created',
+        subject: { kind: 'contact', id: contact.id, jobId: '' },
+        stage: contact.kind,
+      });
   for (const task of inWs(after.tasks))
     if (task.done && before.tasks.find((t) => t.id === task.id)?.done === false)
       events.push({
@@ -383,6 +403,7 @@ function matches(rule: Automation, event: Event) {
   if (t.type !== event.type) return false;
   if (t.type === 'deal.stage') return t.stageId === event.stage;
   if (t.type === 'job.stage') return t.stage === event.stage;
+  if (t.type === 'contact.created') return !t.kind || t.kind === event.stage;
   return true;
 }
 const activeRules = (data: SuiteData, workspaceId: string) =>

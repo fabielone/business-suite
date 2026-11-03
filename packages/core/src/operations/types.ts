@@ -174,7 +174,9 @@ export type AutomationTrigger =
   | { type: 'task.completed' }
   | { type: 'order.tasks.done' }
   | { type: 'date.reached'; field: 'deal.due' | 'job.due' | 'task.due'; offsetDays: number }
-  | { type: 'deal.inactive'; days: number };
+  | { type: 'deal.inactive'; days: number }
+  /** A person or company is added; `kind` empty means any type. */
+  | { type: 'contact.created'; kind: '' | Contact['kind'] };
 export type AutomationCondition =
   | { type: 'no.activity' }
   | { type: 'deal.stage.is'; stageId: string }
@@ -198,7 +200,7 @@ export type Automation = Row & {
   actions: AutomationAction[];
 };
 export type AutomationSubject = {
-  kind: 'deal' | 'order' | 'task';
+  kind: 'deal' | 'order' | 'task' | 'contact';
   id: string;
   /** Set when the subject is one Job of an Order. */
   jobId: string;

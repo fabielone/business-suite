@@ -350,7 +350,10 @@ export function validateData(value: unknown): SuiteData {
     ensure(dateTime(rule.activeSince), 'Invalid automation start.');
   }
   const subject = (s: { kind: string; id: string; jobId: string }) =>
-    s && ['deal', 'order', 'task'].includes(s.kind) && text(s.id, 120) && text(s.jobId, 300);
+    s &&
+    ['deal', 'order', 'task', 'contact'].includes(s.kind) &&
+    text(s.id, 120) &&
+    text(s.jobId, 300);
   for (const run of d.automationRuns) {
     link(d.automations, run.automationId, run.workspaceId, false);
     ensure(

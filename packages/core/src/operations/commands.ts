@@ -972,7 +972,7 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
       ensure(recipientId !== 'pool', 'Choose a workspace member.');
       const subject = p.subject as Record<string, unknown>;
       ensure(
-        subject && ['deal', 'order', 'task'].includes(String(subject.kind)),
+        subject && ['deal', 'order', 'task', 'contact'].includes(String(subject.kind)),
         'Invalid notification subject.',
       );
       data.notifications.push({
@@ -980,7 +980,7 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
         recipientId,
         message: string(p, 'message', 500, true),
         subject: {
-          kind: subject.kind as 'deal' | 'order' | 'task',
+          kind: subject.kind as 'deal' | 'order' | 'task' | 'contact',
           id: id(subject.id),
           jobId: subject.jobId ? text(subject.jobId, 'Job', 300) : '',
         },

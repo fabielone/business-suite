@@ -27,7 +27,15 @@ const TRIGGER_LABELS: Record<AutomationTrigger['type'], string> = {
   'order.tasks.done': 'All tasks of an order are done',
   'date.reached': 'A date is reached',
   'deal.inactive': 'A project has no activity',
+  'contact.created': 'A person or company is added',
 };
+const CONTACT_LABELS = {
+  customer: 'customer',
+  supplier: 'supplier',
+  member: 'team member',
+  candidate: 'candidate',
+  employer: 'employer',
+} as const;
 const CONDITION_LABELS: Record<AutomationCondition['type'], string> = {
   'no.activity': 'Nobody worked on it during the wait',
   'deal.stage.is': 'The project is still at a stage',
@@ -63,6 +71,8 @@ const newTrigger = (type: AutomationTrigger['type'], p: PageProps): AutomationTr
       return { type, field: 'deal.due', offsetDays: 0 };
     case 'deal.inactive':
       return { type, days: 14 };
+    case 'contact.created':
+      return { type, kind: '' };
     default:
       return { type };
   }
@@ -123,7 +133,9 @@ function describe(p: PageProps, rule: Draft) {
           ? `${t.offsetDays ? `${Math.abs(t.offsetDays)} day(s) ${t.offsetDays < 0 ? 'before' : 'after'} ` : ''}the ${DATE_LABELS[t.field].toLowerCase()}`
           : t.type === 'deal.inactive'
             ? `a project has had no activity for ${t.days} day(s)`
-            : TRIGGER_LABELS[t.type].toLowerCase();
+            : t.type === 'contact.created'
+              ? `a ${t.kind ? CONTACT_LABELS[t.kind] : 'person or company'} is added`
+              : TRIGGER_LABELS[t.type].toLowerCase();
   const wait = rule.wait.amount ? `${rule.wait.amount} ${rule.wait.unit}` : '';
   const conditions = rule.conditions.map((c) =>
     c.type === 'deal.stage.is'
@@ -531,6 +543,23 @@ function AutomationEditor({
                     <small>Use a negative number for days before. Dates use UTC for now.</small>
                   </label>
                 </>
+              )}
+              {t.type === 'contact.created' && (
+                <label>
+                  <span>Type</span>
+                  <select
+                    value={t.kind}
+                    onChange={(e) => setTrigger({ ...t, kind: e.target.value as typeof t.kind })}
+                  >
+                    <option value="">Any person or company</option>
+                    {Object.entries(CONTACT_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label[0]!.toUpperCase() + label.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                  <small>Companies are recorded on a person for now.</small>
+                </label>
               )}
               {t.type === 'deal.inactive' && (
                 <label>

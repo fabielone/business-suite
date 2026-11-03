@@ -360,3 +360,58 @@ test('settings keep stages that automations use; replays and old documents are s
     NOW,
   );
 });
+
+test('adding a person or company can create a task and notify, filtered by type', () => {
+  let data = insignia();
+  const sam = member(data, 'sam@example.com');
+  data = act(data, as('manager'), 'automation.save', {
+    name: 'Welcome new customers',
+    enabled: true,
+    trigger: { type: 'contact.created', kind: 'customer' },
+    conditions: [],
+    wait: { amount: 0, unit: 'days' },
+    actions: [
+      { type: 'task.create', title: 'Call {record}', memberId: sam, dueInDays: 1 },
+      { type: 'notify', memberId: sam, message: 'New customer: {record}' },
+    ],
+  });
+  const added = act(data, as('collaborator'), 'contact.save', {
+    name: 'Rita · example',
+    kind: 'customer',
+    company: 'Example Bakery',
+  });
+  const task = added.tasks.find((t) => t.title === 'Call Rita · example (Example Bakery)')!;
+  assert.equal(task.assigneeId, sam);
+  assert.equal(task.due, '2026-11-04');
+  assert.equal(
+    added.notifications.at(-1)!.message,
+    'New customer: Rita · example (Example Bakery)',
+  );
+  assert.equal(runs(added, 'Welcome new customers')[0]!.status, 'done');
+  validateData(added);
+  // Other types and edits of an existing person do not trigger it.
+  const supplier = act(data, as('collaborator'), 'contact.save', {
+    name: 'Supplier · example',
+    kind: 'supplier',
+  });
+  assert.equal(runs(supplier, 'Welcome new customers').length, 0);
+  const rita = added.contacts.at(-1)!;
+  const edited = act(added, as('collaborator'), 'contact.save', {
+    ...rita,
+    notes: 'Prefers mornings',
+  });
+  assert.equal(runs(edited, 'Welcome new customers').length, 1);
+  // Moving a stage does not apply to people.
+  assert.throws(
+    () =>
+      act(data, as('manager'), 'automation.save', {
+        name: 'Bad',
+        enabled: true,
+        trigger: { type: 'contact.created', kind: '' },
+        conditions: [],
+        wait: { amount: 0, unit: 'days' },
+        actions: [{ type: 'stage.move', stage: 'contacted' }],
+      }),
+    /does not apply/,
+  );
+});
