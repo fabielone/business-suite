@@ -1,6 +1,6 @@
 ---
 tags: [hub, business-suite, requirements]
-updated: 2026-10-24
+updated: 2026-11-03
 ---
 # Business Suite
 
@@ -28,6 +28,7 @@ The current operation does not need a sales pipeline. CRM is optional. Jobs, rec
 | Purpose and requirement IDs | [business-suite requirements](<business-suite requirements.md>) |
 | Unresolved product policies | [business-suite open decisions](<business-suite open decisions.md>) |
 | Work, CRM, resources, trips and time | [business-suite modules and workflows](<business-suite modules and workflows.md>) |
+| CRM/ERP vocabulary, Insignia workflow, role views, automations | [business-suite CRM workflow and terminology](<business-suite CRM workflow and terminology.md>) |
 | Module/action/record/field access | [business-suite permissions](<business-suite permissions.md>) |
 | Business expense, worker balances, customer payments | [business-suite money and reimbursements](<business-suite money and reimbursements.md>) |
 | Proposed entities and constraints | [business-suite data model](<business-suite data model.md>) |
@@ -66,3 +67,12 @@ NOTE-009 now has a packaged Electron desktop foundation: 38 aggregate unit/API t
 Windows NSIS installer creation failed on the ARM build host; no Windows runtime or CI run is claimed. Signing/notarization, real auth/local privacy, upgrades/uninstall/recovery and full business workflows remain unfinished. Exact evidence, failure cause and artifact links: [business-suite roadmap](<business-suite roadmap.md#note-009-desktop-foundation--2026-10-24>).
 
 Final desktop report: NOTE-009 2026-10-24 Desktop application foundation report (Obsidian reference). NOTE-009 edit claims are released; further work needs its own authorized scope.
+
+## NOTE-012 local setup — 2026-10-30
+Cloned current public main (`6404e9d`) to `/Users/fabiel/Desktop/business-suite` on this Mac. Installed locked dependencies; 38 unit/API, 10 browser/offline and 3 macOS runtime tests pass. Browser demo at `http://127.0.0.1:5178` and macOS desktop demo were left running; source unchanged. Live API health is reachable, but real client login remains unfinished. NOTE-012 2026-10-30 Desktop clone and local runtime report (Obsidian reference) records startup commands, dependency findings and evidence limits.
+
+## NOTE-013 local shared browser checkpoint — 2026-10-30
+Fresh isolated Docker backend and authenticated browser workflows for Insignia, Household and Referrals are implemented on this Mac. 46 unit scenarios, 9 real backend verification groups and 2 new browser flows pass, including encrypted offline reopen/sync. Owner activation and a physical second Wi-Fi device test are pending; native expansion, billing/email activation and broader ERP work remain unfinished. Source changes are local, unpushed. The mini deployment is unchanged. Checkpoint report (Obsidian reference) · NOTE-013 Configurable CRM money household and referrals (Obsidian reference).
+
+## CRM workflow and terminology — 2026-11-03
+The human defined the shared vocabulary and the Insignia workflow (H-CRM-20261103); decisions from that conversation control over older notes. Deal and Order are separate; Project is the container that sales sees as a pipeline and workers see as a timeline. This is a documentation decision only; the NOTE-013 code still differs. [business-suite CRM workflow and terminology](<business-suite CRM workflow and terminology.md>) · NOTE-014 (Obsidian reference).

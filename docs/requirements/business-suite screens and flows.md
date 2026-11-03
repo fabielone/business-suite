@@ -79,3 +79,6 @@ Desktop flow: launch bundled shell → open isolated prepared profile → captur
 
 ## NOTE-009 observed desktop behavior
 Three actual Electron runtime tests on macOS 27.0.1 arm64 cover bundled interface, isolated bridge, setup denial and two pending intents retained through app quit/relaunch and synchronized with the original IDs. A same-document skip-link hash issue was fixed and checked. A separate launch of the actual packaged Mac demo `.app`, without API/web server, shows the expected connect-once empty-offline state. This is not a macOS DMG installation walkthrough or any Windows runtime observation. The final 8 connected and 2 offline browser regressions also pass. [business-suite roadmap](<business-suite roadmap.md#note-009-desktop-foundation--2026-10-24>) keeps release/privacy and other unrun checks explicit.
+
+## CRM role views — 2026-11-03
+BS-SCR-009 (sales) becomes the **sales pipeline** of Project cards by Deal stage for sales/marketing. BS-SCR-013 (physical work) becomes the worker **project timeline**: only Projects that have an Order, the worker's Jobs and Tasks by date, no price. Managers see both plus Money. Details and stages: [business-suite CRM workflow and terminology](<business-suite CRM workflow and terminology.md>).

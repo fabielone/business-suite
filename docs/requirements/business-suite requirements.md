@@ -105,3 +105,6 @@ BS-PROD-011 confirms the platforms; the following are engineering requirements f
 | BS-DESKTOP-006 | Report package, runtime, signing/notarization and update evidence separately | A built target is not a verified release |
 
 [business-suite desktop applications](<business-suite desktop applications.md>) owns platform lifecycle and verification details. No existing financial or offline requirement is removed by adding desktop clients.
+
+## Human scope expansion — 2026-10-30, NOTE-013
+The human now explicitly includes household expense sharing, expected/actual contributions and chores with CRM disabled. This supersedes BS-PROD-007's previous household exclusion for household workspaces; business workspaces continue excluding personal portions. At least three configurable scenarios are required: Insignia signage/medium-company CRM, household (with food-business history and an optional food template), and online referrals/recruiter tracking with reusable information and email composition. Templates, modules, role permissions and subscription entitlements are distinct configuration concerns. Preserve records across settings and plan changes. NOTE-013 Configurable CRM money household and referrals (Obsidian reference) owns implementation and evidence.

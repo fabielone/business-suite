@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, decisions, discovery]
-updated: 2026-10-24
+updated: 2026-11-03
 ---
 # Business Suite open decisions
 
@@ -14,7 +14,7 @@ updated: 2026-10-24
 | BS-DEC-002 | Resolved policy 2026-10-24: AGPL-3.0-only for original project work; public source; sole official maintainer welcomes contributions | License installation/publication evidence under NOTE-011; compatible dependencies and future binaries still need review | Preserve attribution; compliant independent commercial forks allowed; contributors retain their rights; see [business-suite open source and contributions](<business-suite open source and contributions.md>) |
 | BS-DEC-003 | Exact first pilot and operating day | Default screens, fixture terms, acceptance walkthrough | Preserve food selection and later physical-work clarification; do not choose one silently |
 | BS-DEC-004 | Quote acceptance: manager-recorded shared/PDF acceptance, customer web acceptance, or both | Evidence, portal, approval signatures | No fabricated acceptance; quote implementation deferred |
-| BS-DEC-005 | Job hierarchy: job with tasks/visits, projects containing jobs, or both | Navigation, grouping, job closure semantics | Flat initial jobs do not decide future hierarchy |
+| BS-DEC-005 | Resolved 2026-11-03 (H-CRM-20261103): Project is a container holding a Deal and Orders; Orders hold Jobs; Jobs hold Tasks | Navigation, grouping, job closure semantics | See [business-suite CRM workflow and terminology](<business-suite CRM workflow and terminology.md>); NOTE-013 `projects` rows map to Order/Job, not to the container |
 | BS-DEC-006 | Recurrence: automatic generation versus manual creation/copy | Contracts, scheduler, pause/cancel rules | Do not generate future jobs automatically |
 | BS-DEC-007 | Scheduling conflicts: warn/override, block, or no warning | Resource reservation and dispatch | Record assignments; do not claim conflict prevention |
 | BS-DEC-008 | Materials: purchase/use costing, stock balances, reservations | Inventory schema, commitments and shortage UI | Record cost only where supported; never claim stock availability |
@@ -25,7 +25,7 @@ updated: 2026-10-24
 | BS-DEC-013 | Exact individual role/grant templates and who grants them | Invitations, field visibility, revocation | E1 synthetic manager/worker test grants only |
 | BS-DEC-014 | Who records cash, confirms transfers and records reimbursements | Posting and reconciliation controls | Expense submission/review grants do not confer payment authority |
 | BS-DEC-015 | Privacy, employee/driver visibility, location/time consent and retention | Uploads, tracking, exports, deletion | Minimum necessary data; no continuous GPS or legal retention invented |
-| BS-DEC-016 | Quote/order/internal-job relationship and agreed-price amendments | Commercial model and billed amounts | Separate concepts; no compulsory opportunity or invoice per job |
+| BS-DEC-016 | Partly resolved 2026-11-03: Deal and Order are separate records; an Order is created by an explicit action from the accepted quote; an Order may exist without a Deal. Agreed-price amendments remain open | Commercial model and billed amounts | No automatic won-to-order creation; no compulsory invoice per job; see [business-suite CRM workflow and terminology](<business-suite CRM workflow and terminology.md>) |
 | BS-DEC-017 | Time approval, timer overlap and corrections | Labor costing and payroll export | Timer/manual capture required; policies pending |
 | BS-DEC-018 | Labor rate basis, overhead allocation and costing recognition | Estimates, actual cost, margin labels | Label basis; no automatic repricing or statutory-profit claim |
 | BS-DEC-019 | Businesses, legal entities and resources shared across them | Access, intercompany records, consolidation | Explicit scope; no cross-business sharing by default |
@@ -41,6 +41,9 @@ updated: 2026-10-24
 | BS-DEC-029 | Desktop minimum OS versions and processor architectures | Windows/macOS compatibility and test matrix | Packaging targets are bounded evidence, not support promises |
 | BS-DEC-030 | Desktop distribution, signing/notarization and update policy | Installer format, credentials, release channel and rollback | Local packages only unless separately authorized; no automatic updater or signing claim |
 | BS-DEC-031 | Desktop profile, installation/removal and local-data recovery policy | Branding changes, updates, uninstall, retention and shared devices | No app-controlled silent deletion of unsynced work; exact paths/behavior require verification |
+| BS-DEC-032 | Can a manager complete or override a task besides its assignee and team lead? | Task permissions, audit | Only assignee and team lead complete tasks (H-CRM-20261103) |
+| BS-DEC-033 | Allowed non-deposit reasons for releasing an Order into production, and who may use them | Release grant, activity history | Deposit is the normal release; other release needs a recorded reason and an explicit grant |
+| BS-DEC-034 | Worker timeline granularity: one row per Order with Job progress, or one row per Job | Worker screens, Job records | Keep Jobs as real records so either view is possible |
 
 ## Confirmed delivery correction
 On 2026-10-23 the human required offline-first operation and native multiplatform apps. BS-PROD-003/010 now state the current requirement. BS-DEC-020 retains its ID for unresolved policy detail; whether offline is needed is no longer unanswered. Historical reports and the interview snapshot remain unchanged as dated evidence.
@@ -60,3 +63,6 @@ Use: decision ID; date; human wording or source; selected policy; affected requi
 
 ## Current execution
 Current licensing/public-source acceptance and task status live in NOTE-011 (Obsidian reference); NOTE-010 preserves deployed-backend evidence and NOTE-009 preserves desktop evidence; NOTE-008 preserves the completed offline/mobile foundation; NOTE-007 (Obsidian reference) preserves the completed foundation evidence. The first local job/expense slice can progress without resolving every item above. A dependent feature must either wait for its answer or clearly expose the bounded default and limitation.
+
+## CRM workflow and terminology resolution — 2026-11-03
+The human defined the shared CRM/ERP vocabulary and the Insignia workflow in a planning conversation (H-CRM-20261103) and stated that the decisions in that conversation control. They resolve BS-DEC-005, partly resolve BS-DEC-016 and open BS-DEC-032 to 034. Confirmed points: separate Deal and Order; Project as a container seen as a sales pipeline by sales/marketing and as a timeline by workers; workers see a Project only once it has an Order and never see the price; only the assignee or team lead completes a task; the deposit normally releases an Order into production, with other documented means allowed; "qualified" on a Person means decision maker; automations use When/then and When/wait/then. Full record: [business-suite CRM workflow and terminology](<business-suite CRM workflow and terminology.md>).

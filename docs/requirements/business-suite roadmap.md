@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, roadmap, status]
-updated: 2026-10-24
+updated: 2026-10-30
 ---
 # Business Suite roadmap
 
@@ -116,3 +116,9 @@ Independent Suite database/Auth/API is deployed on the existing Docker host and 
 
 ## NOTE-011 licensing and public-source release — 2026-10-24
 The human authorizes a public repository with attribution, independent forks and pull requests, retaining control of official merges/releases. AGPL-3.0-only is the selected original-project license; contributor ownership and preserved third-party terms are in [business-suite open source and contributions](<business-suite open source and contributions.md>). Source/history review, standard license installation, commit/push and public-visibility verification are complete in NOTE-011 License and publicly release Business Suite (Obsidian reference). This updates source distribution policy without claiming new business features, production readiness, real client login, public binary releases or deployment changes.
+
+## NOTE-012 local setup — 2026-10-30
+Cloned current public main (`6404e9d`) to `/Users/fabiel/Desktop/business-suite` on this Mac. Installed locked dependencies; 38 unit/API, 10 browser/offline and 3 macOS runtime tests pass. Browser demo at `http://127.0.0.1:5178` and macOS desktop demo were left running; source unchanged. Live API health is reachable, but real client login remains unfinished. NOTE-012 2026-10-30 Desktop clone and local runtime report (Obsidian reference) records startup commands, dependency findings and evidence limits.
+
+## NOTE-013 local shared browser checkpoint — 2026-10-30
+Fresh isolated Docker backend and authenticated browser workflows for Insignia, Household and Referrals are implemented on this Mac. 46 unit scenarios, 9 real backend verification groups and 2 new browser flows pass, including encrypted offline reopen/sync. Owner activation and a physical second Wi-Fi device test are pending; native expansion, billing/email activation and broader ERP work remain unfinished. Source changes are local, unpushed. The mini deployment is unchanged. Checkpoint report (Obsidian reference) · NOTE-013 Configurable CRM money household and referrals (Obsidian reference).

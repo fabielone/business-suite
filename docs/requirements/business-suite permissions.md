@@ -67,3 +67,6 @@ Known denial locks the initial demo queue and removes its confirmed snapshot; re
 
 ## Desktop does not add business authority
 The Electron main process and preload bridge are technical trust boundaries, not extra business roles. Validate IPC sender and bounded request shape, then apply the same server membership/action/record/field checks. An operating-system administrator or a local app profile does not automatically become a suite manager. Live/default desktop must fail closed rather than select a demo identity. Cached desktop snapshots and queued payloads need the same scope isolation and unresolved offline-session privacy policy as other clients.
+
+## CRM rules confirmed 2026-11-03
+From H-CRM-20261103 ([business-suite CRM workflow and terminology](<business-suite CRM workflow and terminology.md>)): a worker can read a Project only after it has an Order (record scope); workers never receive selling price fields — agreed price, quote amounts or estimated value (field scope, enforced in the API); a Task can be completed only by its assignee or the assignee's team lead; releasing an Order into production without a recorded deposit needs its own grant and a written reason. Team lead is a new actor template; its price visibility and any manager task override (BS-DEC-032) are still open.
