@@ -22,6 +22,7 @@ import { ensure } from './calculations.js';
  */
 export const AUTOMATION_COMMANDS = new Set([
   'task.save',
+  'task.complete',
   'job.save',
   'job.move',
   'deal.save',
@@ -45,7 +46,15 @@ export const CONDITIONS = [
   'job.stage.is',
   'job.unassigned',
 ] as const;
-export const ACTIONS = ['task.create', 'job.assign', 'notify', 'stage.move', 'note.add'] as const;
+export const ACTIONS = [
+  'task.create',
+  'tasks.create',
+  'tasks.update',
+  'job.assign',
+  'notify',
+  'stage.move',
+  'note.add',
+] as const;
 export type SubjectKind = 'deal' | 'job' | 'order' | 'task' | 'contact';
 export const CONTACT_KINDS = ['customer', 'supplier', 'member', 'candidate', 'employer'] as const;
 /** What each trigger is about decides which conditions and actions make sense. */
@@ -55,18 +64,32 @@ export const ALLOWED: Record<
 > = {
   deal: {
     conditions: ['no.activity', 'deal.stage.is'],
-    actions: ['task.create', 'notify', 'stage.move', 'note.add'],
+    actions: ['task.create', 'tasks.create', 'tasks.update', 'notify', 'stage.move', 'note.add'],
   },
   job: {
     conditions: ['no.activity', 'job.stage.is', 'job.unassigned'],
-    actions: ['task.create', 'job.assign', 'notify', 'stage.move', 'note.add'],
+    actions: [
+      'task.create',
+      'tasks.create',
+      'tasks.update',
+      'job.assign',
+      'notify',
+      'stage.move',
+      'note.add',
+    ],
   },
   order: {
     conditions: ['no.activity', 'job.stage.is'],
-    actions: ['task.create', 'notify', 'stage.move', 'note.add'],
+    actions: ['task.create', 'tasks.create', 'tasks.update', 'notify', 'stage.move', 'note.add'],
   },
-  task: { conditions: ['no.activity'], actions: ['task.create', 'notify', 'note.add'] },
-  contact: { conditions: ['no.activity'], actions: ['task.create', 'notify', 'note.add'] },
+  task: {
+    conditions: ['no.activity'],
+    actions: ['task.create', 'tasks.create', 'tasks.update', 'notify', 'note.add'],
+  },
+  contact: {
+    conditions: ['no.activity'],
+    actions: ['task.create', 'tasks.create', 'notify', 'note.add'],
+  },
 };
 export function triggerSubject(trigger: AutomationTrigger): SubjectKind {
   switch (trigger.type) {
@@ -232,20 +255,52 @@ export function parseAutomation(
       ALLOWED[kind].actions.includes(atype),
       'This action does not apply to the chosen trigger.',
     );
+    if (live && atype.startsWith('task'))
+      ensure(
+        ws.modules.includes('chores'),
+        "Enable chores in this workspace's settings to use task actions.",
+        'MODULE_DISABLED',
+      );
+    const link = () => oneOf(a.link ?? 'record', ['record', 'none'] as const, 'task link');
     switch (atype) {
       case 'task.create':
-        if (live)
-          ensure(
-            ws.modules.includes('chores'),
-            "Enable chores in this workspace's settings to create tasks.",
-            'MODULE_DISABLED',
-          );
         return {
           type: atype,
           title: str(a.title, 'Task title', 200, true),
           memberId: member(a.memberId, 'the task', hasAssignee, false),
           dueInDays: int(a.dueInDays ?? 0, 'Task due in days', 0, 365),
+          notes: str(a.notes ?? '', 'Task notes', 2000),
+          recurrence: oneOf(
+            a.recurrence ?? 'none',
+            ['none', 'daily', 'weekly', 'monthly'] as const,
+            'repeat',
+          ),
+          link: link(),
         };
+      case 'tasks.create': {
+        ensure(
+          Array.isArray(a.items) && a.items.length >= 1 && a.items.length <= 20,
+          'Add between 1 and 20 tasks.',
+        );
+        const items = a.items.map((value) => {
+          const item = obj(value, 'task');
+          return {
+            title: str(item.title, 'Task title', 200, true),
+            memberId: member(item.memberId, 'the task', hasAssignee, false),
+            dueInDays: int(item.dueInDays ?? 0, 'Task due in days', 0, 365),
+          };
+        });
+        return { type: atype, items, link: link() };
+      }
+      case 'tasks.update': {
+        const change = oneOf(a.change, ['complete', 'reassign'] as const, 'task change');
+        return {
+          type: atype,
+          change,
+          memberId: change === 'reassign' ? member(a.memberId, 'the tasks', hasAssignee, true) : '',
+          titleContains: str(a.titleContains ?? '', 'Title filter', 120),
+        };
+      }
       case 'job.assign': {
         const memberId = member(a.memberId, 'the job', false, true);
         return { type: atype, memberId };
@@ -558,6 +613,7 @@ function perform(
   const label = subjectLabel(data, subject);
   const render = (s: string) => s.replaceAll('{record}', label);
   const { deal, order, job, task } = find(data, subject);
+  const linkedOrder = order?.id ?? task?.projectId ?? deal?.projectId ?? '';
   let next = data;
   const exec = (type: string, payload: Record<string, unknown>, id = commandId) => {
     ensure(AUTOMATION_COMMANDS.has(type), 'Automations cannot perform this operation.');
@@ -573,15 +629,75 @@ function perform(
   switch (action.type) {
     case 'task.create': {
       const title = render(action.title).slice(0, 200);
+      const notes = action.notes ? render(action.notes) + '\n\n' : '';
       exec('task.save', {
         title,
         assigneeId: recipient(action.memberId),
-        projectId: order?.id ?? task?.projectId ?? '',
+        projectId: action.link === 'none' ? '' : linkedOrder,
         due: addDays(now.slice(0, 10), action.dueInDays),
-        notes: `Created by the automation “${rule.name}”.`,
-        recurrence: 'none',
+        notes: (notes + `Created by the automation “${rule.name}”.`).slice(0, 10000),
+        recurrence: action.recurrence ?? 'none',
       });
       return { data: next, summary: `Created task “${title}”` };
+    }
+    case 'tasks.create': {
+      action.items.forEach((item, i) =>
+        exec(
+          'task.save',
+          {
+            title: render(item.title).slice(0, 200),
+            assigneeId: recipient(item.memberId),
+            projectId: action.link === 'none' ? '' : linkedOrder,
+            due: addDays(now.slice(0, 10), item.dueInDays),
+            notes: `Created by the automation “${rule.name}”.`,
+            recurrence: 'none',
+          },
+          `${commandId}-${i + 1}`,
+        ),
+      );
+      return { data: next, summary: `Created ${action.items.length} task(s)` };
+    }
+    case 'tasks.update': {
+      // The record's orders: its own, a task's order, or every order of a project.
+      const orders = new Set(
+        deal
+          ? data.projects.filter((o) => o.dealId === deal.id).map((o) => o.id)
+          : [linkedOrder].filter(Boolean),
+      );
+      const filter = action.titleContains.toLowerCase();
+      const targets = data.tasks.filter(
+        (t) =>
+          t.workspaceId === rule.workspaceId &&
+          !t.archived &&
+          !t.done &&
+          orders.has(t.projectId) &&
+          t.title.toLowerCase().includes(filter),
+      );
+      const to = action.change === 'reassign' ? recipient(action.memberId) : '';
+      targets.forEach((t, i) => {
+        const id = targets.length > 1 ? `${commandId}-${i + 1}` : commandId;
+        if (action.change === 'complete') exec('task.complete', { id: t.id }, id);
+        else if (t.assigneeId !== to)
+          exec(
+            'task.save',
+            {
+              id: t.id,
+              title: t.title,
+              assigneeId: to,
+              projectId: t.projectId,
+              due: t.due,
+              notes: t.notes,
+              recurrence: t.recurrence,
+            },
+            id,
+          );
+      });
+      return {
+        data: next,
+        summary: targets.length
+          ? `${action.change === 'complete' ? 'Completed' : 'Reassigned'} ${targets.length} task(s)`
+          : '',
+      };
     }
     case 'job.assign': {
       ensure(order && job, 'The job is no longer available.');

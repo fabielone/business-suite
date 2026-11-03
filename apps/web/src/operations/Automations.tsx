@@ -44,6 +44,8 @@ const CONDITION_LABELS: Record<AutomationCondition['type'], string> = {
 };
 const ACTION_LABELS: Record<AutomationAction['type'], string> = {
   'task.create': 'Create a task',
+  'tasks.create': 'Create several tasks',
+  'tasks.update': 'Complete or reassign tasks',
   'job.assign': 'Assign the job',
   notify: 'Notify someone',
   'stage.move': 'Move to a stage',
@@ -86,7 +88,26 @@ const newCondition = (type: AutomationCondition['type'], p: PageProps): Automati
 const newAction = (type: AutomationAction['type'], subject: string): AutomationAction => {
   switch (type) {
     case 'task.create':
-      return { type, title: 'Follow up: {record}', memberId: '', dueInDays: 0 };
+      return {
+        type,
+        title: 'Follow up: {record}',
+        memberId: '',
+        dueInDays: 0,
+        notes: '',
+        recurrence: 'none',
+        link: 'record',
+      };
+    case 'tasks.create':
+      return {
+        type,
+        items: [
+          { title: '', memberId: '', dueInDays: 0 },
+          { title: '', memberId: '', dueInDays: 1 },
+        ],
+        link: 'record',
+      };
+    case 'tasks.update':
+      return { type, change: 'complete', memberId: '', titleContains: '' };
     case 'job.assign':
       return { type, memberId: '' };
     case 'notify':
@@ -149,13 +170,17 @@ function describe(p: PageProps, rule: Draft) {
   const actions = rule.actions.map((a) =>
     a.type === 'task.create'
       ? `create “${a.title}” for ${person(a.memberId)}`
-      : a.type === 'job.assign'
-        ? `assign the job to ${person(a.memberId)}`
-        : a.type === 'notify'
-          ? `notify ${person(a.memberId)}`
-          : a.type === 'stage.move'
-            ? `move to ${triggerSubject(rule.trigger) === 'deal' ? stage(a.stage) : a.stage}`
-            : 'add a note',
+      : a.type === 'tasks.create'
+        ? `create ${a.items.length} tasks (${a.items.map((t) => `“${t.title}”`).join(', ')})`
+        : a.type === 'tasks.update'
+          ? `${a.change === 'complete' ? 'complete' : `reassign to ${person(a.memberId)}`} the open tasks${a.titleContains ? ` containing “${a.titleContains}”` : ''}`
+          : a.type === 'job.assign'
+            ? `assign the job to ${person(a.memberId)}`
+            : a.type === 'notify'
+              ? `notify ${person(a.memberId)}`
+              : a.type === 'stage.move'
+                ? `move to ${triggerSubject(rule.trigger) === 'deal' ? stage(a.stage) : a.stage}`
+                : 'add a note',
   );
   return { when, wait, conditions, actions };
 }
@@ -729,6 +754,185 @@ function AutomationEditor({
                             setAction(i, { ...a, dueInDays: Number(e.target.value) })
                           }
                         />
+                      </label>
+                      <label>
+                        <span>Repeat</span>
+                        <select
+                          value={a.recurrence ?? 'none'}
+                          onChange={(e) =>
+                            setAction(i, {
+                              ...a,
+                              recurrence: e.target.value as NonNullable<typeof a.recurrence>,
+                            })
+                          }
+                        >
+                          <option value="none">Does not repeat</option>
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                        </select>
+                      </label>
+                      {kind !== 'contact' && (
+                        <label>
+                          <span>Link to</span>
+                          <select
+                            value={a.link ?? 'record'}
+                            onChange={(e) =>
+                              setAction(i, { ...a, link: e.target.value as 'record' | 'none' })
+                            }
+                          >
+                            <option value="record">The record’s order</option>
+                            <option value="none">No order</option>
+                          </select>
+                        </label>
+                      )}
+                      <label className="wide">
+                        <span>Notes</span>
+                        <textarea
+                          rows={3}
+                          maxLength={2000}
+                          value={a.notes ?? ''}
+                          onChange={(e) => setAction(i, { ...a, notes: e.target.value })}
+                        />
+                      </label>
+                    </>
+                  )}
+                  {a.type === 'tasks.create' && (
+                    <>
+                      {kind !== 'contact' && (
+                        <label>
+                          <span>Link to</span>
+                          <select
+                            value={a.link ?? 'record'}
+                            onChange={(e) =>
+                              setAction(i, { ...a, link: e.target.value as 'record' | 'none' })
+                            }
+                          >
+                            <option value="record">The record’s order</option>
+                            <option value="none">No order</option>
+                          </select>
+                        </label>
+                      )}
+                      <div className="wide op-automation-checklist">
+                        {a.items.map((item, k) => {
+                          const setItem = (patch: Partial<typeof item>) =>
+                            setAction(i, {
+                              ...a,
+                              items: a.items.map((x, m) => (m === k ? { ...x, ...patch } : x)),
+                            });
+                          return (
+                            <div key={k}>
+                              <label>
+                                <span>Task {k + 1} *</span>
+                                <input
+                                  required
+                                  maxLength={200}
+                                  value={item.title}
+                                  onChange={(e) => setItem({ title: e.target.value })}
+                                />
+                              </label>
+                              <label>
+                                <span>Assign to</span>
+                                <select
+                                  value={item.memberId}
+                                  onChange={(e) => setItem({ memberId: e.target.value })}
+                                >
+                                  {people('Nobody').map((o) => (
+                                    <option key={o.value} value={o.value}>
+                                      {o.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label>
+                                <span>Due in days</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={365}
+                                  value={item.dueInDays}
+                                  onChange={(e) => setItem({ dueInDays: Number(e.target.value) })}
+                                />
+                              </label>
+                              {a.items.length > 1 && (
+                                <button
+                                  type="button"
+                                  className="op-text-button"
+                                  aria-label={`Remove task ${k + 1}`}
+                                  onClick={() =>
+                                    setAction(i, { ...a, items: a.items.filter((_, m) => m !== k) })
+                                  }
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {a.items.length < 20 && (
+                          <Button
+                            secondary
+                            icon="plus"
+                            onClick={() =>
+                              setAction(i, {
+                                ...a,
+                                items: [...a.items, { title: '', memberId: '', dueInDays: 0 }],
+                              })
+                            }
+                          >
+                            Add task
+                          </Button>
+                        )}
+                      </div>
+                    </>
+                  )}
+                  {a.type === 'tasks.update' && (
+                    <>
+                      <label>
+                        <span>Change</span>
+                        <select
+                          value={a.change}
+                          onChange={(e) =>
+                            setAction(i, {
+                              ...a,
+                              change: e.target.value as typeof a.change,
+                              memberId: '',
+                            })
+                          }
+                        >
+                          <option value="complete">Mark them complete</option>
+                          <option value="reassign">Reassign them</option>
+                        </select>
+                      </label>
+                      {a.change === 'reassign' && (
+                        <label>
+                          <span>Reassign to *</span>
+                          <select
+                            required
+                            value={a.memberId}
+                            onChange={(e) => setAction(i, { ...a, memberId: e.target.value })}
+                          >
+                            <option value="">Choose a member</option>
+                            {people(null).map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
+                      <label className="wide">
+                        <span>Only tasks whose title contains</span>
+                        <input
+                          maxLength={120}
+                          value={a.titleContains}
+                          placeholder="All open tasks"
+                          onChange={(e) => setAction(i, { ...a, titleContains: e.target.value })}
+                        />
+                        <small>
+                          Open tasks linked to the record’s order
+                          {kind === 'deal' ? 's (every order of the project)' : ''}.
+                        </small>
                       </label>
                     </>
                   )}

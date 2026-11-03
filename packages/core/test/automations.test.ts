@@ -415,3 +415,90 @@ test('adding a person or company can create a task and notify, filtered by type'
     /does not apply/,
   );
 });
+
+test('task actions: a checklist, notes/repeat/link, and completing or reassigning open tasks', () => {
+  let data = insignia();
+  const sam = member(data, 'sam@example.com');
+  const alex = member(data, 'alex@example.com');
+  const order = released(data);
+  const rule = (name: string, trigger: Record<string, unknown>, actions: unknown[]) =>
+    act(data, as('manager'), 'automation.save', {
+      name,
+      enabled: true,
+      trigger,
+      conditions: [],
+      wait: { amount: 0, unit: 'days' },
+      actions,
+    });
+  data = rule('Design kit', { type: 'job.stage', stage: 'Design approved' }, [
+    {
+      type: 'tasks.create',
+      link: 'record',
+      items: [
+        { title: 'Order vinyl for {record}', memberId: sam, dueInDays: 1 },
+        { title: 'Book installers', memberId: 'assignee', dueInDays: 2 },
+      ],
+    },
+    {
+      type: 'task.create',
+      title: 'Weekly site check',
+      memberId: alex,
+      dueInDays: 7,
+      notes: 'Photos for {record}',
+      recurrence: 'weekly',
+      link: 'none',
+    },
+  ]);
+  const installation = job(data, 'Installation');
+  data = act(data, as('manager'), 'job.move', {
+    orderId: order.id,
+    jobId: installation.id,
+    stage: 'Design approved',
+  });
+  const created = data.tasks.slice(-3);
+  assert.deepEqual(
+    created.map((t) => [t.title.split(' for ')[0], t.assigneeId, t.due, t.projectId]),
+    [
+      ['Order vinyl', sam, '2026-11-04', order.id],
+      ['Book installers', alex, '2026-11-05', order.id],
+      ['Weekly site check', alex, '2026-11-10', ''],
+    ],
+  );
+  assert.equal(created[2]!.recurrence, 'weekly');
+  assert.match(created[2]!.notes, /^Photos for Order 1 Reception signage \/ Installation/);
+  validateData(data);
+
+  // Reassign only matching open tasks, then complete all open tasks of the order.
+  data = rule('Hand over', { type: 'job.stage', stage: 'Installation' }, [
+    { type: 'tasks.update', change: 'reassign', memberId: sam, titleContains: 'book' },
+  ]);
+  data = act(data, as('manager'), 'job.move', {
+    orderId: order.id,
+    jobId: installation.id,
+    stage: 'Installation',
+  });
+  assert.equal(data.tasks.find((t) => t.title === 'Book installers')!.assigneeId, sam);
+  assert.equal(data.tasks.find((t) => t.title.startsWith('Order vinyl'))!.assigneeId, sam);
+  data = rule('Wrap up', { type: 'job.stage', stage: 'Delivered' }, [
+    { type: 'tasks.update', change: 'complete', memberId: '', titleContains: '' },
+  ]);
+  data = act(data, as('manager'), 'job.move', {
+    orderId: order.id,
+    jobId: installation.id,
+    stage: 'Delivered',
+  });
+  const open = data.tasks.filter((t) => t.projectId === order.id && !t.done);
+  assert.deepEqual(open, []);
+  assert.ok(!data.tasks.find((t) => t.title === 'Weekly site check')!.done, 'unlinked task kept');
+  assert.match(runs(data, 'Wrap up')[0]!.outcome, /Completed \d+ task\(s\)/);
+  validateData(data);
+
+  // People have no order, so they cannot complete or reassign tasks.
+  assert.throws(
+    () =>
+      rule('Bad', { type: 'contact.created', kind: '' }, [
+        { type: 'tasks.update', change: 'complete', memberId: '', titleContains: '' },
+      ]),
+    /does not apply/,
+  );
+});

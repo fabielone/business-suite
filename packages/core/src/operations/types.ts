@@ -200,7 +200,29 @@ export type AutomationCondition =
   | { type: 'job.unassigned' };
 /** `memberId` is a member contact, `assignee` (the record's assignee) or empty for nobody. */
 export type AutomationAction =
-  | { type: 'task.create'; title: string; memberId: string; dueInDays: number }
+  | {
+      type: 'task.create';
+      title: string;
+      memberId: string;
+      dueInDays: number;
+      /** Added later; older stored rules default to no notes, no repeat and `record`. */
+      notes?: string;
+      recurrence?: Task['recurrence'];
+      /** `record` links the task to the record's order, when it has one. */
+      link?: 'record' | 'none';
+    }
+  | {
+      type: 'tasks.create';
+      items: { title: string; memberId: string; dueInDays: number }[];
+      link: 'record' | 'none';
+    }
+  /** Open tasks linked to the record's order(s), optionally only titles containing a text. */
+  | {
+      type: 'tasks.update';
+      change: 'complete' | 'reassign';
+      memberId: string;
+      titleContains: string;
+    }
   | { type: 'job.assign'; memberId: string }
   | { type: 'notify'; memberId: string; message: string }
   | { type: 'stage.move'; stage: string }

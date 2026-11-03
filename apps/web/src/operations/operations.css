@@ -1577,6 +1577,26 @@ body:has(> #root > .operations[data-theme='dark']) {
 .op-automation-action > .op-form-grid {
   width: 100%;
 }
+.op-automation-checklist {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+.op-automation-checklist > div {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) 96px auto;
+  gap: 8px;
+  align-items: end;
+  width: 100%;
+}
+@media (max-width: 639px) {
+  .op-automation-checklist > div {
+    grid-template-columns: minmax(0, 1fr) 96px;
+  }
+  .op-automation-checklist > div > label:first-child {
+    grid-column: 1 / -1;
+  }
+}
 .op-automation-preview {
   margin: 0;
   padding: 10px 12px;
