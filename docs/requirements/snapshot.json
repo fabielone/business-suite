@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2026-11-03T14:22:43.675Z",
+  "exportedAt": "2026-11-03T14:42:08.418Z",
   "sourceDirectory": "/Users/fabiel/Library/Mobile Documents/iCloud~md~obsidian/Documents/obnotes/business-suite",
   "authority": "Obsidian source notes; this directory is a portable snapshot, not an independent specification.",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "file": "business-suite CRM workflow and terminology.md",
-      "sha256": "d23d036cfb578ee2d416e2e0f39845dc3f359e4090307981b56bfdfe67dd7e90"
+      "sha256": "ca3a7836d703e134d6a06bf3c3724df13b2d4ef29cf72081cbb82d48f6a37bdc"
     },
     {
       "file": "business-suite architecture.md",
@@ -29,7 +29,7 @@
     },
     {
       "file": "business-suite hub.md",
-      "sha256": "6f21ac72af28ff3afc0e7a911094a3da70522a0cd179f60487fd497aaf359a2d"
+      "sha256": "2a9015de664fd20770b257a693c57c45e98f3638de5b2adfa20e1fdfe792a307"
     },
     {
       "file": "business-suite migration.md",
@@ -37,7 +37,7 @@
     },
     {
       "file": "business-suite modules and workflows.md",
-      "sha256": "bd7c45417fbf9cca5a71690bec1eb2609912dbfb079c99349dab02c57ae0fc11"
+      "sha256": "8d087a2cb6709209ced5d27e3113e368205208f3c529d10afed74fe3dcfd57c9"
     },
     {
       "file": "business-suite money and reimbursements.md",
@@ -49,7 +49,7 @@
     },
     {
       "file": "business-suite open decisions.md",
-      "sha256": "5c246bd3fd3a0d59d80e7bbf0b73df30efc972f5c5367bda28db662f43463dde"
+      "sha256": "93b9ec9d3ae756171aa25bdced56b5a7163f43fd5de18fc71f9306674bfe0e62"
     },
     {
       "file": "business-suite open source and contributions.md",
@@ -57,7 +57,7 @@
     },
     {
       "file": "business-suite permissions.md",
-      "sha256": "1ec6041e312aaba3fc18dd1f1c7f512feb850ad808f3194a4fa4ef534a44a588"
+      "sha256": "d0dd452387dd9d03a29e061bf265e924a9ad90266f4a4bc5d02e7756d36fd1b5"
     },
     {
       "file": "business-suite quality and verification.md",
@@ -73,7 +73,7 @@
     },
     {
       "file": "business-suite screens and flows.md",
-      "sha256": "f10b63c8e0a62981512558bb05acf4611827b9097c622ee43c4e02e9e1ee2b2d"
+      "sha256": "0720e926033f06a55c50022cf18931b96bebb8416ebee1f4a213c67e5e959e7c"
     },
     {
       "file": "business-suite security privacy and operations.md",
