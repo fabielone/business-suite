@@ -93,7 +93,9 @@ export function buildApp(options: Options) {
     if (error instanceof OperationError)
       return reply
         .code(
-          error.code === 'CONFLICT' || error.code === 'IDEMPOTENCY_CONFLICT'
+          error.code === 'CONFLICT' ||
+            error.code === 'IDEMPOTENCY_CONFLICT' ||
+            error.code === 'ALREADY_CLAIMED'
             ? 409
             : error.code === 'MODULE_DISABLED' || error.code === 'ACTION_DENIED'
               ? 403

@@ -32,6 +32,14 @@ export function sampleData(now = new Date().toISOString()): SuiteData {
     run(ws, 'contact.save', { name, kind: 'member', weight, email });
   const alex = member('insignia', 'Alex · example', 1, 'alex@example.com');
   const shop = member('insignia', 'Sam · example', 1, 'sam@example.com');
+  // Sam leads Production, so unclaimed Production work alerts Sam.
+  run('insignia', 'team.save', {
+    id: 'production',
+    name: 'Production',
+    memberIds: [alex, shop],
+    leadIds: [shop],
+    alert: { amount: 4, unit: 'hours' },
+  });
   const customer = run('insignia', 'contact.save', {
     name: 'Marina · example',
     kind: 'customer',

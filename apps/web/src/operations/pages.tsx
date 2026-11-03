@@ -12,6 +12,9 @@ import {
   PRESETS,
   PRODUCTION_STAGES,
   authorizeCommand,
+  actorScope,
+  activeTeams,
+  isUpForGrabs,
   orderJobs,
   orderNumber,
   isReleased,
@@ -140,7 +143,7 @@ function contactForm(p: PageProps, row?: Contact, kind?: Contact['kind'], compan
       select(
         'kind',
         'Contact type',
-        ['customer', 'supplier', 'member', 'candidate', 'employer'].map((s) => ({
+        ['lead', 'customer', 'supplier', 'member', 'candidate', 'employer'].map((s) => ({
           value: s,
           label: s[0]!.toUpperCase() + s.slice(1),
         })),
@@ -184,19 +187,24 @@ function contactForm(p: PageProps, row?: Contact, kind?: Contact['kind'], compan
               ? 'member'
               : p.ws.preset === 'referrals'
                 ? 'candidate'
-                : 'customer'),
+                : 'lead'),
           weight: 1,
         },
   );
 }
 export function Contacts(p: PageProps) {
-  const contacts = active(rows(p.data.contacts, p.ws)).filter((r) => match(r, p.search));
+  const everyone = active(rows(p.data.contacts, p.ws));
+  const [view, setView] = useState<'all' | 'lead' | 'customer'>('all');
+  const contacts = everyone.filter(
+    (r) => (view === 'all' || r.kind === view) && match(r, p.search),
+  );
+  const leadCount = everyone.filter((r) => r.kind === 'lead').length;
   const [importing, setImporting] = useState(false);
   return (
     <>
       <PageTitle
         title={p.ws.preset === 'household' ? 'Members' : 'People'}
-        description="Customers, suppliers, members and candidates used across this workspace."
+        description="Leads, customers, suppliers, members and candidates used across this workspace."
         action={
           can(p, 'contacts.write') && (
             <div className="op-row-actions">
@@ -213,6 +221,22 @@ export function Contacts(p: PageProps) {
         }
       />
       {importing && <ContactImport {...p} close={() => setImporting(false)} />}
+      {p.ws.preset !== 'household' && (
+        <div className="op-tabs">
+          <button className={view === 'all' ? 'selected' : ''} onClick={() => setView('all')}>
+            Everyone ({everyone.length})
+          </button>
+          <button className={view === 'lead' ? 'selected' : ''} onClick={() => setView('lead')}>
+            Leads ({leadCount})
+          </button>
+          <button
+            className={view === 'customer' ? 'selected' : ''}
+            onClick={() => setView('customer')}
+          >
+            Customers ({everyone.filter((r) => r.kind === 'customer').length})
+          </button>
+        </div>
+      )}
       {contacts.length ? (
         <Table
           headings={[
@@ -245,6 +269,21 @@ export function Contacts(p: PageProps) {
               <td>
                 {can(p, 'contacts.write') && (
                   <div className="op-row-actions">
+                    {c.kind === 'lead' && (
+                      <button
+                        onClick={() =>
+                          p.form({
+                            title: 'Convert to customer',
+                            description: `${c.name} becomes a customer. Their notes, projects and history stay linked.`,
+                            fields: [],
+                            submitLabel: 'Convert to customer',
+                            submit: (_v, key) => p.run('contact.convert', { id: c.id }, key),
+                          })
+                        }
+                      >
+                        Convert
+                      </button>
+                    )}
                     <button onClick={() => contactForm(p, c)}>Edit</button>
                     <button onClick={() => archive(p, 'contacts', c.id)}>Archive</button>
                   </div>
@@ -255,8 +294,8 @@ export function Contacts(p: PageProps) {
         </Table>
       ) : (
         <Empty title="No people yet">
-          Add customers, suppliers, candidates or household members to link them to work, money and
-          referrals.
+          Add leads, customers, suppliers, candidates or household members to link them to work,
+          money and referrals.
         </Empty>
       )}
     </>
@@ -1216,14 +1255,86 @@ export function Money(p: PageProps) {
     </>
   );
 }
+const teamName = (p: PageProps, teamId = '') =>
+  (p.ws.teams ?? []).find((t) => t.id === teamId)?.name ?? '';
+/** The signed-in person's member record (first match) and teams. */
+const me = (p: PageProps) => {
+  const scope = actorScope(p.data, p.ws.id, p.actor);
+  return { ...scope, id: scope.mine[0] ?? '' };
+};
+/** Acting member sent with task commands so history and completion name the person. */
+const byMe = (p: PageProps) => (me(p).id ? { by: me(p).id } : {});
+const waited = (iso = '') => {
+  const minutes = Math.max(0, (Date.now() - Date.parse(iso)) / 60000);
+  if (!iso || Number.isNaN(minutes)) return '';
+  if (minutes < 60) return 'waiting < 1 h';
+  if (minutes < 60 * 24) return `waiting ${Math.floor(minutes / 60)} h`;
+  return `waiting ${Math.floor(minutes / 60 / 24)} d`;
+};
+/** Oldest due date first, then the longest wait; undated work after dated work. */
+const queueOrder = (a: Task, b: Task) =>
+  (a.due || '9999').localeCompare(b.due || '9999') ||
+  (a.queuedAt ?? '').localeCompare(b.queuedAt ?? '');
+const runTask = (p: PageProps, type: string, payload: Record<string, unknown>) =>
+  void p.run(type, payload).catch((e) => p.notify(e.message));
+function TaskActions({ p, t }: { p: PageProps; t: Task }) {
+  const self = me(p).id;
+  const claim = { id: t.id, memberId: self };
+  return (
+    <div className="op-row-actions">
+      {self && isUpForGrabs(t) && allowed(p, 'task.claim', claim) && (
+        <button onClick={() => runTask(p, 'task.claim', claim)}>Claim</button>
+      )}
+      {t.teamId && t.assigneeId && !t.done && allowed(p, 'task.unclaim', { id: t.id }) && (
+        <button onClick={() => runTask(p, 'task.unclaim', { id: t.id, ...byMe(p) })}>
+          Give back
+        </button>
+      )}
+      {!t.done && allowed(p, 'task.complete', { id: t.id }) && (
+        <button onClick={() => runTask(p, 'task.complete', { id: t.id, ...byMe(p) })}>
+          Complete
+        </button>
+      )}
+      {allowed(p, 'task.save', { id: t.id }) && (
+        <button onClick={() => taskForm(p, t)}>Edit</button>
+      )}
+      {allowed(p, 'record.archive', { collection: 'tasks', id: t.id }) && (
+        <button onClick={() => archive(p, 'tasks', t.id)}>Archive</button>
+      )}
+    </div>
+  );
+}
+/** Who holds a task: a person, or "Up for grabs" in its team. */
+function Holder({ p, t }: { p: PageProps; t: Task }) {
+  const team = teamName(p, t.teamId);
+  return (
+    <>
+      {t.assigneeId ? (
+        names(p, t.assigneeId)
+      ) : team && !t.done ? (
+        <Badge tone="attention">Up for grabs</Badge>
+      ) : (
+        'Unassigned'
+      )}
+      {team && <small>{team}</small>}
+    </>
+  );
+}
 function taskForm(p: PageProps, row?: Task) {
-  action(
-    p,
-    row ? 'Edit task' : 'Add task',
-    'task.save',
-    [
+  const teams = activeTeams(p.ws);
+  p.form({
+    title: row ? 'Edit task' : 'Add task',
+    description: teams.length
+      ? 'Choose a team and leave the person empty to put the task up for grabs: anyone in that team can claim it.'
+      : undefined,
+    fields: [
       field('title', 'Task / chore', 'text', true),
-      select('assigneeId', 'Responsible person', options(members(p), 'Unassigned')),
+      ...(teams.length ? [select('teamId', 'Team', options(teams, 'No team'))] : []),
+      select(
+        'assigneeId',
+        'Responsible person',
+        options(members(p), teams.length ? 'Nobody yet (up for grabs in the team)' : 'Unassigned'),
+      ),
       field('due', 'Due date', 'date'),
       select(
         'recurrence',
@@ -1238,11 +1349,16 @@ function taskForm(p: PageProps, row?: Task) {
         : []),
       field('notes', 'Details', 'textarea'),
     ],
-    row ? { ...row } : { due: '' },
-  );
+    initial: row ? { ...row, teamId: row.teamId ?? '' } : { due: '', teamId: '', assigneeId: '' },
+    submit: (v, key) => p.run('task.save', { ...v, ...byMe(p) }, key),
+  });
 }
 export function Tasks(p: PageProps) {
-  const tasks = active(rows(p.data.tasks, p.ws)).filter((t) => match(t, p.search));
+  const [team, setTeam] = useState('');
+  const teams = activeTeams(p.ws);
+  const tasks = active(rows(p.data.tasks, p.ws))
+    .filter((t) => match(t, p.search))
+    .filter((t) => !team || (team === 'none' ? !t.teamId : t.teamId === team));
   return (
     <>
       <PageTitle
@@ -1256,8 +1372,17 @@ export function Tasks(p: PageProps) {
           )
         }
       />
+      {teams.length > 0 && (
+        <div className="op-chips" role="group" aria-label="Filter by team">
+          {[{ id: '', name: 'All teams' }, ...teams, { id: 'none', name: 'No team' }].map((t) => (
+            <button key={t.id} aria-pressed={team === t.id} onClick={() => setTeam(t.id)}>
+              {t.name}
+            </button>
+          ))}
+        </div>
+      )}
       {tasks.length ? (
-        <Table headings={['Task', 'Responsible', 'Due / repeat', 'Actions']}>
+        <Table headings={['Task', 'Responsible / team', 'Due / repeat', 'Actions']}>
           {tasks
             .slice()
             .sort((a, b) => Number(a.done) - Number(b.done) || a.due.localeCompare(b.due))
@@ -1266,31 +1391,21 @@ export function Tasks(p: PageProps) {
                 <td>
                   <strong>{t.title}</strong>
                   <small>{t.notes}</small>
-                  {t.done && <Badge tone="good">Completed</Badge>}
+                  {t.done && (
+                    <Badge tone="good">
+                      {t.completedBy ? `Completed by ${names(p, t.completedBy)}` : 'Completed'}
+                    </Badge>
+                  )}
                 </td>
-                <td>{names(p, t.assigneeId)}</td>
+                <td>
+                  <Holder p={p} t={t} />
+                </td>
                 <td>
                   {t.due || 'No date'}
                   <small>{t.recurrence === 'none' ? 'One time' : t.recurrence}</small>
                 </td>
                 <td>
-                  {can(p, 'chores.write') && (
-                    <div className="op-row-actions">
-                      {!t.done && allowed(p, 'task.complete', { id: t.id }) && (
-                        <button
-                          onClick={() =>
-                            void p
-                              .run('task.complete', { id: t.id })
-                              .catch((e) => p.notify(e.message))
-                          }
-                        >
-                          Complete
-                        </button>
-                      )}
-                      <button onClick={() => taskForm(p, t)}>Edit</button>
-                      <button onClick={() => archive(p, 'tasks', t.id)}>Archive</button>
-                    </div>
-                  )}
+                  <TaskActions p={p} t={t} />
                 </td>
               </tr>
             ))}
@@ -1299,6 +1414,162 @@ export function Tasks(p: PageProps) {
         <Empty title="No tasks yet">
           Add a task, assign a person and set a date. Chores can repeat daily, weekly or monthly.
         </Empty>
+      )}
+    </>
+  );
+}
+function TaskList({ p, tasks, empty }: { p: PageProps; tasks: Task[]; empty: string }) {
+  if (!tasks.length) return <p className="op-caption">{empty}</p>;
+  return (
+    <div className="op-list op-queue">
+      {tasks.map((t) => (
+        <div key={t.id}>
+          <span>
+            <strong>{t.title}</strong>
+            <small>
+              {[
+                t.assigneeId ? names(p, t.assigneeId) : '',
+                teamName(p, t.teamId),
+                t.due ? `due ${t.due}` : '',
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+              {isUpForGrabs(t) && <Badge tone="attention">{waited(t.queuedAt)}</Badge>}
+            </small>
+          </span>
+          <TaskActions p={p} t={t} />
+        </div>
+      ))}
+    </div>
+  );
+}
+/**
+ * The daily home for everyone: what I hold, my teams' unclaimed work (oldest due first) and
+ * what my teammates are doing. Another team's work never appears here.
+ */
+export function MyWork(p: PageProps) {
+  const self = me(p);
+  const open = active(rows(p.data.tasks, p.ws)).filter((t) => !t.done && match(t, p.search));
+  const teams = activeTeams(p.ws);
+  const mineTeams = teams.filter((t) => self.myTeams.includes(t.id));
+  const mine = open.filter((t) => self.mine.includes(t.assigneeId)).sort(queueOrder);
+  const myJobs = projects(p).flatMap((o) =>
+    orderJobs(o)
+      .filter((j) => self.mine.includes(j.assigneeId) && !['Delivered', 'Closed'].includes(j.stage))
+      .map((j) => ({ order: o, job: j })),
+  );
+  const manages = can(p, 'work.assign') || can(p, 'work.lead');
+  const queueOf = (teamId: string) =>
+    open.filter((t) => t.teamId === teamId && isUpForGrabs(t)).sort(queueOrder);
+  return (
+    <>
+      <PageTitle
+        title="My work"
+        description="Your tasks, your teams’ unclaimed work and what your teammates hold. Oldest due work comes first."
+        action={
+          can(p, 'chores.write') && (
+            <Button icon="plus" onClick={() => taskForm(p)}>
+              Add task
+            </Button>
+          )
+        }
+      />
+      <Notifications {...p} />
+      {!self.id && (
+        <Empty title="Your sign-in is not linked to a team member">
+          Add yourself in People as a team member with the same email you sign in with. Then you can
+          claim work and it will show here.
+        </Empty>
+      )}
+      {self.id && (
+        <Panel title={`Mine (${mine.length + myJobs.length})`}>
+          <TaskList p={p} tasks={mine} empty="Nothing assigned to you right now." />
+          {myJobs.length > 0 && (
+            <div className="op-list">
+              {myJobs.map(({ order, job }) => (
+                <div key={job.id}>
+                  <span>
+                    <strong>{job.name}</strong>
+                    <small>
+                      #{orderNumber(p.data, order)} {order.title} · {job.stage}
+                      {job.due ? ` · due ${job.due}` : ''}
+                    </small>
+                  </span>
+                  <button className="op-text-button" onClick={() => p.go('work')}>
+                    Open job
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+      )}
+      {mineTeams.map((team) => {
+        const queue = queueOf(team.id);
+        const held = open
+          .filter((t) => t.teamId === team.id && t.assigneeId && !self.mine.includes(t.assigneeId))
+          .sort(queueOrder);
+        const next = queue[0];
+        return (
+          <Panel
+            key={team.id}
+            title={`${team.name}: up for grabs (${queue.length})`}
+            action={
+              next &&
+              allowed(p, 'task.claim', { id: next.id, memberId: self.id }) && (
+                <Button
+                  onClick={() => runTask(p, 'task.claim', { id: next.id, memberId: self.id })}
+                >
+                  Take next
+                </Button>
+              )
+            }
+          >
+            <TaskList p={p} tasks={queue} empty={`Nothing waiting in ${team.name}.`} />
+            {held.length > 0 && (
+              <>
+                <h3 className="op-subheading">Teammates are working on</h3>
+                <TaskList p={p} tasks={held} empty="" />
+              </>
+            )}
+          </Panel>
+        );
+      })}
+      {manages && teams.length > 0 && (
+        <Panel title="All team queues">
+          <div className="op-team-grid">
+            {teams.map((team) => {
+              const queue = queueOf(team.id);
+              const oldest = queue
+                .slice()
+                .sort((a, b) => (a.queuedAt ?? '').localeCompare(b.queuedAt ?? ''))[0];
+              return (
+                <div key={team.id} className="op-team-card">
+                  <strong>{team.name}</strong>
+                  <span>
+                    {queue.length} unclaimed
+                    {oldest && (
+                      <Badge tone={queue.length ? 'attention' : ''}>
+                        {waited(oldest.queuedAt)}
+                      </Badge>
+                    )}
+                  </span>
+                  <small>
+                    {team.memberIds.length} member(s) ·{' '}
+                    {team.leadIds.length
+                      ? `lead ${team.leadIds.map((m) => names(p, m)).join(', ')}`
+                      : 'no lead: alerts go to managers'}
+                  </small>
+                </div>
+              );
+            })}
+          </div>
+        </Panel>
+      )}
+      {self.id && !mineTeams.length && teams.length > 0 && (
+        <p className="op-caption">
+          You are not in a team yet. A manager can add you in Settings → Teams.
+        </p>
       )}
     </>
   );

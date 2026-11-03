@@ -160,7 +160,7 @@ test('lead capture adds a person, company and project but never edits known reco
     estimatedValueMinor: 150000,
   });
   const carla = people(next).find((c) => c.email === 'carla@example.com')!;
-  assert.equal(carla.kind, 'customer', 'public intake never creates team members');
+  assert.equal(carla.kind, 'lead', 'public intake creates leads, never team members');
   assert.match(carla.notes, /Website form\] Need a sign/);
   assert.equal(next.companies.find((c) => c.id === carla.companyId)?.name, 'Paz Café');
   const deal = next.deals.find((d) => d.contactId === carla.id)!;
@@ -204,4 +204,29 @@ test('companies: unique names, renames flow to people, archive needs contacts.wr
   validateData(data);
   assert.equal(projectForActor(data, as('finance')).companies.length, data.companies.length);
   assert.equal(projectForActor(data, { grants: ['work.read'], email: '' }).companies.length, 0);
+});
+
+test('leads: forms add leads, only an explicit command converts them to customers', () => {
+  let data = act(insignia(), as('collaborator'), 'lead.capture', {
+    source: 'Website form',
+    fields: { name: 'Lia Mora', email: 'lia@example.com' },
+  });
+  const lia = () => people(data).find((c) => c.email === 'lia@example.com')!;
+  assert.equal(lia().kind, 'lead');
+  // A later import never promotes or changes the type of an existing person.
+  data = act(data, as('manager'), 'contact.import', {
+    rows: [{ name: 'Lia Mora', email: 'lia@example.com', kind: 'supplier' }],
+    existing: 'update',
+  });
+  assert.equal(lia().kind, 'lead');
+  const version = lia().version;
+  assert.throws(() => act(data, as('viewer'), 'contact.convert', { id: lia().id }));
+  data = act(data, as('collaborator'), 'contact.convert', { id: lia().id });
+  assert.equal(lia().kind, 'customer');
+  assert.equal(lia().version, version + 1);
+  assert.throws(
+    () => act(data, as('collaborator'), 'contact.convert', { id: lia().id }),
+    /Only a lead/,
+  );
+  validateData(data);
 });

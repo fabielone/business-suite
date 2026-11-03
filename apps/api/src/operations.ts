@@ -9,6 +9,7 @@ import {
   ROLE_GRANTS,
   authorizeCommand,
   projectForActor,
+  actorMemberIds,
   validateData,
   type SuiteData,
   type Command,
@@ -176,11 +177,19 @@ export function registerOperations(
         await db.transaction(async (tx) => {
           await tx.query("SELECT set_config('suite.space_id',$1,true)", [spaceId]);
           const before = await read(tx, spaceId, true);
+          // Teams without a lead send unclaimed-work alerts to owners and managers.
+          const managers = (
+            await tx.query<{ email: string }>(
+              "SELECT email FROM suite_space_members WHERE space_id=$1 AND active AND role IN ('owner','manager')",
+              [spaceId],
+            )
+          ).rows.flatMap((m) => actorMemberIds(before, spaceId, m.email));
           const after = runDueAutomations(
             before,
             spaceId,
             new Date().toISOString(),
             'tick-' + randomUUID(),
+            managers,
           );
           if (after === before) await schedule(tx, before, spaceId);
           else await save(tx, before, after, AUTOMATION_ACTOR);

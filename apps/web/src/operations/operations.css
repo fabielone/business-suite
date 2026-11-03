@@ -1661,6 +1661,62 @@ body:has(> #root > .operations[data-theme='dark']) {
   color: var(--text-2);
   font-variant-numeric: normal;
 }
+/* ---------- Teams ---------- */
+.op-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.op-chips button {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.op-chips button[aria-pressed='true'] {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--surface);
+}
+.op-queue > div {
+  flex-wrap: wrap;
+}
+.op-queue small .op-badge {
+  margin-left: 6px;
+}
+.op-team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.op-team-card {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  min-width: 0;
+}
+.op-team-card small {
+  color: var(--text-2);
+}
+.op-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.op-days label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
 .op-theme-options {
   display: inline-flex;
   justify-self: start;
@@ -2248,5 +2304,47 @@ body:has(> #root > .operations[data-theme='dark']) {
   }
   .op-skeleton {
     background: var(--surface-3);
+  }
+}
+.op-teams-form fieldset {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.op-teams-form fieldset.op-days {
+  display: flex;
+}
+.op-teams-form legend {
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.op-teams-form {
+  margin-top: 14px;
+}
+.op-subheading {
+  margin: 14px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+@media (max-width: 639px) {
+  .op-teams-form.op-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.op-queue > div > span:first-child strong {
+  white-space: normal;
+}
+@media (max-width: 639px) {
+  .op-queue > div {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
   }
 }

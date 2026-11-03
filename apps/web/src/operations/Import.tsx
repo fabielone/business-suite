@@ -51,7 +51,7 @@ export function ContactImport(p: PageProps & { close: () => void }) {
   const [file, setFile] = useState<Loaded>();
   const [mapping, setMapping] = useState<(ImportField | '')[]>([]);
   const [kind, setKind] = useState<Contact['kind']>(
-    p.ws.preset === 'referrals' ? 'candidate' : 'customer',
+    p.ws.preset === 'referrals' ? 'candidate' : 'lead',
   );
   const [existing, setExisting] = useState<'skip' | 'update'>('skip');
   const [source, setSource] = useState('');
@@ -227,11 +227,13 @@ export function ContactImport(p: PageProps & { close: () => void }) {
             <label>
               Type for rows without one
               <select value={kind} onChange={(e) => setKind(e.target.value as Contact['kind'])}>
-                {(['customer', 'supplier', 'candidate', 'employer', 'member'] as const).map((k) => (
-                  <option key={k} value={k}>
-                    {k[0]!.toUpperCase() + k.slice(1)}
-                  </option>
-                ))}
+                {(['lead', 'customer', 'supplier', 'candidate', 'employer', 'member'] as const).map(
+                  (k) => (
+                    <option key={k} value={k}>
+                      {k[0]!.toUpperCase() + k.slice(1)}
+                    </option>
+                  ),
+                )}
               </select>
             </label>
             <label>

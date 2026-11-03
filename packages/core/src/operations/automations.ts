@@ -13,6 +13,7 @@ import {
 } from './types.js';
 import { orderJobs, orderNumber } from './production.js';
 import { ensure } from './calculations.js';
+import { nextQueueAlert } from './teams.js';
 
 /**
  * When → optional If → optional Wait → Then, from fixed lists (CRM workflow note).
@@ -56,7 +57,14 @@ export const ACTIONS = [
   'note.add',
 ] as const;
 export type SubjectKind = 'deal' | 'job' | 'order' | 'task' | 'contact';
-export const CONTACT_KINDS = ['customer', 'supplier', 'member', 'candidate', 'employer'] as const;
+export const CONTACT_KINDS = [
+  'lead',
+  'customer',
+  'supplier',
+  'member',
+  'candidate',
+  'employer',
+] as const;
 /** What each trigger is about decides which conditions and actions make sense. */
 export const ALLOWED: Record<
   SubjectKind,
@@ -847,5 +855,12 @@ export function nextAutomationCheck(data: SuiteData, workspaceId: string, now: s
     )
   )
     waits.push(addHours(now, 0.25));
+  // Unclaimed team work raises alerts on the same schedule.
+  const ws = data.workspaces.find((w) => w.id === workspaceId);
+  for (const task of data.tasks ?? [])
+    if (task.workspaceId === workspaceId) {
+      const at = nextQueueAlert(ws, task);
+      if (at) waits.push(at);
+    }
   return waits.sort()[0] ?? '';
 }

@@ -14,6 +14,8 @@ import {
   type Expense,
   type Payment,
   type Task,
+  type TaskEvent,
+  type Team,
   type Attachment,
   type Job,
   PRODUCTION_STAGES,
@@ -36,6 +38,18 @@ import {
   withAutomationCollections,
   MAX_AUTOMATION_DEPTH,
 } from './automations.js';
+import {
+  DEFAULT_HOURS,
+  DEFAULT_TEAMS,
+  MAX_QUEUE_ALERTS,
+  TASK_HISTORY_LIMIT,
+  activeTeams,
+  hoursOf,
+  isTimeZone,
+  localTime,
+  nextQueueAlert,
+  teamOf,
+} from './teams.js';
 import {
   OperationError,
   ensure,
@@ -203,6 +217,17 @@ export function createWorkspace(
     archived: false,
     monthlyBudgetMinor: 0,
     createdAt: now,
+    ...(preset === 'signage'
+      ? {
+          teams: DEFAULT_TEAMS.map((t) => ({
+            ...t,
+            alert: { ...t.alert },
+            memberIds: [],
+            leadIds: [],
+            archived: false,
+          })),
+        }
+      : {}),
     stages:
       preset === 'signage'
         ? [
@@ -246,15 +271,47 @@ export function executeCommand(
 ): SuiteData {
   return apply(original, command, now, 0);
 }
-/** Waits that are due and time-based triggers; the same object back when nothing ran. */
+/**
+ * Waits that are due, time-based triggers and unclaimed-work alerts; the same object back
+ * when nothing ran. `managerIds` are the member contacts of owners and managers, who receive
+ * alerts for teams without a lead.
+ */
 export function runDueAutomations(
   data: SuiteData,
   workspaceId: string,
   now: string,
   tickId: string,
+  managerIds: string[] = [],
 ): SuiteData {
   id(tickId);
-  return tickAutomations(data, workspaceId, now, tickId, apply);
+  let next = tickAutomations(data, workspaceId, now, tickId, apply);
+  const ws = next.workspaces.find((w) => w.id === workspaceId && !w.archived);
+  const due = next.tasks.filter((t) => {
+    if (t.workspaceId !== workspaceId) return false;
+    const at = nextQueueAlert(ws, t);
+    return Boolean(at) && at <= now;
+  });
+  due.forEach((task, i) => {
+    const team = teamOf(ws, task.teamId)!;
+    const leads = team.leadIds.filter((m) => team.memberIds.includes(m));
+    const recipientIds = [...new Set(leads.length ? leads : managerIds)].filter((m) =>
+      next.contacts.some(
+        (c) => c.id === m && c.workspaceId === workspaceId && c.kind === 'member' && !c.archived,
+      ),
+    );
+    next = apply(
+      next,
+      {
+        id: `${tickId}-q${i + 1}`,
+        workspaceId,
+        type: 'task.alert',
+        payload: { id: task.id, recipientIds },
+      },
+      now,
+      1,
+    );
+  });
+  return next;
 }
 /** `depth` > 0 means an automation issued the command, not a person. */
 function apply(original: SuiteData, command: Command, now: string, depth: number): SuiteData {
@@ -432,6 +489,27 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
     }
     return { person, company, counts };
   };
+  /** The acting member as sent by the client and checked by authorizeCommand; empty if none. */
+  const by = (): string => {
+    if (!p.by) return '';
+    const value = member(data, p.by, wsId);
+    ensure(value !== 'pool', 'Choose a workspace member.');
+    return value;
+  };
+  const record = (task: Task, action: TaskEvent['action'], memberId: string, actor: string) => {
+    task.history = [
+      ...(task.history ?? []),
+      { at: now, action, memberId, teamId: task.teamId ?? '', by: actor },
+    ].slice(-TASK_HISTORY_LIMIT);
+  };
+  /** Restarts the unclaimed clock when a task enters its team's queue. */
+  const queue = (task: Task) => {
+    task.queuedAt = now;
+    task.alerts = 0;
+    delete task.lastAlertAt;
+  };
+  const memberName = (memberId: string) =>
+    data.contacts.find((c) => c.id === memberId)?.name ?? 'Someone';
   let summary = command.type.replaceAll('.', ' ');
   let auditRecordId = recordId;
   const systemOnly = () =>
@@ -506,10 +584,14 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
       const existing = p.id ? own(data.contacts, p.id, wsId) : undefined;
       const kind = choice(
         p.kind,
-        ['customer', 'supplier', 'member', 'candidate', 'employer'] as const,
+        ['lead', 'customer', 'supplier', 'member', 'candidate', 'employer'] as const,
         'contact type',
       );
-      if (existing && existing.kind !== kind) {
+      if (
+        existing &&
+        existing.kind !== kind &&
+        !(existing.kind === 'lead' && kind === 'customer')
+      ) {
         const used = [...data.expenses, ...data.payments, ...data.tasks, ...data.referrals].some(
           (r) => r.workspaceId === wsId && JSON.stringify(r).includes(existing.id),
         );
@@ -546,6 +628,16 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
         data.contacts.push({ ...base(recordId), ...fields });
       }
       summary = `Saved contact ${fields.name}`;
+      break;
+    }
+    case 'contact.convert': {
+      // A lead becomes a customer only by this explicit action; its links and history stay.
+      const lead = own(data.contacts, p.id, wsId);
+      ensure(lead.kind === 'lead', 'Only a lead can be converted to a customer.');
+      lead.kind = 'customer';
+      touch(lead);
+      auditRecordId = lead.id;
+      summary = `Converted lead ${lead.name} to customer`;
       break;
     }
     case 'company.save': {
@@ -589,8 +681,9 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
         'Send the lead fields as an object.',
       );
       const source = string(p, 'source', 120) || 'Lead form';
-      const lead = normalizeLead({ ...(p.fields as Record<string, unknown>), source }, 'customer');
-      if (lead.person?.kind === 'member') lead.person.kind = 'customer';
+      const lead = normalizeLead({ ...(p.fields as Record<string, unknown>), source }, 'lead');
+      if (lead.person && !['lead', 'customer'].includes(lead.person.kind))
+        lead.person.kind = 'lead';
       const note = `[${now.slice(0, 10)} ${source}] ${lead.notes || 'New lead'}`;
       const { person, company, counts } = intake(
         lead,
@@ -632,7 +725,7 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
       const existing = choice(p.existing ?? 'skip', ['skip', 'update'] as const, 'duplicate rule');
       const kind = choice(
         p.kind ?? 'customer',
-        ['customer', 'supplier', 'member', 'candidate', 'employer'] as const,
+        ['lead', 'customer', 'supplier', 'member', 'candidate', 'employer'] as const,
         'contact type',
       );
       const source = string(p, 'source', 120) || 'Import';
@@ -1029,9 +1122,18 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
     case 'task.save': {
       requireModule('chores');
       const existing = p.id ? own(data.tasks, p.id, wsId) : undefined;
+      const assigneeId = member(data, p.assigneeId, wsId, true);
+      ensure(assigneeId !== 'pool', 'Choose a workspace member.');
+      const teamId = p.teamId ? text(p.teamId, 'Team', 120, true) : '';
+      const team = teamOf(ws, teamId);
+      ensure(!teamId || (team && !team.archived), 'Choose an active team.');
+      ensure(
+        !team || !assigneeId || team.memberIds.includes(assigneeId),
+        `${memberName(assigneeId)} is not a member of ${team?.name}. Add them to the team first.`,
+      );
       const fields = {
         title: string(p, 'title', 200, true),
-        assigneeId: member(data, p.assigneeId, wsId, true),
+        assigneeId,
         projectId: project(data, p.projectId, wsId),
         due: date(p.due),
         notes: string(p, 'notes', 10000),
@@ -1042,26 +1144,242 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
         ),
       };
       ensure(fields.recurrence === 'none' || fields.due, 'Recurring tasks need a due date.');
+      const actor = by();
+      let task: Task;
       if (existing) {
+        const moved = (existing.teamId ?? '') !== teamId;
+        const handed = existing.assigneeId !== assigneeId;
         Object.assign(existing, fields);
+        if (teamId) existing.teamId = teamId;
+        else delete existing.teamId;
+        task = existing;
+        if (moved || handed) {
+          if (assigneeId) {
+            if (handed) task.claimedAt = now;
+            record(task, 'assigned', assigneeId, actor);
+          } else {
+            delete task.claimedAt;
+            record(task, teamId ? 'queued' : 'assigned', '', actor);
+          }
+          if (teamId && !assigneeId && !existing.done) queue(task);
+        }
         touch(existing);
       } else {
         newRecord(data.tasks);
-        data.tasks.push({
+        task = {
           ...base(recordId),
           ...fields,
+          ...(teamId ? { teamId } : {}),
+          ...(assigneeId && teamId ? { claimedAt: now } : {}),
           done: false,
           nextTaskId: '',
-        });
+        };
+        if (teamId && !assigneeId) queue(task);
+        if (teamId || assigneeId)
+          record(task, assigneeId ? 'assigned' : 'queued', assigneeId, actor);
+        data.tasks.push(task);
       }
-      summary = `Saved task ${fields.title}`;
+      summary = `Saved task ${fields.title}${team ? ` for ${team.name}` : ''}`;
+      break;
+    }
+    case 'task.claim': {
+      requireModule('chores');
+      const task = own(data.tasks, p.id, wsId);
+      const memberId = member(data, p.memberId, wsId);
+      const team = teamOf(ws, task.teamId);
+      ensure(team && !team.archived, 'Only team tasks can be claimed.');
+      ensure(!task.done, 'This task is already complete.');
+      ensure(
+        !task.assigneeId,
+        task.assigneeId === memberId
+          ? 'You already claimed this task.'
+          : `${memberName(task.assigneeId)} claimed this first${
+              task.claimedAt ? ` at ${localTime(task.claimedAt, hoursOf(ws))}` : ''
+            }. Your other work on this device is kept.`,
+        'ALREADY_CLAIMED',
+      );
+      ensure(
+        team.memberIds.includes(memberId),
+        `Only members of ${team.name} can claim this task.`,
+        'ACTION_DENIED',
+      );
+      task.assigneeId = memberId;
+      task.claimedAt = now;
+      record(task, 'claimed', memberId, memberId);
+      touch(task);
+      summary = `${memberName(memberId)} claimed ${task.title}`;
+      break;
+    }
+    case 'task.unclaim': {
+      requireModule('chores');
+      const task = own(data.tasks, p.id, wsId);
+      const team = teamOf(ws, task.teamId);
+      ensure(team && !team.archived, 'Only team tasks can be given back to a team.');
+      ensure(!task.done, 'This task is already complete.');
+      ensure(task.assigneeId, 'Nobody holds this task.', 'CONFLICT');
+      const previous = task.assigneeId;
+      task.assigneeId = '';
+      delete task.claimedAt;
+      queue(task);
+      record(task, 'unclaimed', previous, by());
+      touch(task);
+      summary = `Gave ${task.title} back to ${team.name}`;
+      break;
+    }
+    case 'task.alert': {
+      systemOnly();
+      const task = own(data.tasks, p.id, wsId);
+      const team = teamOf(ws, task.teamId);
+      ensure(team && nextQueueAlert(ws, task), 'This task no longer needs an alert.');
+      ensure(Array.isArray(p.recipientIds), 'Invalid alert recipients.');
+      const recipients = [
+        ...new Set((p.recipientIds as unknown[]).map((m) => member(data, m, wsId))),
+      ];
+      ensure(
+        recipients.every((m) => m !== 'pool'),
+        'Choose a workspace member.',
+      );
+      task.alerts = (task.alerts ?? 0) + 1;
+      task.lastAlertAt = now;
+      touch(task);
+      const message =
+        task.alerts === 1
+          ? `Nobody in ${team.name} has claimed “${task.title}” yet.`
+          : `Still unclaimed in ${team.name}: “${task.title}” (reminder ${task.alerts - 1} of ${
+              MAX_QUEUE_ALERTS - 1
+            }).`;
+      recipients.forEach((recipientId, i) =>
+        data.notifications.push({
+          ...base(`${command.id}-n${i + 1}`),
+          recipientId,
+          message: message.slice(0, 500),
+          subject: { kind: 'task', id: task.id, jobId: '' },
+          automationId: '',
+          read: false,
+        }),
+      );
+      summary = recipients.length
+        ? `Unclaimed-work alert for ${task.title} to ${recipients.map(memberName).join(', ')}`
+        : `Unclaimed-work alert for ${task.title}: no lead or manager to notify`;
+      break;
+    }
+    case 'team.defaults': {
+      const existing = new Set((ws!.teams ?? []).map((t) => t.name.toLowerCase()));
+      const added = DEFAULT_TEAMS.filter((t) => !existing.has(t.name.toLowerCase()));
+      ensure(added.length, 'The usual teams already exist.');
+      const ids = new Set((ws!.teams ?? []).map((t) => t.id));
+      ws!.teams = [
+        ...(ws!.teams ?? []),
+        ...added.map((t) => ({
+          ...t,
+          id: ids.has(t.id) ? `${t.id}-${command.id}` : t.id,
+          alert: { ...t.alert },
+          memberIds: [],
+          leadIds: [],
+          archived: false,
+        })),
+      ];
+      summary = `Added teams ${added.map((t) => t.name).join(', ')}`;
+      break;
+    }
+    case 'team.save': {
+      const teams = ws!.teams ?? [];
+      const existing = p.id ? teams.find((t) => t.id === p.id && !t.archived) : undefined;
+      ensure(!p.id || existing, 'The selected team is unavailable.', 'NOT_FOUND');
+      const name = string(p, 'name', 60, true);
+      ensure(
+        !teams.some(
+          (t) => !t.archived && t !== existing && t.name.toLowerCase() === name.toLowerCase(),
+        ),
+        'Another team already has this name.',
+      );
+      const memberList = (value: unknown, label: string) => {
+        ensure(Array.isArray(value) && value.length <= 100, `Choose the ${label}.`);
+        const ids = (value as unknown[]).map((m) => member(data, m, wsId));
+        ensure(
+          ids.every((m) => m !== 'pool'),
+          'Choose workspace members.',
+        );
+        return [...new Set(ids)];
+      };
+      const memberIds = memberList(p.memberIds ?? [], 'team members');
+      const leadIds = memberList(p.leadIds ?? [], 'team leads');
+      ensure(
+        leadIds.every((m) => memberIds.includes(m)),
+        'A team lead must also be a member of the team.',
+      );
+      const a = (p.alert ?? {}) as Record<string, unknown>;
+      const unit = choice(a.unit, ['hours', 'days'] as const, 'alert unit');
+      ensure(
+        typeof a.amount === 'number' &&
+          Number.isInteger(a.amount) &&
+          a.amount >= 1 &&
+          a.amount <= (unit === 'hours' ? 23 : 5),
+        'Alert after 1 to 23 business hours, or 1 to 5 business days.',
+      );
+      const alert = { amount: a.amount, unit };
+      if (existing) Object.assign(existing, { name, memberIds, leadIds, alert });
+      else {
+        ensure(activeTeams(ws).length < 20, 'A workspace can have at most 20 teams.');
+        ensure(!teams.some((t) => t.id === recordId), 'A team with this ID already exists.');
+        ws!.teams = [
+          ...teams,
+          { id: recordId, name, memberIds, leadIds, alert, archived: false } satisfies Team,
+        ];
+      }
+      auditRecordId = existing?.id ?? recordId;
+      summary = `Saved team ${name}`;
+      break;
+    }
+    case 'team.archive': {
+      const team = (ws!.teams ?? []).find((t) => t.id === p.id && !t.archived);
+      ensure(team, 'The selected team is unavailable.', 'NOT_FOUND');
+      ensure(
+        !data.tasks.some(
+          (t) => t.workspaceId === wsId && t.teamId === team.id && !t.done && !t.archived,
+        ),
+        `Move or finish the open tasks of ${team.name} first.`,
+      );
+      team.archived = true;
+      auditRecordId = team.id;
+      summary = `Archived team ${team.name} (history retained)`;
+      break;
+    }
+    case 'workspace.hours': {
+      const timeZone = string(p, 'timeZone', 64, true);
+      ensure(isTimeZone(timeZone), 'Choose a valid time zone, for example America/Mexico_City.');
+      ensure(
+        Array.isArray(p.days) &&
+          p.days.length > 0 &&
+          p.days.every((d) => Number.isInteger(d) && (d as number) >= 0 && (d as number) <= 6),
+        'Choose at least one working day.',
+      );
+      const time = (v: unknown, label: string) => {
+        const s = text(v, label, 5, true);
+        ensure(/^([01]\d|2[0-3]):[0-5]\d$/.test(s), `${label} must be a time such as 09:00.`);
+        return s;
+      };
+      const start = time(p.start, 'Opening time');
+      const end = time(p.end, 'Closing time');
+      ensure(start < end, 'Closing time must be after opening time.');
+      ws!.businessHours = {
+        timeZone,
+        days: [...new Set(p.days as number[])].sort(),
+        start,
+        end,
+      };
+      summary = `Set business hours ${start}–${end}`;
       break;
     }
     case 'task.complete': {
       requireModule('chores');
       const task = own(data.tasks, p.id, wsId);
       ensure(!task.done, 'This task is already complete.');
+      const actor = by();
       task.done = true;
+      task.completedAt = now;
+      if (actor) task.completedBy = actor;
+      record(task, 'completed', actor || task.assigneeId, actor);
       touch(task);
       if (task.recurrence !== 'none' && !task.nextTaskId) {
         const d = new Date(task.due + 'T12:00:00Z');
@@ -1073,13 +1391,23 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
           d.setUTCDate(Math.min(day, last));
         } else d.setUTCDate(d.getUTCDate() + (task.recurrence === 'weekly' ? 7 : 1));
         task.nextTaskId = command.id + '-next';
-        data.tasks.push({
+        const next: Task = {
           ...task,
           ...base(task.nextTaskId),
           done: false,
           due: d.toISOString().slice(0, 10),
           nextTaskId: '',
-        });
+          history: [],
+        };
+        for (const key of ['completedBy', 'completedAt', 'claimedAt', 'lastAlertAt'] as const)
+          delete next[key];
+        // A team chore goes back to its team's queue; a personal one stays with its person.
+        if (activeTeams(ws).some((t) => t.id === task.teamId)) {
+          next.assigneeId = '';
+          queue(next);
+          record(next, 'queued', '', '');
+        } else delete next.teamId;
+        data.tasks.push(next);
       }
       summary = `Completed ${task.title}`;
       break;

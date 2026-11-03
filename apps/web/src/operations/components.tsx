@@ -76,6 +76,12 @@ export function Icon({ name, size = 20 }: { name: string; size?: number }) {
       </>
     ),
     plus: <path d="M12 4v16M4 12h16" />,
+    mywork: (
+      <>
+        <circle cx="12" cy="7" r="4" />
+        <path d="M4 21v-2a6 6 0 0 1 9-5.2M15 18l2 2 4-4" />
+      </>
+    ),
     companies: (
       <>
         <rect x="4" y="3" width="11" height="18" rx="1" />

@@ -21,6 +21,41 @@ export type Workspace = {
   categories: string[];
   monthlyBudgetMinor: number;
   createdAt: string;
+  /** Departments that receive work. Added later; absent on older workspaces. */
+  teams?: Team[];
+  /** Opening hours used to time unclaimed-work alerts. Absent means DEFAULT_HOURS. */
+  businessHours?: BusinessHours;
+};
+/**
+ * A department such as Production or Sales. A team decides where work waits and who sees
+ * it; it never grants permissions or prices. Members are member contacts.
+ */
+export type Team = {
+  id: string;
+  name: string;
+  memberIds: string[];
+  /** Members who receive unclaimed-work alerts. Without leads, managers receive them. */
+  leadIds: string[];
+  /** How long work may wait unclaimed, counted in business time only. */
+  alert: { amount: number; unit: 'hours' | 'days' };
+  archived: boolean;
+};
+export type BusinessHours = {
+  /** IANA time zone, e.g. America/Mexico_City. */
+  timeZone: string;
+  /** Working weekdays, 0 = Sunday … 6 = Saturday. */
+  days: number[];
+  /** Opening and closing time, HH:MM in the time zone. */
+  start: string;
+  end: string;
+};
+/** One change of who holds a task. `by` is the acting member, or empty for automations. */
+export type TaskEvent = {
+  at: string;
+  action: 'assigned' | 'queued' | 'claimed' | 'unclaimed' | 'completed';
+  memberId: string;
+  teamId: string;
+  by: string;
 };
 export type Row = {
   id: string;
@@ -32,7 +67,8 @@ export type Row = {
 };
 export type Contact = Row & {
   name: string;
-  kind: 'customer' | 'supplier' | 'member' | 'candidate' | 'employer';
+  /** A `lead` is a prospect; converting one to a `customer` is an explicit action. */
+  kind: 'lead' | 'customer' | 'supplier' | 'member' | 'candidate' | 'employer';
   company: string;
   email: string;
   phone: string;
@@ -150,6 +186,21 @@ export type Task = Row & {
   done: boolean;
   recurrence: 'none' | 'daily' | 'weekly' | 'monthly';
   nextTaskId: string;
+  /**
+   * Team fields, added later. A task with a team and no assignee is "up for grabs": any
+   * member of that team may claim it. The team stays after someone claims it.
+   */
+  teamId?: string;
+  /** When the task last entered its team's queue unclaimed. */
+  queuedAt?: string;
+  claimedAt?: string;
+  /** Unclaimed-work alerts already sent since `queuedAt`. */
+  alerts?: number;
+  lastAlertAt?: string;
+  completedBy?: string;
+  completedAt?: string;
+  /** Who held the task over time; newest last, at most TASK_HISTORY_LIMIT entries. */
+  history?: TaskEvent[];
 };
 export type Referral = Row & {
   candidateId: string;

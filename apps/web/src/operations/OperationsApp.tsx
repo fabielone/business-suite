@@ -46,6 +46,7 @@ import {
   Work,
   Money,
   Tasks,
+  MyWork,
   Referrals,
   Activity,
   type PageProps,
@@ -56,17 +57,22 @@ import './operations.css';
 
 const OFFLINE_COMMANDS = new Set([
   'contact.save',
+  'contact.convert',
   'deal.save',
   'project.save',
   'expense.add',
   'task.save',
   'task.complete',
+  // A claim made offline stays pending; if a teammate claimed first the server refuses it.
+  'task.claim',
+  'task.unclaim',
   'referral.save',
   'template.save',
   'draft.save',
 ]);
 const PAGE_NAMES: Record<string, string> = {
   overview: 'Overview',
+  mywork: 'My work',
   crm: 'Pipeline',
   contacts: 'People',
   companies: 'Companies',
@@ -424,7 +430,10 @@ export function OperationsApp() {
       workspaceId: entry.workspace.id,
       type,
       payload,
-      expectedRevision: revisionRef.current + pendingRef.current.length,
+      // The server checks claims against the task itself, so unrelated edits never block one.
+      expectedRevision: ['task.claim', 'task.unclaim'].includes(type)
+        ? undefined
+        : revisionRef.current + pendingRef.current.length,
     };
     if (example) {
       authorizeCommand(data, command, exampleActor);
@@ -817,6 +826,8 @@ export function OperationsApp() {
   const actor: Actor = example ? exampleActor : { grants, email: user?.email ?? '' };
   const nav = [
     'overview',
+    // Second, so phones keep it in the bottom bar.
+    ...(ws?.modules.includes('chores') && grants.includes('chores.read') ? ['mywork'] : []),
     ...(grants.includes('contacts.read') ? ['contacts'] : []),
     ...(grants.includes('contacts.read') && ws?.preset !== 'household' ? ['companies'] : []),
     ...(['crm', 'work', 'money', 'chores', 'referrals'] as Module[]).filter(
@@ -844,6 +855,7 @@ export function OperationsApp() {
           work: <Work {...props} />,
           money: <Money {...props} />,
           chores: <Tasks {...props} />,
+          mywork: <MyWork {...props} />,
           referrals: <Referrals {...props} />,
           activity: <Activity {...props} />,
           automations: (

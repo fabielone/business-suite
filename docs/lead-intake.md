@@ -24,7 +24,7 @@ Commands: `company.save`, and `record.archive` / `record.restore` with `collecti
 ```
 
 - Field names are matched loosely: `name`/`full_name`, `first_name`, `email`, `phone`, `company`, `position`/`title`, `website`, `message`, address parts, and Spanish equivalents (`nombre`, `correo`, `teléfono`, `empresa`…).
-- A new Person gets type customer. The intake never creates team members. A known person, matched by email or else phone, is **never changed**: the message is only added to their notes with the date and source. The same applies to known companies.
+- A new Person gets type **lead** (convert it to customer from People when the time is right). The intake never creates team members. A known person, matched by email or else phone, is **never changed**: the message is only added to their notes with the date and source. The same applies to known companies.
 - `projectTitle` (optional) opens a Project in the first open pipeline stage when CRM is enabled. `estimatedValueMinor` is in integer minor units.
 - `Idempotency-Key` (8–100 letters, digits, `-` or `_`) makes retries safe: the same key and lead return 200 without a second record.
 - `_gotcha` is a honeypot. If it is filled in, the response is 202 and nothing is stored. `_redirect` sends the browser to a thank-you page only when that page's origin is one of the key's websites. Requests are limited to 30 per minute per IP and workspace.

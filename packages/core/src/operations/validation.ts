@@ -11,6 +11,7 @@ import {
 import { ensure, sum } from './calculations.js';
 import { validateReceipt, validateDate } from './commands.js';
 import { parseAutomation, withAutomationCollections } from './automations.js';
+import { isTimeZone } from './teams.js';
 
 const text = (v: unknown, limit = 20000) =>
   typeof v === 'string' && v.length <= limit && !v.includes('\u0000');
@@ -85,6 +86,44 @@ export function validateData(value: unknown): SuiteData {
           w[key].every((s) => text(s, 80) && s.trim()),
         `Invalid ${key}.`,
       );
+    if (w.businessHours !== undefined) {
+      const h = w.businessHours;
+      ensure(
+        h &&
+          text(h.timeZone, 64) &&
+          isTimeZone(h.timeZone) &&
+          Array.isArray(h.days) &&
+          h.days.length > 0 &&
+          h.days.every((x) => Number.isInteger(x) && x >= 0 && x <= 6) &&
+          [h.start, h.end].every((t) => text(t, 5) && /^([01]\d|2[0-3]):[0-5]\d$/.test(t)) &&
+          h.start < h.end,
+        'Invalid business hours.',
+      );
+    }
+    if (w.teams !== undefined) {
+      ensure(Array.isArray(w.teams) && w.teams.length <= 200, 'Invalid teams.');
+      ensure(
+        new Set(w.teams.map((t) => t?.id)).size === w.teams.length &&
+          w.teams.every(
+            (t) =>
+              t &&
+              text(t.id, 120) &&
+              /^[\w-]+$/.test(t.id) &&
+              text(t.name, 60) &&
+              t.name.trim() &&
+              typeof t.archived === 'boolean' &&
+              Array.isArray(t.memberIds) &&
+              Array.isArray(t.leadIds) &&
+              t.leadIds.every((m) => t.memberIds.includes(m)) &&
+              t.alert &&
+              ['hours', 'days'].includes(t.alert.unit) &&
+              Number.isInteger(t.alert.amount) &&
+              t.alert.amount >= 1 &&
+              t.alert.amount <= (t.alert.unit === 'hours' ? 23 : 5),
+          ),
+        'Invalid teams.',
+      );
+    }
   }
   const allIds = new Set<string>();
   const keys = [
@@ -139,7 +178,7 @@ export function validateData(value: unknown): SuiteData {
     ensure(
       text(c.name, 150) &&
         c.name.trim() &&
-        ['customer', 'supplier', 'member', 'candidate', 'employer'].includes(c.kind) &&
+        ['lead', 'customer', 'supplier', 'member', 'candidate', 'employer'].includes(c.kind) &&
         text(c.company, 200) &&
         text(c.phone, 50) &&
         text(c.email, 254) &&
@@ -332,7 +371,29 @@ export function validateData(value: unknown): SuiteData {
     member(t.assigneeId, t.workspaceId, true);
     link(d.projects, t.projectId, t.workspaceId);
     link(d.tasks, t.nextTaskId, t.workspaceId);
+    if (t.teamId !== undefined)
+      ensure(
+        d.workspaces
+          .find((w) => w.id === t.workspaceId)!
+          .teams?.some((team) => team.id === t.teamId),
+        'A task belongs to an unknown team.',
+      );
+    for (const key of ['queuedAt', 'claimedAt', 'lastAlertAt', 'completedAt'] as const)
+      ensure(t[key] === undefined || dateTime(t[key]), 'Invalid task dates.');
+    ensure(
+      (t.alerts === undefined || (Number.isInteger(t.alerts) && t.alerts >= 0)) &&
+        (t.completedBy === undefined || t.completedBy === '' || text(t.completedBy, 120)) &&
+        (t.history === undefined ||
+          (Array.isArray(t.history) &&
+            t.history.length <= 200 &&
+            t.history.every(
+              (e) => e && dateTime(e.at) && text(e.memberId, 120) && text(e.by, 120),
+            ))),
+      'Invalid task history.',
+    );
   }
+  for (const w of d.workspaces)
+    for (const team of w.teams ?? []) [...team.memberIds].forEach((m) => member(m, w.id));
   for (const r of d.referrals) {
     link(d.contacts, r.candidateId, r.workspaceId, false);
     ensure(

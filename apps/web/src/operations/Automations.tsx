@@ -30,6 +30,7 @@ const TRIGGER_LABELS: Record<AutomationTrigger['type'], string> = {
   'contact.created': 'A person or company is added',
 };
 const CONTACT_LABELS = {
+  lead: 'lead',
   customer: 'customer',
   supplier: 'supplier',
   member: 'team member',

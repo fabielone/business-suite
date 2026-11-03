@@ -58,7 +58,7 @@ describe('public lead intake with an intake key (PGlite)', () => {
     await db.close();
   });
 
-  test('JSON from a sales channel adds a customer, a company and a pipeline project once', async () => {
+  test('JSON from a sales channel adds a lead, a company and a pipeline project once', async () => {
     const send = () =>
       app.inject({
         method: 'POST',
@@ -84,7 +84,7 @@ describe('public lead intake with an intake key (PGlite)', () => {
     const [ana] = await contacts();
     assert.equal((await contacts()).length, 1);
     assert.equal(ana!.name, 'Ana Ruiz');
-    assert.equal(ana!.kind, 'customer');
+    assert.equal(ana!.kind, 'lead');
     assert.equal(ana!.source, 'Website form');
     assert.match(ana!.notes, /Quote please/);
     const companies = await db.query('SELECT 1 FROM suite_companies WHERE space_id=$1', [space]);

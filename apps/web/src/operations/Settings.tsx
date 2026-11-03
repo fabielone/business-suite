@@ -16,6 +16,7 @@ import { api, download, updateSamples } from './client';
 import { Badge, Button, PageTitle, Panel, Table, type FormSpec } from './components';
 import type { PageProps } from './pages';
 import { LeadIntake } from './LeadIntake';
+import { TeamsSettings } from './TeamsSettings';
 
 export function Settings(
   p: PageProps & {
@@ -314,6 +315,7 @@ export function Settings(
           </p>
         </Panel>
       )}
+      {p.ws.preset !== 'household' && p.ws.modules.includes('chores') && <TeamsSettings {...p} />}
       <Panel title="Labels and stages">
         <div className="op-form-grid">
           <label>
