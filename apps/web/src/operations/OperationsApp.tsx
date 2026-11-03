@@ -1,9 +1,13 @@
-import { Fragment, useEffect, useRef, useState, type FormEvent } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import {
   emptyData,
   executeCommand,
+  authorizeCommand,
+  projectForActor,
+  workspaceData,
   PRESETS,
   ROLE_GRANTS,
+  type Actor,
   type SuiteData,
   type Command,
   type Access,
@@ -70,6 +74,14 @@ const PAGE_NAMES: Record<string, string> = {
   activity: 'Activity',
   sync: 'Device sync',
 };
+/** Example mode only: preview each role with the same projection the server applies. */
+const VIEW_AS: Record<string, { label: string; email: string }> = {
+  owner: { label: 'Owner', email: '' },
+  manager: { label: 'Manager', email: '' },
+  collaborator: { label: 'Sales', email: '' },
+  lead: { label: 'Team lead (Sam)', email: 'sam@example.com' },
+  production: { label: 'Production (Alex)', email: 'alex@example.com' },
+};
 type Theme = 'system' | 'light' | 'dark';
 type Breakpoint = 'phone' | 'tablet' | 'desktop';
 const PHONE = '(max-width: 639px)';
@@ -111,6 +123,7 @@ export function OperationsApp() {
   const [example, setExample] = useState(
     new URLSearchParams(location.search).get('examples') === '1',
   );
+  const [viewAs, setViewAs] = useState('owner');
   const [user, setUser] = useState<User | null>(null);
   const [entries, setEntries] = useState<WorkspaceEntry[]>([]);
   const [entry, setEntry] = useState<WorkspaceEntry | null>(null);
@@ -395,6 +408,7 @@ export function OperationsApp() {
       expectedRevision: data.revision + pendingRef.current.length,
     };
     if (example) {
+      authorizeCommand(data, command, exampleActor);
       const result = await sampleCommand(command);
       setData(result);
       setEntries(sampleEntries(result));
@@ -651,6 +665,18 @@ export function OperationsApp() {
     });
   }
   const ws = entry?.workspace;
+  const exampleActor: Actor = { grants: ROLE_GRANTS[viewAs]!, email: VIEW_AS[viewAs]!.email };
+  // In example mode `data` holds every sample workspace; other roles see the server projection.
+  const shown = useMemo(
+    () =>
+      example && viewAs !== 'owner' && ws
+        ? projectForActor(workspaceData(data, ws), {
+            grants: ROLE_GRANTS[viewAs]!,
+            email: VIEW_AS[viewAs]!.email,
+          })
+        : data,
+    [example, viewAs, data, ws],
+  );
   if (!example && !user)
     return (
       <div className="operations op-auth" data-theme={themeAttr}>
@@ -766,12 +792,16 @@ export function OperationsApp() {
         </main>
       </div>
     );
-  const grants = entry?.grants ?? [];
+  const grants = example ? ROLE_GRANTS[viewAs]! : (entry?.grants ?? []);
+  const actor: Actor = example ? exampleActor : { grants, email: user?.email ?? '' };
   const nav = [
     'overview',
     ...(grants.includes('contacts.read') ? ['contacts'] : []),
     ...(['crm', 'work', 'money', 'chores', 'referrals'] as Module[]).filter(
-      (m) => ws?.modules.includes(m) && grants.includes((m + '.read') as Access),
+      (m) =>
+        ws?.modules.includes(m) &&
+        (grants.includes((m + '.read') as Access) ||
+          (m === 'work' && grants.includes('work.read.assigned'))),
     ),
     'sync',
     ...(grants.includes('workspace.manage') ? ['activity'] : []),
@@ -779,7 +809,7 @@ export function OperationsApp() {
   ];
   const permittedPage = nav.includes(page) ? page : 'overview';
   const props: PageProps | null = ws
-    ? { data, ws, grants, search, run, form: showForm, notify, go }
+    ? { data: shown, ws, grants, actor, search, run, form: showForm, notify, go }
     : null;
   const content = props
     ? (
@@ -943,7 +973,9 @@ export function OperationsApp() {
       </select>
     </label>
   );
-  const accountName = example ? 'Example owner' : user?.name || user?.email || 'Signed in';
+  const accountName = example
+    ? `Example ${VIEW_AS[viewAs]!.label.toLowerCase()}`
+    : user?.name || user?.email || 'Signed in';
   const accountDetail = example ? 'Fictional records only' : (entry?.role ?? user?.email ?? '');
   return (
     <div className="operations" data-theme={themeAttr}>
@@ -955,6 +987,16 @@ export function OperationsApp() {
           <span>
             <strong>Example workspaces.</strong> Fictional records saved only in this browser.
           </span>
+          <label className="op-view-as">
+            <span>View as</span>
+            <select value={viewAs} onChange={(e) => setViewAs(e.target.value)}>
+              {Object.entries(VIEW_AS).map(([role, v]) => (
+                <option key={role} value={role}>
+                  {v.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <button onClick={() => void signOut()}>
             Sign in for shared workspaces <Icon name="arrow" size={14} />
           </button>

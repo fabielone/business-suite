@@ -1262,6 +1262,60 @@ body:has(> #root > .operations[data-theme='dark']) {
 .op-opportunity .op-row-actions {
   margin: 4px 0 0 -8px;
 }
+/* Every piece of one order shares a hue, so split work reads as one order across columns. */
+.op-piece {
+  border-left: 4px solid hsl(var(--piece-hue) 62% 48%);
+}
+.op-piece-marker {
+  justify-self: start;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: hsl(var(--piece-hue) 55% 34%);
+  background: hsl(var(--piece-hue) 70% 94%);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+@media (prefers-color-scheme: dark) {
+  .operations:not([data-theme='light']) .op-piece-marker {
+    color: hsl(var(--piece-hue) 70% 78%);
+    background: hsl(var(--piece-hue) 35% 20%);
+  }
+}
+.operations[data-theme='dark'] .op-piece-marker {
+  color: hsl(var(--piece-hue) 70% 78%);
+  background: hsl(var(--piece-hue) 35% 20%);
+}
+/* On phones the role switcher replaces the explanatory sentence. */
+@media (max-width: 639px) {
+  .op-example-bar {
+    justify-content: space-between;
+  }
+  .op-example-bar > span {
+    display: none;
+  }
+}
+.op-example-bar .op-view-as {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+}
+.op-example-bar .op-view-as select {
+  width: auto;
+  height: 26px;
+  min-height: 0;
+  font: inherit;
+  padding: 0 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+.op-section-title {
+  font-size: 15px;
+  margin: 24px 0 10px;
+}
 .op-stage-empty {
   color: var(--text-3);
   font-size: 12.5px;

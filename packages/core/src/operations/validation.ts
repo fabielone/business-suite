@@ -1,5 +1,6 @@
 import {
   emptyData,
+  PRODUCTION_STAGES,
   PRESETS,
   PLANS,
   MODULES,
@@ -141,7 +142,9 @@ export function validateData(value: unknown): SuiteData {
         (!c.url || /^https?:\/\//.test(c.url)) &&
         Number.isInteger(c.weight) &&
         c.weight > 0 &&
-        c.weight <= 100000,
+        c.weight <= 100000 &&
+        (c.position === undefined || text(c.position, 120)) &&
+        (c.decisionMaker === undefined || ['yes', 'no', 'unknown'].includes(c.decisionMaker)),
       'Invalid contact.',
     );
     notes(c);
@@ -166,6 +169,40 @@ export function validateData(value: unknown): SuiteData {
     ensure(['planned', 'active', 'completed'].includes(r.status), 'Invalid work status.');
     link(d.deals, r.dealId, r.workspaceId);
     member(r.assigneeId, r.workspaceId, true);
+    ensure(
+      r.number === undefined || (Number.isSafeInteger(r.number) && r.number > 0),
+      'Invalid order number.',
+    );
+    if (r.release)
+      ensure(
+        ['deposit', 'manager'].includes(r.release.basis) &&
+          text(r.release.reason, 2000) &&
+          (r.release.basis !== 'manager' || r.release.reason.trim()) &&
+          dateTime(r.release.at),
+        'Invalid production release.',
+      );
+    if (r.jobs !== undefined) {
+      ensure(
+        Array.isArray(r.jobs) &&
+          r.jobs.length > 0 &&
+          r.jobs.length <= 20 &&
+          new Set(r.jobs.map((j) => j.id)).size === r.jobs.length,
+        'Invalid order jobs.',
+      );
+      for (const j of r.jobs) {
+        ensure(
+          text(j.id, 300) &&
+            text(j.name, 120) &&
+            j.name.trim() &&
+            text(j.notes, 10000) &&
+            PRODUCTION_STAGES.includes(j.stage) &&
+            (j.stage === 'Awaiting release') === !(r.release || r.status !== 'planned'),
+          'Invalid order job.',
+        );
+        validateDate(j.due);
+        member(j.assigneeId, r.workspaceId, true);
+      }
+    }
   }
   for (const e of d.expenses) {
     ensure(

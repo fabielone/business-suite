@@ -28,13 +28,16 @@ export function sampleData(now = new Date().toISOString()): SuiteData {
     data.workspaces.find((w) => w.id === ws)!.sample = true;
   }
   data.workspaces.find((w) => w.id === 'household')!.monthlyBudgetMinor = 1500000;
-  const member = (ws: string, name: string, weight = 1) =>
-    run(ws, 'contact.save', { name, kind: 'member', weight });
-  const alex = member('insignia', 'Alex · example');
+  const member = (ws: string, name: string, weight = 1, email = '') =>
+    run(ws, 'contact.save', { name, kind: 'member', weight, email });
+  const alex = member('insignia', 'Alex · example', 1, 'alex@example.com');
+  const shop = member('insignia', 'Sam · example', 1, 'sam@example.com');
   const customer = run('insignia', 'contact.save', {
     name: 'Marina · example',
     kind: 'customer',
     company: 'Example Studio',
+    position: 'Office manager',
+    decisionMaker: 'yes',
     email: 'marina@example.com',
   });
   const d = run('insignia', 'deal.save', {
@@ -57,7 +60,7 @@ export function sampleData(now = new Date().toISOString()): SuiteData {
     title: 'Storefront refresh',
     contactId: customer,
     amountMinor: 1850000,
-    stageId: 'qualified',
+    stageId: 'interested',
     due,
   });
   const expense = run('insignia', 'expense.add', {
@@ -78,6 +81,28 @@ export function sampleData(now = new Date().toISOString()): SuiteData {
     fromId: customer,
     method: 'transfer',
     reference: 'Example customer deposit',
+  });
+  run('insignia', 'order.release', { id: job, basis: 'deposit', reason: '' });
+  run('insignia', 'job.save', {
+    orderId: job,
+    jobId: `${job}-job-1`,
+    name: 'Fabrication',
+    assigneeId: shop,
+    due,
+    notes: 'Example: cut and light the lettering.',
+  });
+  run('insignia', 'job.save', {
+    orderId: job,
+    name: 'Installation',
+    assigneeId: alex,
+    due,
+    notes: 'Example: mount at reception.',
+  });
+  run('insignia', 'job.move', { orderId: job, jobId: `${job}-job-1`, stage: 'Fabrication' });
+  run('insignia', 'deal.convert', {
+    id: d,
+    title: 'Reception signage – phase 2',
+    amountMinor: 900000,
   });
   run('insignia', 'task.save', {
     title: 'Confirm site measurements',

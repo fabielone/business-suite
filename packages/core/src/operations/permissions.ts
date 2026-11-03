@@ -6,7 +6,10 @@ export const PERMISSIONS = [
   'crm.read',
   'crm.write',
   'work.read',
+  'work.read.assigned',
   'work.write',
+  'work.lead',
+  'work.assign',
   'prices.read',
   'money.read',
   'money.submit',
@@ -46,11 +49,16 @@ export const ROLE_GRANTS: Record<string, Access[]> = {
     'backup.export',
   ],
   viewer: ['contacts.read', 'crm.read', 'work.read', 'chores.read', 'referrals.read'],
+  // Production never receives prices. Team leads see all production work; workers only theirs.
+  lead: ['contacts.read', 'work.read', 'work.lead', 'chores.read', 'chores.write'],
+  production: ['contacts.read', 'work.read.assigned', 'chores.read', 'chores.write'],
 };
 export function commandAccess(type: string, collection?: unknown): Access {
   if (type === 'workspace.settings') return 'workspace.manage';
   if (type.startsWith('contact.')) return 'contacts.write';
   if (type.startsWith('deal.')) return 'crm.write';
+  if (type === 'job.save') return 'work.assign';
+  if (type === 'order.release') return 'work.write';
   if (type.startsWith('project.')) return 'work.write';
   if (type === 'expense.add') return 'money.submit';
   if (type === 'expense.review') return 'money.review';

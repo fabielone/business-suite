@@ -4,9 +4,9 @@ import { DomainError, uuid } from '@suite/core';
 import {
   emptyData,
   executeCommand,
-  OperationError,
   ROLE_GRANTS,
-  commandAccess,
+  authorizeCommand,
+  projectForActor,
   validateData,
   type SuiteData,
   type Command,
@@ -103,51 +103,9 @@ export function registerOperations(
     ).rows.map((r) => r.payload);
     return data;
   }
-  function project(data: SuiteData, grants: Access[]): SuiteData {
-    const copy = structuredClone(data);
-    const access: Record<keyof typeof TABLES, Access> = {
-      contacts: 'contacts.read',
-      deals: 'crm.read',
-      projects: 'work.read',
-      expenses: 'money.read',
-      payments: 'money.read',
-      tasks: 'chores.read',
-      referrals: 'referrals.read',
-      templates: 'referrals.read',
-      drafts: 'referrals.read',
-    };
-    const modules: Partial<Record<keyof typeof TABLES, string>> = {
-      deals: 'crm',
-      projects: 'work',
-      expenses: 'money',
-      payments: 'money',
-      tasks: 'chores',
-      referrals: 'referrals',
-      templates: 'referrals',
-      drafts: 'referrals',
-    };
-    for (const key of Object.keys(TABLES) as (keyof typeof TABLES)[])
-      if (
-        !grants.includes(access[key]) ||
-        (modules[key] && !copy.workspaces[0]?.modules.includes(modules[key] as never))
-      )
-        (copy[key] as unknown[]) = [];
-    if (!grants.includes('prices.read')) {
-      copy.projects.forEach((p) => {
-        p.amountMinor = 0;
-      });
-      copy.deals.forEach((d) => {
-        d.amountMinor = 0;
-      });
-    }
-    if (!grants.includes('prices.read'))
-      copy.referrals.forEach((r) => {
-        r.rewardMinor = 0;
-      });
-    if (!grants.includes('workspace.manage')) copy.audit = [];
-    copy.commands = [];
-    return copy;
-  }
+  // One shared rule set: the same projection runs in example mode and in the client tests.
+  const project = (data: SuiteData, grants: Access[], member: Membership) =>
+    projectForActor(data, { grants, email: member.email });
   async function save(
     tx: Sql,
     before: SuiteData,
@@ -256,7 +214,7 @@ export function registerOperations(
   app.get<{ Params: { id: string } }>('/v2/workspaces/:id', async (request) => {
     const user = await authenticate(request);
     return context(user, request.params.id, async (tx, member, grants) => ({
-      data: project(await read(tx, request.params.id), grants),
+      data: project(await read(tx, request.params.id), grants, member),
       role: member.role,
       grants,
     }));
@@ -276,8 +234,6 @@ export function registerOperations(
       )
         throw new DomainError(400, 'INVALID_INPUT', 'Invalid workspace command.');
       return context(user, request.params.id, async (tx, member, grants) => {
-        permitted(grants, commandAccess(command.type, command.payload.collection));
-        if (command.type === 'deal.convert') permitted(grants, 'work.write');
         if (command.type === 'workspace.settings' && member.role !== 'owner') {
           const old = (await read(tx, request.params.id)).workspaces[0]!;
           if (command.payload.plan !== old.plan)
@@ -304,7 +260,7 @@ export function registerOperations(
               'IDEMPOTENCY_CONFLICT',
               'This command key has already been used.',
             );
-          return { data: project(before, grants), grants, role: member.role };
+          return { data: project(before, grants, member), grants, role: member.role };
         }
         if (command.type === 'expense.review' && command.payload.status === 'approved') {
           const submission = (
@@ -320,9 +276,10 @@ export function registerOperations(
               'Another authorized reviewer must approve your business expense. Invite a manager or finance member.',
             );
         }
+        authorizeCommand(before, command, { grants, email: member.email });
         const after = executeCommand(before, command);
         await save(tx, before, after, user.id, command, fingerprint);
-        return { data: project(after, grants), grants, role: member.role };
+        return { data: project(after, grants, member), grants, role: member.role };
       });
     },
   );

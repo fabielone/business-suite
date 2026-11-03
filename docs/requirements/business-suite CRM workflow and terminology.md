@@ -125,6 +125,9 @@ A workflow template bundles pipeline stages, production stages, stage checklists
 ## Still open
 - Can one Order be created from part of a Project's accepted quote, or does each Order need its own quote?
 
+## Implementation status — NOTE-015, 2026-11-03
+A first slice is implemented locally (uncommitted at writing): Project terms in the pipeline, several numbered Orders per Project, release by deposit or manager with reason, Jobs split per team member with "Order / Job" cards and one colour per Order, `lead` and `production` roles with assigned-only visibility and no prices, the task completion rule, and decision maker/position on Person. Unit tests and a browser example-mode check pass; the real local backend was not exercised. Remaining gaps are listed in NOTE-015 (Obsidian reference).
+
 ## Relation to the NOTE-013 implementation
 Checked 2026-11-03 in `packages/core/src/operations`. The code's names map to these terms as follows:
 - Code `deals` (UI "opportunity") = this note's **Project**.

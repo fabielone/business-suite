@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2026-11-03T14:42:08.418Z",
+  "exportedAt": "2026-11-03T15:02:51.839Z",
   "sourceDirectory": "/Users/fabiel/Library/Mobile Documents/iCloud~md~obsidian/Documents/obnotes/business-suite",
   "authority": "Obsidian source notes; this directory is a portable snapshot, not an independent specification.",
   "files": [
@@ -9,7 +9,7 @@
     },
     {
       "file": "business-suite CRM workflow and terminology.md",
-      "sha256": "ca3a7836d703e134d6a06bf3c3724df13b2d4ef29cf72081cbb82d48f6a37bdc"
+      "sha256": "143dbeaf4d4af9b05f238dd5bbd60a25afd23f30470c6aa00624ca3ba89075d0"
     },
     {
       "file": "business-suite architecture.md",

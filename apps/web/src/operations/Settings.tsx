@@ -400,7 +400,7 @@ export function Settings(
         )}
         <p className="op-caption">
           Move existing records before removing a stage. Renaming a CRM stage preserves its stable
-          ID and existing opportunities.
+          ID and existing projects.
         </p>
       </Panel>
       {error && (

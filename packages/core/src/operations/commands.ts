@@ -14,7 +14,10 @@ import {
   type Payment,
   type Task,
   type Attachment,
+  type Job,
+  PRODUCTION_STAGES,
 } from './types.js';
+import { orderJobs, isReleased } from './production.js';
 import {
   ensure,
   sum,
@@ -181,13 +184,25 @@ export function createWorkspace(
     archived: false,
     monthlyBudgetMinor: 0,
     createdAt: now,
-    stages: [
-      { id: 'new', name: 'New inquiry', outcome: 'open' },
-      { id: 'qualified', name: 'Qualified', outcome: 'open' },
-      { id: 'quoted', name: 'Quotation sent', outcome: 'open' },
-      { id: 'won', name: 'Won', outcome: 'won' },
-      { id: 'lost', name: 'Lost', outcome: 'lost' },
-    ],
+    stages:
+      preset === 'signage'
+        ? [
+            { id: 'new', name: 'New', outcome: 'open' },
+            { id: 'contacted', name: 'Contacted', outcome: 'open' },
+            { id: 'interested', name: 'Interested', outcome: 'open' },
+            { id: 'visit', name: 'Site visit', outcome: 'open' },
+            { id: 'quoted', name: 'Quote sent', outcome: 'open' },
+            { id: 'negotiation', name: 'Negotiation', outcome: 'open' },
+            { id: 'won', name: 'Won', outcome: 'won' },
+            { id: 'lost', name: 'Lost', outcome: 'lost' },
+          ]
+        : [
+            { id: 'new', name: 'New inquiry', outcome: 'open' },
+            { id: 'qualified', name: 'Qualified', outcome: 'open' },
+            { id: 'quoted', name: 'Quotation sent', outcome: 'open' },
+            { id: 'won', name: 'Won', outcome: 'won' },
+            { id: 'lost', name: 'Lost', outcome: 'lost' },
+          ],
     referralStages: [
       'Researching',
       'Contacted',
@@ -268,6 +283,28 @@ export function executeCommand(
       'A record with this ID already exists.',
       'CONFLICT',
     );
+  const nextOrderNumber = () =>
+    Math.max(
+      0,
+      ...data.projects
+        .filter((o) => o.workspaceId === wsId)
+        .map((o, index) => o.number ?? index + 1),
+    ) + 1;
+  const newJob = (
+    jobId: string,
+    name: string,
+    assigneeId: string,
+    due: string,
+    released: boolean,
+    notes = '',
+  ): Job => ({
+    id: jobId,
+    name,
+    assigneeId,
+    stage: released ? 'Design' : 'Awaiting release',
+    due,
+    notes,
+  });
   let summary = command.type.replaceAll('.', ' ');
   switch (command.type) {
     case 'workspace.create': {
@@ -355,6 +392,12 @@ export function executeCommand(
         url: url(p.url),
         notes: string(p, 'notes', 10000),
         weight,
+        position: string(p, 'position', 120),
+        decisionMaker: choice(
+          p.decisionMaker ?? 'unknown',
+          ['yes', 'no', 'unknown'] as const,
+          'decision maker answer',
+        ),
       };
       if (existing) {
         Object.assign(existing, fields);
@@ -398,27 +441,114 @@ export function executeCommand(
       break;
     }
     case 'deal.convert': {
+      // A Project (deal) can lead to several Orders; each is an explicit human action.
       requireModule('crm');
       requireModule('work');
       const deal = own(data.deals, p.id, wsId);
-      ensure(!deal.projectId, 'This opportunity already has a linked job.');
       const won = ws!.stages.find((s) => s.outcome === 'won');
       ensure(won, 'Add a won pipeline stage first.');
+      // The payload id names the deal, so the order takes the command id.
+      const orderId = id(command.id);
+      ensure(
+        !data.projects.some((r) => r.id === orderId),
+        'A record with this ID already exists.',
+        'CONFLICT',
+      );
       deal.stageId = won.id;
-      deal.projectId = command.id;
+      if (!deal.projectId) deal.projectId = orderId;
       touch(deal);
+      const title = p.title === undefined ? deal.title : string(p, 'title', 200, true);
       data.projects.push({
-        ...base(command.id),
-        title: deal.title,
+        ...base(orderId),
+        title,
         contactId: deal.contactId,
-        amountMinor: deal.amountMinor,
+        amountMinor: p.amountMinor === undefined ? deal.amountMinor : amount(p.amountMinor, true),
         due: deal.due,
         notes: deal.notes,
         status: 'planned',
         dealId: deal.id,
         assigneeId: '',
+        number: nextOrderNumber(),
+        jobs: [newJob(`${orderId}-job-1`, 'Production', '', deal.due, false)],
       });
-      summary = `Converted ${deal.title} into work`;
+      summary = `Created order for ${deal.title}`;
+      break;
+    }
+    case 'order.release': {
+      requireModule('work');
+      const order = own(data.projects, p.id, wsId);
+      ensure(!isReleased(order), 'This order is already in production.');
+      const basis = choice(p.basis, ['deposit', 'manager'] as const, 'release basis');
+      const reason = string(p, 'reason', 2000, basis === 'manager');
+      if (basis === 'deposit')
+        ensure(
+          projectMoney(data, order.id).received > 0,
+          'Record the deposit first, or ask a manager to release without one.',
+        );
+      order.release = { basis, reason, at: now };
+      order.status = 'active';
+      order.jobs = orderJobs(order).map((j) =>
+        j.stage === 'Awaiting release' ? { ...j, stage: 'Design' } : j,
+      );
+      touch(order);
+      summary =
+        basis === 'deposit'
+          ? `Released ${order.title} after deposit`
+          : `Released ${order.title} without deposit: ${reason}`;
+      break;
+    }
+    case 'job.save': {
+      requireModule('work');
+      const order = own(data.projects, p.orderId, wsId);
+      const jobs = orderJobs(order).map((j) => ({ ...j }));
+      const fields = {
+        name: string(p, 'name', 120, true),
+        assigneeId: member(data, p.assigneeId, wsId, true),
+        due: date(p.due),
+        notes: string(p, 'notes', 10000),
+      };
+      ensure(fields.assigneeId !== 'pool', 'Assign a team member.');
+      const existing = p.jobId ? jobs.find((j) => j.id === p.jobId) : undefined;
+      if (p.jobId) ensure(existing, 'The selected job is unavailable.', 'NOT_FOUND');
+      if (existing) Object.assign(existing, fields);
+      else {
+        ensure(jobs.length < 20, 'An order can have at most 20 jobs.');
+        const jobId = `${order.id}-job-${command.id}`;
+        jobs.push(
+          newJob(
+            jobId,
+            fields.name,
+            fields.assigneeId,
+            fields.due,
+            isReleased(order),
+            fields.notes,
+          ),
+        );
+      }
+      order.jobs = jobs;
+      touch(order);
+      summary = `Saved job ${fields.name} for ${order.title}`;
+      break;
+    }
+    case 'job.move': {
+      requireModule('work');
+      const order = own(data.projects, p.orderId, wsId);
+      const jobs = orderJobs(order).map((j) => ({ ...j }));
+      const job = jobs.find((j) => j.id === p.jobId);
+      ensure(job, 'The selected job is unavailable.', 'NOT_FOUND');
+      const stage = choice(p.stage, PRODUCTION_STAGES, 'production stage');
+      ensure(
+        isReleased(order) ? stage !== 'Awaiting release' : stage === 'Awaiting release',
+        isReleased(order)
+          ? 'A released order cannot return to awaiting release.'
+          : 'Release the order into production first: deposit received or manager approval.',
+      );
+      job.stage = stage;
+      order.jobs = jobs;
+      const allClosed = jobs.every((j) => j.stage === 'Closed');
+      order.status = allClosed ? 'completed' : 'active';
+      touch(order);
+      summary = `Moved ${order.title} / ${job.name} to ${stage}`;
       break;
     }
     case 'project.save': {
@@ -439,12 +569,26 @@ export function executeCommand(
         status: choice(p.status, ['planned', 'active', 'completed'] as const, 'work status'),
         assigneeId: member(data, p.assigneeId, wsId, true),
       };
+      ensure(
+        fields.status === 'planned' || (existing && isReleased(existing)),
+        'Release the order into production before starting it.',
+      );
+      ensure(
+        fields.status !== 'planned' || !existing || !existing.release,
+        'A released order cannot return to planned.',
+      );
       if (existing) {
         Object.assign(existing, fields);
         touch(existing);
       } else {
         newRecord(data.projects);
-        data.projects.push({ ...base(recordId), ...fields, dealId: '' });
+        data.projects.push({
+          ...base(recordId),
+          ...fields,
+          dealId: '',
+          number: nextOrderNumber(),
+          jobs: [newJob(`${recordId}-job-1`, 'Production', fields.assigneeId, fields.due, false)],
+        });
       }
       summary = `Saved work ${fields.title}`;
       break;

@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   active,
   posted,
@@ -10,6 +10,13 @@ import {
   renderMessage,
   csvCell,
   PRESETS,
+  PRODUCTION_STAGES,
+  authorizeCommand,
+  orderJobs,
+  orderNumber,
+  isReleased,
+  type Actor,
+  type Job,
   type SuiteData,
   type Workspace,
   type Access,
@@ -43,6 +50,8 @@ export interface PageProps {
   data: SuiteData;
   ws: Workspace;
   grants: Access[];
+  /** The signed-in person; decides record-level rules such as who completes a task. */
+  actor: Actor;
   search: string;
   run: (type: string, payload: Record<string, unknown>, key?: string) => Promise<void>;
   form: (spec: FormSpec) => void;
@@ -78,7 +87,19 @@ const money = (p: PageProps, amount: number) => formatMoney(amount, p.ws.currenc
 const members = (p: PageProps) =>
   active(rows(p.data.contacts, p.ws)).filter((c) => c.kind === 'member');
 const projects = (p: PageProps) => active(rows(p.data.projects, p.ws));
+const ordersOf = (p: PageProps, dealId: string) => projects(p).filter((o) => o.dealId === dealId);
+const decisionMaker = (p: PageProps, contactId: string) =>
+  p.data.contacts.find((c) => c.id === contactId)?.decisionMaker ?? 'unknown';
 const can = (p: PageProps, access: Access) => p.grants.includes(access);
+/** Mirrors the server decision so buttons only appear where the action would be accepted. */
+const allowed = (p: PageProps, type: string, payload: Record<string, unknown>) => {
+  try {
+    authorizeCommand(p.data, { id: 'check', workspaceId: p.ws.id, type, payload }, p.actor);
+    return true;
+  } catch {
+    return false;
+  }
+};
 function action(
   p: PageProps,
   title: string,
@@ -121,6 +142,19 @@ function contactForm(p: PageProps, row?: Contact, kind?: Contact['kind']) {
         })),
       ),
       field('company', 'Company / specialization'),
+      ...(p.ws.preset === 'household'
+        ? []
+        : [
+            field('position', 'Position'),
+            {
+              ...select('decisionMaker', 'Decision maker', [
+                { value: 'unknown', label: 'Unknown' },
+                { value: 'yes', label: 'Yes' },
+                { value: 'no', label: 'No' },
+              ]),
+              hint: 'Can this person approve the purchase?',
+            },
+          ]),
       field('email', 'Email', 'email'),
       field('phone', 'Phone'),
       field('url', 'Website / profile', 'url'),
@@ -132,8 +166,9 @@ function contactForm(p: PageProps, row?: Contact, kind?: Contact['kind']) {
       field('notes', 'Notes', 'textarea'),
     ],
     row
-      ? { ...row }
+      ? { decisionMaker: 'unknown', position: '', ...row }
       : {
+          decisionMaker: 'unknown',
           kind:
             kind ??
             (p.ws.preset === 'household'
@@ -183,7 +218,11 @@ export function Contacts(p: PageProps) {
                 {c.email || '—'}
                 <small>{c.phone}</small>
               </td>
-              <td>{p.ws.preset === 'household' ? c.weight : c.company || '—'}</td>
+              <td>
+                {p.ws.preset === 'household' ? c.weight : c.company || '—'}
+                {c.position && <small>{c.position}</small>}
+                {c.decisionMaker === 'yes' && <Badge tone="good">Decision maker</Badge>}
+              </td>
               <td>
                 {can(p, 'contacts.write') && (
                   <div className="op-row-actions">
@@ -207,10 +246,10 @@ export function Contacts(p: PageProps) {
 function dealForm(p: PageProps, row?: Deal) {
   action(
     p,
-    row ? 'Edit opportunity' : 'New opportunity',
+    row ? 'Edit project' : 'New project',
     'deal.save',
     [
-      field('title', 'Opportunity', 'text', true),
+      field('title', 'Project', 'text', true),
       select(
         'contactId',
         'Customer / contact',
@@ -237,18 +276,18 @@ export function CRM(p: PageProps) {
     <>
       <PageTitle
         title="Pipeline"
-        description="Open opportunities by stage, with the next follow-up and estimated value."
+        description="Projects by sales stage, with the next follow-up and estimated value. A won project can lead to several orders."
         action={
           can(p, 'crm.write') && (
             <Button icon="plus" onClick={() => dealForm(p)}>
-              New opportunity
+              New project
             </Button>
           )
         }
       />
       <Stats
         values={[
-          { label: 'Open opportunities', value: open.length },
+          { label: 'Open projects', value: open.length },
           {
             label: 'Open pipeline value',
             value: can(p, 'prices.read')
@@ -261,7 +300,7 @@ export function CRM(p: PageProps) {
           },
         ]}
       />
-      <div className="op-pipeline" aria-label="Opportunity pipeline">
+      <div className="op-pipeline" aria-label="Project pipeline">
         {p.ws.stages.map((stage) => (
           <section className="op-stage" key={stage.id}>
             <header>
@@ -274,26 +313,49 @@ export function CRM(p: PageProps) {
                 <article className="op-opportunity" key={d.id}>
                   <h3>{d.title}</h3>
                   <p>{d.contactId ? names(p, d.contactId) : 'Contact not assigned'}</p>
+                  {d.contactId && decisionMaker(p, d.contactId) !== 'yes' && (
+                    <Badge tone="attention">No decision maker confirmed</Badge>
+                  )}
                   {can(p, 'prices.read') && <strong>{money(p, d.amountMinor)}</strong>}
                   <small>{d.due ? `Follow up ${d.due}` : 'No follow-up date'}</small>
-                  {d.projectId && <Badge tone="good">Linked to work</Badge>}
+                  {ordersOf(p, d.id).length > 0 && (
+                    <Badge tone="good">
+                      {ordersOf(p, d.id).length === 1
+                        ? '1 order'
+                        : `${ordersOf(p, d.id).length} orders`}
+                    </Badge>
+                  )}
                   {can(p, 'crm.write') && (
                     <div className="op-row-actions">
                       <button onClick={() => dealForm(p, d)}>Edit / move</button>
-                      {!d.projectId && p.ws.modules.includes('work') && can(p, 'work.write') && (
+                      {p.ws.modules.includes('work') && can(p, 'work.write') && (
                         <button
                           onClick={() =>
                             action(
                               p,
-                              'Accept & create work',
+                              'Create order',
                               'deal.convert',
-                              [],
-                              { id: d.id },
-                              'This marks the opportunity won and creates one linked job at the agreed value. It does not record a payment.',
+                              [
+                                field('title', 'Order title', 'text', true),
+                                field(
+                                  'amountMinor',
+                                  `Agreed price (${p.ws.currency})`,
+                                  'amount',
+                                  true,
+                                ),
+                              ],
+                              {
+                                id: d.id,
+                                title: ordersOf(p, d.id).length
+                                  ? `${d.title} – order ${ordersOf(p, d.id).length + 1}`
+                                  : d.title,
+                                amountMinor: (d.amountMinor / 100).toFixed(2),
+                              },
+                              'Marks the project won and creates an order awaiting release into production. It does not record a payment.',
                             )
                           }
                         >
-                          Create job
+                          Create order
                         </button>
                       )}
                     </div>
@@ -301,7 +363,7 @@ export function CRM(p: PageProps) {
                 </article>
               ))}
             {!deals.some((d) => d.stageId === stage.id) && (
-              <p className="op-stage-empty">No opportunities here.</p>
+              <p className="op-stage-empty">No projects here.</p>
             )}
           </section>
         ))}
@@ -312,7 +374,7 @@ export function CRM(p: PageProps) {
 function projectForm(p: PageProps, row?: Project) {
   action(
     p,
-    row ? 'Edit work' : 'Create work',
+    row ? 'Edit order' : 'Create order',
     'project.save',
     [
       field('title', 'Title', 'text', true),
@@ -336,80 +398,198 @@ function projectForm(p: PageProps, row?: Project) {
       : { amountMinor: '0', due: '' },
   );
 }
+/** Same colour for every piece of one order, so split work is recognisable across columns. */
+const orderHue = (number: number) => (number * 137 + 200) % 360;
+function jobForm(p: PageProps, order: Project, job?: Job) {
+  action(
+    p,
+    job
+      ? `Edit job · Order ${orderNumber(p.data, order)}`
+      : `Add job · Order ${orderNumber(p.data, order)}`,
+    'job.save',
+    [
+      field('name', 'Job', 'text', true),
+      select('assigneeId', 'Team member', options(members(p), 'Unassigned')),
+      field('due', 'Due date', 'date'),
+      field('notes', 'Instructions', 'textarea'),
+    ],
+    job
+      ? {
+          orderId: order.id,
+          jobId: job.id,
+          name: job.name,
+          assigneeId: job.assigneeId,
+          due: job.due,
+          notes: job.notes,
+        }
+      : { orderId: order.id, due: order.due },
+    job
+      ? undefined
+      : 'Splits the order into another piece. The team member only sees the pieces assigned to them.',
+  );
+}
+function releaseForm(p: PageProps, order: Project) {
+  const manager = can(p, 'work.assign');
+  action(
+    p,
+    `Release order ${orderNumber(p.data, order)} into production`,
+    'order.release',
+    [
+      select('basis', 'Release because', [
+        { value: 'deposit', label: 'Deposit received' },
+        ...(manager ? [{ value: 'manager', label: 'Manager approval without deposit' }] : []),
+      ]),
+      {
+        ...field('reason', 'Reason', 'textarea'),
+        hint: 'Required when releasing without a deposit.',
+      },
+    ],
+    { id: order.id, basis: 'deposit', reason: '' },
+    'A deposit must already be recorded in Money. Releasing never records a payment.',
+  );
+}
 export function Work(p: PageProps) {
   const all = projects(p).filter((r) => match(r, p.search));
   const [selected, setSelected] = useState('');
   const selectedProject = all.find((j) => j.id === selected);
+  const pieces = all.flatMap((order) => orderJobs(order).map((job) => ({ order, job })));
+  const manageOrders = can(p, 'work.write');
   return (
     <>
       <PageTitle
         title={PRESETS[p.ws.preset].workLabel}
-        description="Agreed work, who is responsible, and what has been collected. Costs never change the agreed price."
+        description={
+          can(p, 'work.read')
+            ? 'Order / job cards by production stage. Cards with the same colour belong to the same order.'
+            : 'Your pieces of each order, by production stage.'
+        }
         action={
-          can(p, 'work.write') && (
+          manageOrders && (
             <Button icon="plus" onClick={() => projectForm(p)}>
-              Create work
+              Create order
             </Button>
           )
         }
       />
-      {all.length ? (
-        <Table
-          headings={[
-            'Work',
-            'Status',
-            'Assigned / due',
-            ...(can(p, 'prices.read') ? ['Agreed', 'Collected / due'] : []),
-            'Actions',
-          ]}
-        >
-          {all.map((j) => {
-            const totals = projectMoney(p.data, j.id);
-            return (
-              <tr key={j.id}>
-                <td>
-                  <button className="op-record-link" onClick={() => setSelected(j.id)}>
-                    {j.title}
-                  </button>
-                  <small>{j.contactId ? names(p, j.contactId) : 'Internal work'}</small>
-                </td>
-                <td>
-                  <Badge
-                    tone={j.status === 'completed' ? 'good' : j.status === 'active' ? 'info' : ''}
+      <div className="op-pipeline" aria-label="Production board">
+        {PRODUCTION_STAGES.map((stage, index) => {
+          const here = pieces.filter((x) => x.job.stage === stage);
+          const next = PRODUCTION_STAGES[index + 1];
+          return (
+            <section className="op-stage" key={stage}>
+              <header>
+                <h2>{stage}</h2>
+                <span>{here.length}</span>
+              </header>
+              {here.map(({ order, job }) => {
+                const number = orderNumber(p.data, order);
+                const total = orderJobs(order).length;
+                const move = { orderId: order.id, jobId: job.id, stage: next };
+                return (
+                  <article
+                    className="op-opportunity op-piece"
+                    key={job.id}
+                    style={{ '--piece-hue': orderHue(number) } as CSSProperties}
                   >
-                    {j.status}
-                  </Badge>
-                </td>
-                <td>
-                  {names(p, j.assigneeId)}
-                  <small>{j.due || 'No date'}</small>
-                </td>
-                {can(p, 'prices.read') && (
-                  <>
-                    <td>{money(p, j.amountMinor)}</td>
-                    <td>
-                      {money(p, totals.received)}
-                      <small>{money(p, totals.due)} outstanding</small>
-                    </td>
-                  </>
-                )}
-                <td>
-                  <div className="op-row-actions">
-                    {can(p, 'work.write') && (
-                      <button onClick={() => projectForm(p, j)}>Edit</button>
+                    <span className="op-piece-marker">Order {number}</span>
+                    <h3>
+                      {order.title} / {job.name}
+                    </h3>
+                    <p>{job.assigneeId ? names(p, job.assigneeId) : 'Unassigned'}</p>
+                    <small>
+                      {job.due ? `Due ${job.due}` : 'No date'}
+                      {total > 1 && ` · piece of ${total}`}
+                    </small>
+                    {order.release?.basis === 'manager' && can(p, 'work.read') && (
+                      <Badge tone="attention">Released without deposit</Badge>
                     )}
-                    <button onClick={() => setSelected(j.id)}>Details</button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </Table>
-      ) : (
-        <Empty title="No work yet">
-          Create work directly or convert an accepted opportunity from the pipeline.
-        </Empty>
-      )}
+                    <div className="op-row-actions">
+                      {stage === 'Awaiting release' && manageOrders && !isReleased(order) && (
+                        <button onClick={() => releaseForm(p, order)}>Release</button>
+                      )}
+                      {next && isReleased(order) && allowed(p, 'job.move', move) && (
+                        <button
+                          onClick={() =>
+                            void p.run('job.move', move).catch((e) => p.notify(e.message))
+                          }
+                        >
+                          Move to {next}
+                        </button>
+                      )}
+                      {can(p, 'work.assign') && (
+                        <>
+                          <button onClick={() => jobForm(p, order, job)}>Edit job</button>
+                          <button onClick={() => jobForm(p, order)}>Add job</button>
+                        </>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+              {!here.length && <p className="op-stage-empty">Nothing here.</p>}
+            </section>
+          );
+        })}
+      </div>
+      {manageOrders && <h2 className="op-section-title">Orders</h2>}
+      {manageOrders &&
+        (all.length ? (
+          <Table
+            headings={[
+              'Work',
+              'Status',
+              'Assigned / due',
+              ...(can(p, 'prices.read') ? ['Agreed', 'Collected / due'] : []),
+              'Actions',
+            ]}
+          >
+            {all.map((j) => {
+              const totals = projectMoney(p.data, j.id);
+              return (
+                <tr key={j.id}>
+                  <td>
+                    <button className="op-record-link" onClick={() => setSelected(j.id)}>
+                      Order {orderNumber(p.data, j)} · {j.title}
+                    </button>
+                    <small>{j.contactId ? names(p, j.contactId) : 'Internal work'}</small>
+                  </td>
+                  <td>
+                    <Badge
+                      tone={j.status === 'completed' ? 'good' : j.status === 'active' ? 'info' : ''}
+                    >
+                      {isReleased(j) ? j.status : 'awaiting release'}
+                    </Badge>
+                  </td>
+                  <td>
+                    {names(p, j.assigneeId)}
+                    <small>{j.due || 'No date'}</small>
+                  </td>
+                  {can(p, 'prices.read') && (
+                    <>
+                      <td>{money(p, j.amountMinor)}</td>
+                      <td>
+                        {money(p, totals.received)}
+                        <small>{money(p, totals.due)} outstanding</small>
+                      </td>
+                    </>
+                  )}
+                  <td>
+                    <div className="op-row-actions">
+                      {can(p, 'work.write') && (
+                        <button onClick={() => projectForm(p, j)}>Edit</button>
+                      )}
+                      <button onClick={() => setSelected(j.id)}>Details</button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </Table>
+        ) : (
+          <Empty title="No orders yet">
+            Create an order directly, or from a won project in the pipeline.
+          </Empty>
+        ))}
       {selectedProject && (
         <Panel
           title={selectedProject.title}
@@ -488,7 +668,7 @@ function expenseForm(p: PageProps) {
               { value: 'weighted', label: 'Contribution weights' },
             ]),
           ]
-        : [select('projectId', 'Related work', options(projects(p), 'General business expense'))]),
+        : [select('projectId', 'Related order', options(projects(p), 'General business expense'))]),
       field('receipt', 'Receipt (PNG, JPEG or PDF · max 3 MB)', 'file'),
       field(
         'reason',
@@ -943,7 +1123,7 @@ function taskForm(p: PageProps, row?: Task) {
         })),
       ),
       ...(p.ws.modules.includes('work')
-        ? [select('projectId', 'Related work', options(projects(p), 'No linked job'))]
+        ? [select('projectId', 'Related order', options(projects(p), 'No linked order'))]
         : []),
       field('notes', 'Details', 'textarea'),
     ],
@@ -985,7 +1165,7 @@ export function Tasks(p: PageProps) {
                 <td>
                   {can(p, 'chores.write') && (
                     <div className="op-row-actions">
-                      {!t.done && (
+                      {!t.done && allowed(p, 'task.complete', { id: t.id }) && (
                         <button
                           onClick={() =>
                             void p
@@ -1394,7 +1574,7 @@ export function Overview(p: PageProps) {
             ? 'Shared costs, contributions and open chores.'
             : p.ws.preset === 'referrals'
               ? 'Active referrals and the follow-ups due.'
-              : 'Open opportunities, active work, balances due and expenses to review.'
+              : 'Open projects, orders in production, balances due and expenses to review.'
         }
       />
       <Stats
@@ -1427,14 +1607,15 @@ export function Overview(p: PageProps) {
                 ]
               : [
                   {
-                    label: 'Open opportunities',
+                    label: 'Open projects',
                     value: deals.filter(
                       (d) => p.ws.stages.find((s) => s.id === d.stageId)?.outcome === 'open',
                     ).length,
                   },
                   {
-                    label: 'Active work',
-                    value: projects(p).filter((j) => j.status !== 'completed').length,
+                    label: 'Orders in production',
+                    value: projects(p).filter((j) => isReleased(j) && j.status !== 'completed')
+                      .length,
                   },
                   {
                     label: 'Customer balances due',
@@ -1500,7 +1681,7 @@ export function Overview(p: PageProps) {
                   dealForm(p);
                 }}
               >
-                New opportunity <Icon name="chevron" size={16} />
+                New project <Icon name="chevron" size={16} />
               </Button>
             )}
             {p.ws.modules.includes('money') && can(p, 'money.submit') && (

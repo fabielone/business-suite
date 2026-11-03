@@ -39,6 +39,9 @@ export type Contact = Row & {
   url: string;
   notes: string;
   weight: number;
+  /** Added with the CRM workflow; absent on older records. */
+  position?: string;
+  decisionMaker?: 'yes' | 'no' | 'unknown';
 };
 export type Deal = Row & {
   title: string;
@@ -49,6 +52,24 @@ export type Deal = Row & {
   notes: string;
   projectId: string;
 };
+/** A piece of an Order's production work, assigned to one team member. */
+export type Job = {
+  id: string;
+  name: string;
+  assigneeId: string;
+  stage: ProductionStage;
+  due: string;
+  notes: string;
+};
+export type Release = {
+  basis: 'deposit' | 'manager';
+  reason: string;
+  at: string;
+};
+/**
+ * Stored as `projects` for compatibility; in the product vocabulary this is an Order.
+ * A Deal is a Project (sales). See the CRM workflow and terminology requirements note.
+ */
 export type Project = Row & {
   title: string;
   contactId: string;
@@ -58,7 +79,21 @@ export type Project = Row & {
   notes: string;
   dealId: string;
   assigneeId: string;
+  /** Added with the CRM workflow; absent on older records. */
+  number?: number;
+  release?: Release;
+  jobs?: Job[];
 };
+export const PRODUCTION_STAGES = [
+  'Awaiting release',
+  'Design',
+  'Design approved',
+  'Fabrication',
+  'Installation',
+  'Delivered',
+  'Closed',
+] as const;
+export type ProductionStage = (typeof PRODUCTION_STAGES)[number];
 export type Attachment = {
   name: string;
   mime: 'image/png' | 'image/jpeg' | 'application/pdf';
@@ -191,7 +226,7 @@ export const PRESETS: Record<
     modules: ['crm', 'work', 'money', 'chores'],
     plan: 'business',
     description: 'Lead to quotation, installation and collection.',
-    workLabel: 'Jobs',
+    workLabel: 'Production',
   },
   household: {
     name: 'Household',

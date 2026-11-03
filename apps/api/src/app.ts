@@ -79,7 +79,7 @@ export function buildApp(options: Options) {
         .code(
           error.code === 'CONFLICT' || error.code === 'IDEMPOTENCY_CONFLICT'
             ? 409
-            : error.code === 'MODULE_DISABLED'
+            : error.code === 'MODULE_DISABLED' || error.code === 'ACTION_DENIED'
               ? 403
               : 400,
         )
