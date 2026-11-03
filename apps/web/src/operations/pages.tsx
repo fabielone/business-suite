@@ -21,6 +21,7 @@ import {
   type Workspace,
   type Access,
   type Contact,
+  type Company,
   type Deal,
   type Project,
   type Expense,
@@ -46,6 +47,7 @@ import {
 } from './components';
 import { download, eml } from './client';
 import { Notifications } from './Automations';
+import { ContactImport } from './Import';
 
 export interface PageProps {
   data: SuiteData;
@@ -88,6 +90,7 @@ const money = (p: PageProps, amount: number) => formatMoney(amount, p.ws.currenc
 const members = (p: PageProps) =>
   active(rows(p.data.contacts, p.ws)).filter((c) => c.kind === 'member');
 const projects = (p: PageProps) => active(rows(p.data.projects, p.ws));
+const companies = (p: PageProps) => active(rows(p.data.companies ?? [], p.ws));
 const ordersOf = (p: PageProps, dealId: string) => projects(p).filter((o) => o.dealId === dealId);
 const decisionMaker = (p: PageProps, contactId: string) =>
   p.data.contacts.find((c) => c.id === contactId)?.decisionMaker ?? 'unknown';
@@ -127,7 +130,7 @@ function archive(p: PageProps, collection: string, id: string) {
     submit: (_v, key) => p.run('record.archive', { collection, id }, key),
   });
 }
-function contactForm(p: PageProps, row?: Contact, kind?: Contact['kind']) {
+function contactForm(p: PageProps, row?: Contact, kind?: Contact['kind'], companyId = '') {
   action(
     p,
     row ? 'Edit contact' : 'Add contact',
@@ -142,10 +145,14 @@ function contactForm(p: PageProps, row?: Contact, kind?: Contact['kind']) {
           label: s[0]!.toUpperCase() + s.slice(1),
         })),
       ),
-      field('company', 'Company / specialization'),
       ...(p.ws.preset === 'household'
-        ? []
+        ? [field('company', 'Company / specialization')]
         : [
+            {
+              ...select('companyId', 'Company', options(companies(p), 'No linked company')),
+              hint: 'Add companies in the Companies tab, or import them with people.',
+            },
+            field('company', 'Company name if not linked / specialization'),
             field('position', 'Position'),
             {
               ...select('decisionMaker', 'Decision maker', [
@@ -167,8 +174,9 @@ function contactForm(p: PageProps, row?: Contact, kind?: Contact['kind']) {
       field('notes', 'Notes', 'textarea'),
     ],
     row
-      ? { decisionMaker: 'unknown', position: '', ...row }
+      ? { decisionMaker: 'unknown', position: '', companyId: '', ...row }
       : {
+          companyId,
           decisionMaker: 'unknown',
           kind:
             kind ??
@@ -183,6 +191,7 @@ function contactForm(p: PageProps, row?: Contact, kind?: Contact['kind']) {
 }
 export function Contacts(p: PageProps) {
   const contacts = active(rows(p.data.contacts, p.ws)).filter((r) => match(r, p.search));
+  const [importing, setImporting] = useState(false);
   return (
     <>
       <PageTitle
@@ -190,12 +199,20 @@ export function Contacts(p: PageProps) {
         description="Customers, suppliers, members and candidates used across this workspace."
         action={
           can(p, 'contacts.write') && (
-            <Button icon="plus" onClick={() => contactForm(p)}>
-              Add contact
-            </Button>
+            <div className="op-row-actions">
+              {p.ws.preset !== 'household' && (
+                <Button secondary icon="upload" onClick={() => setImporting((v) => !v)}>
+                  Import
+                </Button>
+              )}
+              <Button icon="plus" onClick={() => contactForm(p)}>
+                Add contact
+              </Button>
+            </div>
           )
         }
       />
+      {importing && <ContactImport {...p} close={() => setImporting(false)} />}
       {contacts.length ? (
         <Table
           headings={[
@@ -222,6 +239,7 @@ export function Contacts(p: PageProps) {
               <td>
                 {p.ws.preset === 'household' ? c.weight : c.company || '—'}
                 {c.position && <small>{c.position}</small>}
+                {c.source && <small>Source: {c.source}</small>}
                 {c.decisionMaker === 'yes' && <Badge tone="good">Decision maker</Badge>}
               </td>
               <td>
@@ -239,6 +257,98 @@ export function Contacts(p: PageProps) {
         <Empty title="No people yet">
           Add customers, suppliers, candidates or household members to link them to work, money and
           referrals.
+        </Empty>
+      )}
+    </>
+  );
+}
+function companyForm(p: PageProps, row?: Company) {
+  action(
+    p,
+    row ? 'Edit company' : 'Add company',
+    'company.save',
+    [
+      field('name', 'Company name', 'text', true),
+      select(
+        'primaryContactId',
+        'Contact person',
+        options(
+          active(rows(p.data.contacts, p.ws)).filter(
+            (c) => !row || !c.companyId || c.companyId === row.id,
+          ),
+          'No contact person',
+        ),
+      ),
+      field('phone', 'Phone'),
+      field('email', 'Email', 'email'),
+      field('url', 'Website', 'url'),
+      field('address', 'Address', 'textarea'),
+      field('notes', 'Notes', 'textarea'),
+    ],
+    row ?? { primaryContactId: '' },
+  );
+}
+export function Companies(p: PageProps) {
+  const list = companies(p).filter((r) => match(r, p.search));
+  const people = active(rows(p.data.contacts, p.ws));
+  return (
+    <>
+      <PageTitle
+        title="Companies"
+        description="Organizations you sell to or buy from. People link to a company; projects stay linked to a person."
+        action={
+          can(p, 'contacts.write') && (
+            <Button icon="plus" onClick={() => companyForm(p)}>
+              Add company
+            </Button>
+          )
+        }
+      />
+      {list.length ? (
+        <Table headings={['Company', 'Contact person', 'Contact', 'People', 'Actions']}>
+          {list.map((c) => {
+            const primary = people.find((x) => x.id === c.primaryContactId);
+            const linked = people.filter((x) => x.companyId === c.id);
+            return (
+              <tr key={c.id}>
+                <td>
+                  <strong>{c.name}</strong>
+                  {c.address && <small className="op-truncate">{c.address}</small>}
+                  {c.source && <small>Source: {c.source}</small>}
+                </td>
+                <td>
+                  {primary?.name ?? '—'}
+                  {primary?.position && <small>{primary.position}</small>}
+                </td>
+                <td>
+                  {/* Without its own phone, show the contact person's, without copying it. */}
+                  {c.email || primary?.email || '—'}
+                  <small>{c.phone || primary?.phone}</small>
+                  {c.url && <small className="op-truncate">{c.url}</small>}
+                </td>
+                <td>
+                  {linked.length}
+                  <small className="op-truncate">{linked.map((x) => x.name).join(', ')}</small>
+                </td>
+                <td>
+                  {can(p, 'contacts.write') && (
+                    <div className="op-row-actions">
+                      <button onClick={() => companyForm(p, c)}>Edit</button>
+                      <button onClick={() => contactForm(p, undefined, 'customer', c.id)}>
+                        Add person
+                      </button>
+                      <button onClick={() => archive(p, 'companies', c.id)}>Archive</button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </Table>
+      ) : (
+        <Empty title="No companies yet">
+          Add a company, import a list from People, or connect a website form in Settings → Lead
+          intake.
         </Empty>
       )}
     </>

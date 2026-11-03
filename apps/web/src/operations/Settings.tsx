@@ -15,6 +15,7 @@ import {
 import { api, download, updateSamples } from './client';
 import { Badge, Button, PageTitle, Panel, Table, type FormSpec } from './components';
 import type { PageProps } from './pages';
+import { LeadIntake } from './LeadIntake';
 
 export function Settings(
   p: PageProps & {
@@ -520,6 +521,7 @@ export function Settings(
           </dl>
         </details>
       </Panel>
+      {manage && p.ws.preset !== 'household' && <LeadIntake {...p} />}
       <Panel title="Archived records">
         <p className="op-caption">
           Restore archived people, work, tasks and referral records. Enable their module first if it
@@ -527,9 +529,18 @@ export function Settings(
         </p>
         <div className="op-list">
           {(
-            ['contacts', 'deals', 'projects', 'tasks', 'referrals', 'templates', 'drafts'] as const
+            [
+              'contacts',
+              'companies',
+              'deals',
+              'projects',
+              'tasks',
+              'referrals',
+              'templates',
+              'drafts',
+            ] as const
           ).flatMap((collection) =>
-            p.data[collection]
+            (p.data[collection] ?? [])
               .filter((row) => row.workspaceId === p.ws.id && row.archived)
               .map((row) => (
                 <div key={row.id}>

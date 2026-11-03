@@ -41,6 +41,7 @@ import {
 import {
   Overview,
   Contacts,
+  Companies,
   CRM,
   Work,
   Money,
@@ -68,6 +69,7 @@ const PAGE_NAMES: Record<string, string> = {
   overview: 'Overview',
   crm: 'Pipeline',
   contacts: 'People',
+  companies: 'Companies',
   work: 'Jobs',
   money: 'Money',
   chores: 'Tasks',
@@ -131,6 +133,9 @@ export function OperationsApp() {
   const [entries, setEntries] = useState<WorkspaceEntry[]>([]);
   const [entry, setEntry] = useState<WorkspaceEntry | null>(null);
   const [data, setData] = useState<SuiteData>(emptyData);
+  // Several commands in one flow (import batches) must not compare against a stale render.
+  const revisionRef = useRef(0);
+  revisionRef.current = data.revision;
   const [page, setPage] = useState('overview');
   const [search, setSearch] = useState('');
   const [form, setForm] = useState<FormSpec | null>(null);
@@ -419,11 +424,12 @@ export function OperationsApp() {
       workspaceId: entry.workspace.id,
       type,
       payload,
-      expectedRevision: data.revision + pendingRef.current.length,
+      expectedRevision: revisionRef.current + pendingRef.current.length,
     };
     if (example) {
       authorizeCommand(data, command, exampleActor);
       const result = await sampleCommand(command);
+      revisionRef.current = result.revision;
       setData(result);
       setEntries(sampleEntries(result));
       const ws = result.workspaces.find((w) => w.id === entry.workspace.id)!;
@@ -474,6 +480,7 @@ export function OperationsApp() {
           return;
         }
       }
+      revisionRef.current = result.data.revision;
       setData(result.data);
       setEntry({
         workspace: result.data.workspaces[0]!,
@@ -811,6 +818,7 @@ export function OperationsApp() {
   const nav = [
     'overview',
     ...(grants.includes('contacts.read') ? ['contacts'] : []),
+    ...(grants.includes('contacts.read') && ws?.preset !== 'household' ? ['companies'] : []),
     ...(['crm', 'work', 'money', 'chores', 'referrals'] as Module[]).filter(
       (m) =>
         ws?.modules.includes(m) &&
@@ -831,6 +839,7 @@ export function OperationsApp() {
         {
           overview: <Overview {...props} />,
           contacts: <Contacts {...props} />,
+          companies: <Companies {...props} />,
           crm: <CRM {...props} />,
           work: <Work {...props} />,
           money: <Money {...props} />,

@@ -42,6 +42,22 @@ export type Contact = Row & {
   /** Added with the CRM workflow; absent on older records. */
   position?: string;
   decisionMaker?: 'yes' | 'no' | 'unknown';
+  /** Linked Company record; `company` keeps its name (or free text when unlinked). */
+  companyId?: string;
+  /** Where the record came from: a form, a sales channel or an import file. */
+  source?: string;
+};
+/** An organization. People link to it with `companyId`; it is not a user account. */
+export type Company = Row & {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  url: string;
+  notes: string;
+  /** The usual contact person; empty when none is chosen. */
+  primaryContactId: string;
+  source?: string;
 };
 export type Deal = Row & {
   title: string;
@@ -227,6 +243,7 @@ export type SuiteData = {
   revision: number;
   workspaces: Workspace[];
   contacts: Contact[];
+  companies: Company[];
   deals: Deal[];
   projects: Project[];
   expenses: Expense[];
@@ -315,6 +332,7 @@ export const emptyData = (): SuiteData => ({
   revision: 0,
   workspaces: [],
   contacts: [],
+  companies: [],
   deals: [],
   projects: [],
   expenses: [],

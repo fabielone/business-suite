@@ -96,6 +96,7 @@ export function projectForActor(data: SuiteData, actor: Actor): SuiteData {
   const ws = copy.workspaces[0];
   const access = {
     contacts: 'contacts.read',
+    companies: 'contacts.read',
     deals: 'crm.read',
     projects: 'work.read',
     expenses: 'money.read',
@@ -132,6 +133,8 @@ export function projectForActor(data: SuiteData, actor: Actor): SuiteData {
       ...data.contacts.filter((c) => c.kind === 'member').map((c) => c.id),
     ]);
     copy.contacts = copy.contacts.filter((c) => visible.has(c.id));
+    const companies = new Set(copy.contacts.map((c) => c.companyId));
+    copy.companies = (copy.companies ?? []).filter((c) => companies.has(c.id));
   }
   if (!grants.includes('prices.read')) {
     copy.projects.forEach((o) => {

@@ -33,6 +33,7 @@ const TABLES = {
   automations: 'suite_automations',
   automationRuns: 'suite_automation_runs',
   notifications: 'suite_notifications',
+  companies: 'suite_companies',
 } as const;
 /** Audit actor for changes the scheduler makes; no person has this ID. */
 const AUTOMATION_ACTOR = '00000000-0000-0000-0000-000000000000';
@@ -507,5 +508,264 @@ export function registerOperations(
       );
       return { workspace: restored.workspaces[0] };
     });
+  });
+  // Lead intake keys: owners and managers create one per form or sales channel.
+  type IntakeKey = { id: string; name: string; source: string; origins: string[] };
+  const intakeOrigins = (value: unknown): string[] => {
+    const list = value ?? [];
+    if (!Array.isArray(list) || list.length > 10)
+      throw new DomainError(400, 'INVALID_INPUT', 'List at most 10 website origins.');
+    return list.map((o) => {
+      let parsed: URL | undefined;
+      try {
+        parsed = new URL(String(o));
+      } catch {
+        // Reported below.
+      }
+      if (!parsed || !['https:', 'http:'].includes(parsed.protocol) || parsed.origin !== o)
+        throw new DomainError(
+          400,
+          'INVALID_INPUT',
+          'Each website must be an origin such as https://www.example.com (no path).',
+        );
+      return parsed.origin;
+    });
+  };
+  const audit = (
+    tx: Sql,
+    spaceId: string,
+    actor: string,
+    action: string,
+    recordId: string,
+    summary: string,
+  ) => {
+    const entry = {
+      id: randomUUID(),
+      workspaceId: spaceId,
+      at: new Date().toISOString(),
+      action,
+      recordId,
+      summary,
+    };
+    return tx.query(
+      'INSERT INTO suite_space_audit(space_id,id,actor_id,payload) VALUES($1,$2,$3,$4::jsonb)',
+      [spaceId, entry.id, actor, JSON.stringify(entry)],
+    );
+  };
+  app.get<{ Params: { id: string } }>('/v2/workspaces/:id/intake-keys', async (request) => {
+    const user = await authenticate(request);
+    return context(user, request.params.id, async (tx, _member, grants) => {
+      permitted(grants, 'workspace.manage');
+      return {
+        keys: (
+          await tx.query(
+            'SELECT id,name,prefix,source,origins,created_at AS "createdAt",last_used_at AS "lastUsedAt",revoked_at AS "revokedAt" FROM suite_intake_keys WHERE space_id=$1 ORDER BY created_at',
+            [request.params.id],
+          )
+        ).rows,
+      };
+    });
+  });
+  app.post<{ Params: { id: string } }>('/v2/workspaces/:id/intake-keys', async (request) => {
+    const user = await authenticate(request);
+    return context(user, request.params.id, async (tx, _member, grants) => {
+      permitted(grants, 'workspace.manage');
+      const p = (request.body ?? {}) as Record<string, unknown>;
+      const name = typeof p.name === 'string' ? p.name.trim() : '';
+      const source = typeof p.source === 'string' && p.source.trim() ? p.source.trim() : name;
+      if (!name || name.length > 80 || source.length > 120)
+        throw new DomainError(
+          400,
+          'INVALID_INPUT',
+          'Name the form or channel (up to 80 characters).',
+        );
+      const origins = intakeOrigins(p.origins);
+      const id = randomUUID();
+      const key = 'sik_' + randomBytes(24).toString('base64url');
+      await tx.query(
+        'INSERT INTO suite_intake_keys(space_id,id,name,prefix,key_hash,source,origins,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',
+        [request.params.id, id, name, key.slice(0, 10), hash(key), source, origins, user.id],
+      );
+      await audit(
+        tx,
+        request.params.id,
+        user.id,
+        'intake.key.create',
+        id,
+        `Created lead intake key ${name}`,
+      );
+      // The only time the key is available; it is stored as a hash.
+      return { id, name, source, origins, key };
+    });
+  });
+  app.post<{ Params: { id: string; keyId: string } }>(
+    '/v2/workspaces/:id/intake-keys/:keyId/revoke',
+    async (request) => {
+      const user = await authenticate(request);
+      return context(user, request.params.id, async (tx, _member, grants) => {
+        permitted(grants, 'workspace.manage');
+        const keyId = uuid(request.params.keyId, 'Key');
+        const revoked = await tx.query<{ name: string }>(
+          'UPDATE suite_intake_keys SET revoked_at=now() WHERE space_id=$1 AND id=$2 AND revoked_at IS NULL RETURNING name',
+          [request.params.id, keyId],
+        );
+        if (!revoked.rows[0]) throw new DomainError(404, 'NOT_FOUND', 'Active key not found.');
+        await audit(
+          tx,
+          request.params.id,
+          user.id,
+          'intake.key.revoke',
+          keyId,
+          `Revoked lead intake key ${revoked.rows[0].name}`,
+        );
+        return { revoked: true };
+      });
+    },
+  );
+  /**
+   * Public lead intake for website forms, landing pages and sales channels (Zapier, Make,
+   * ad lead forms, chat tools). Authenticated by an intake key, not a person: it can only
+   * add leads, never read data, and never changes people or companies already recorded.
+   */
+  /** Project fields sit beside `fields` in JSON and among the fields in a form post. */
+  const pick = (body: Record<string, unknown>) =>
+    Object.fromEntries(
+      Object.entries(body).filter(([k]) => k === 'projectTitle' || k === 'estimatedValueMinor'),
+    );
+  const intakeAttempts = new Map<string, { count: number; reset: number }>();
+  const intakeLimit = (ip: string, spaceId: string) => {
+    const k = ip + spaceId;
+    const value = intakeAttempts.get(k);
+    const current =
+      value && value.reset > Date.now() ? value : { count: 0, reset: Date.now() + 60000 };
+    current.count++;
+    intakeAttempts.set(k, current);
+    if (intakeAttempts.size > 10000)
+      for (const [key, v] of intakeAttempts) if (v.reset < Date.now()) intakeAttempts.delete(key);
+    if (current.count > 30)
+      throw new DomainError(
+        429,
+        'RATE_LIMIT',
+        'Too many submissions. Wait a minute and try again.',
+      );
+  };
+  void app.register(async (scope) => {
+    // Plain HTML forms post url-encoded bodies; only this route accepts them.
+    scope.addContentTypeParser(
+      'application/x-www-form-urlencoded',
+      { parseAs: 'string' },
+      (_request, body, done) => done(null, Object.fromEntries(new URLSearchParams(body as string))),
+    );
+    scope.post<{ Params: { id: string } }>(
+      '/v2/intake/:id/leads',
+      { bodyLimit: 32 * 1024 },
+      async (request, reply) => {
+        const spaceId = uuid(request.params.id, 'Workspace');
+        intakeLimit(request.ip, spaceId);
+        const body = request.body as Record<string, unknown> | undefined;
+        if (!body || typeof body !== 'object' || Array.isArray(body))
+          throw new DomainError(400, 'INVALID_INPUT', 'Send the lead as JSON or a form post.');
+        const bearer = /^Bearer (.+)$/.exec(request.headers.authorization ?? '')?.[1];
+        const key = request.headers['x-intake-key'] ?? bearer ?? body._key;
+        if (typeof key !== 'string' || !/^sik_[\w-]{20,64}$/.test(key))
+          throw new DomainError(401, 'INTAKE_KEY_REQUIRED', 'A valid intake key is required.');
+        // Bots fill hidden fields; answer as if accepted and store nothing.
+        if (typeof body._gotcha === 'string' && body._gotcha.trim())
+          return reply.code(202).send({ accepted: true });
+        const raw =
+          body.fields && typeof body.fields === 'object' && !Array.isArray(body.fields)
+            ? (body.fields as Record<string, unknown>)
+            : Object.fromEntries(Object.entries(body).filter(([k]) => !k.startsWith('_')));
+        const { projectTitle, estimatedValueMinor, ...fields } = { ...raw, ...pick(body) };
+        const payload: Record<string, unknown> = { fields };
+        if (typeof projectTitle === 'string' && projectTitle.trim())
+          payload.projectTitle = projectTitle;
+        // Form posts send text; the command still rejects anything but whole minor units.
+        if (estimatedValueMinor !== undefined && estimatedValueMinor !== '')
+          payload.estimatedValueMinor = /^\d{1,12}$/.test(String(estimatedValueMinor))
+            ? Number(estimatedValueMinor)
+            : estimatedValueMinor;
+        const retry = request.headers['idempotency-key'];
+        if (retry !== undefined && (typeof retry !== 'string' || !/^[\w-]{8,100}$/.test(retry)))
+          throw new DomainError(
+            400,
+            'INVALID_INPUT',
+            'Idempotency-Key must be 8-100 letters, digits, - or _.',
+          );
+        const result = await db.transaction(async (tx) => {
+          await tx.query("SELECT set_config('suite.space_id',$1,true)", [spaceId]);
+          const found = (
+            await tx.query<IntakeKey>(
+              'SELECT id,name,source,origins FROM suite_intake_keys WHERE space_id=$1 AND key_hash=$2 AND revoked_at IS NULL',
+              [spaceId, hash(key)],
+            )
+          ).rows[0];
+          if (!found)
+            throw new DomainError(
+              401,
+              'INTAKE_KEY_DENIED',
+              'This intake key is not valid for this workspace.',
+            );
+          const origin = request.headers.origin;
+          if (origin && !found.origins.includes(origin))
+            throw new DomainError(
+              403,
+              'ORIGIN_DENIED',
+              'This website is not allowed to send leads with this key.',
+            );
+          payload.source = found.source;
+          const command: Command = {
+            id:
+              'intake-' +
+              (retry
+                ? createHash('sha256')
+                    .update(found.id + retry)
+                    .digest('hex')
+                    .slice(0, 40)
+                : randomUUID()),
+            workspaceId: spaceId,
+            type: 'lead.capture',
+            payload,
+          };
+          const fingerprint = createHash('sha256')
+            .update(JSON.stringify({ type: command.type, payload: command.payload }))
+            .digest('hex');
+          const previous = (
+            await tx.query<{ fingerprint: string }>(
+              'SELECT fingerprint FROM suite_space_commands WHERE space_id=$1 AND id=$2',
+              [spaceId, command.id],
+            )
+          ).rows[0];
+          if (previous) {
+            if (previous.fingerprint !== fingerprint)
+              throw new DomainError(
+                409,
+                'IDEMPOTENCY_CONFLICT',
+                'This Idempotency-Key was already used for a different lead.',
+              );
+            return { found, duplicate: true };
+          }
+          const before = await read(tx, spaceId, true);
+          const after = executeCommand(before, command);
+          await save(tx, before, after, found.id, { command, fingerprint });
+          await tx.query(
+            'UPDATE suite_intake_keys SET last_used_at=now() WHERE space_id=$1 AND id=$2',
+            [spaceId, found.id],
+          );
+          return { found, duplicate: false };
+        });
+        const next = typeof body._redirect === 'string' ? body._redirect : '';
+        let target: URL | undefined;
+        try {
+          target = next ? new URL(next) : undefined;
+        } catch {
+          target = undefined;
+        }
+        // Only back to a website this key allows, so the endpoint is not an open redirect.
+        if (target && result.found.origins.includes(target.origin))
+          return reply.redirect(target.href, 303);
+        return reply.code(result.duplicate ? 200 : 201).send({ accepted: true });
+      },
+    );
   });
 }

@@ -151,6 +151,8 @@ test('shared activation, encrypted offline capture and reconnection preserve int
         'suite_referrals',
         'suite_message_templates',
         'suite_message_drafts',
+        'suite_companies',
+        'suite_intake_keys',
         'suite_space_commands',
         'suite_space_audit',
         'suite_invitations',

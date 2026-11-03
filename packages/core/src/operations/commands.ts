@@ -9,6 +9,7 @@ import {
   type Preset,
   type Plan,
   type Contact,
+  type Company,
   type Row,
   type Expense,
   type Payment,
@@ -19,6 +20,14 @@ import {
 } from './types.js';
 import { orderJobs, isReleased } from './production.js';
 import {
+  normalizeLead,
+  leadError,
+  findCompany,
+  findPerson,
+  IMPORT_BATCH,
+  type NormalizedLead,
+} from './intake.js';
+import {
   parseAutomation,
   runAutomations,
   tickAutomations,
@@ -28,6 +37,7 @@ import {
   MAX_AUTOMATION_DEPTH,
 } from './automations.js';
 import {
+  OperationError,
   ensure,
   sum,
   allocate,
@@ -329,6 +339,99 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
     due,
     notes,
   });
+  /** Keeps notes within their limit; the newest line is shortened, never older notes. */
+  const appendNote = (notes: string, line: string) => {
+    const room = 10000 - notes.length - (notes ? 1 : 0);
+    return room < 20 ? notes : notes + (notes ? '\n' : '') + line.slice(0, room);
+  };
+  /**
+   * Adds the Person and Company of one lead, or finds them by email/phone and company name.
+   * `fill` never changes existing records except adding the note; `update` replaces their
+   * fields with the non-empty incoming ones; `skip` leaves them untouched.
+   */
+  const intake = (
+    lead: NormalizedLead,
+    ids: { person: string; company: string },
+    existing: 'fill' | 'update' | 'skip',
+    note: string,
+  ) => {
+    ensure(!leadError(lead), leadError(lead));
+    const source = text(lead.source, 'Source', 120);
+    let company: Company | undefined;
+    let person: Contact | undefined;
+    const counts = { people: 0, companies: 0, updated: 0 };
+    if (lead.company) {
+      const fields = {
+        name: text(lead.company.name, 'Company name', 200, true),
+        email: email(lead.company.email),
+        phone: text(lead.company.phone, 'Company phone', 50),
+        url: url(lead.company.url),
+        address: text(lead.company.address, 'Address', 500),
+      };
+      company = findCompany(data, wsId, fields.name);
+      if (!company) {
+        ensure(
+          !data.companies.some((c) => c.id === ids.company),
+          'A record with this ID already exists.',
+          'CONFLICT',
+        );
+        company = { ...base(ids.company), ...fields, notes: '', primaryContactId: '', source };
+        data.companies.push(company);
+        counts.companies++;
+      } else if (existing === 'update') {
+        for (const [k, v] of Object.entries(fields)) if (v) Object.assign(company, { [k]: v });
+        touch(company);
+        counts.updated++;
+      }
+    }
+    if (lead.person) {
+      const fields = {
+        name: text(lead.person.name, 'Name', 150, true),
+        email: email(lead.person.email),
+        phone: text(lead.person.phone, 'Phone', 50),
+        position: text(lead.person.position, 'Position', 120),
+        url: url(lead.person.url),
+      };
+      person = findPerson(data, wsId, fields);
+      if (!person) {
+        ensure(
+          !data.contacts.some((c) => c.id === ids.person),
+          'A record with this ID already exists.',
+          'CONFLICT',
+        );
+        person = {
+          ...base(ids.person),
+          ...fields,
+          kind: lead.person.kind,
+          company: company?.name ?? '',
+          ...(company ? { companyId: company.id } : {}),
+          notes: note,
+          weight: 1,
+          decisionMaker: 'unknown',
+          source,
+        };
+        data.contacts.push(person);
+        counts.people++;
+      } else if (existing === 'update') {
+        for (const [k, v] of Object.entries(fields)) if (v) Object.assign(person, { [k]: v });
+        if (company) Object.assign(person, { company: company.name, companyId: company.id });
+        if (note) person.notes = appendNote(person.notes, note);
+        touch(person);
+        counts.updated++;
+      } else if (existing === 'fill' && note) {
+        person.notes = appendNote(person.notes, note);
+        touch(person);
+      }
+      if (company && !company.primaryContactId && person.companyId === company.id) {
+        company.primaryContactId = person.id;
+        touch(company);
+      }
+    } else if (company && note && existing !== 'skip') {
+      company.notes = appendNote(company.notes, note);
+      touch(company);
+    }
+    return { person, company, counts };
+  };
   let summary = command.type.replaceAll('.', ' ');
   let auditRecordId = recordId;
   const systemOnly = () =>
@@ -417,10 +520,12 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
         Number.isInteger(weight) && weight > 0 && weight <= 100000,
         'Contribution weight must be a whole number from 1 to 100000.',
       );
+      const linked = p.companyId ? own(data.companies, p.companyId, wsId) : undefined;
       const fields = {
         name: string(p, 'name', 150, true),
         kind,
-        company: string(p, 'company'),
+        company: linked ? linked.name : string(p, 'company'),
+        companyId: linked?.id ?? '',
         email: email(p.email),
         phone: string(p, 'phone', 50),
         url: url(p.url),
@@ -441,6 +546,123 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
         data.contacts.push({ ...base(recordId), ...fields });
       }
       summary = `Saved contact ${fields.name}`;
+      break;
+    }
+    case 'company.save': {
+      const existing = p.id ? own(data.companies, p.id, wsId) : undefined;
+      const fields = {
+        name: string(p, 'name', 200, true),
+        email: email(p.email),
+        phone: string(p, 'phone', 50),
+        address: string(p, 'address', 500),
+        url: url(p.url),
+        notes: string(p, 'notes', 10000),
+        primaryContactId: contact(data, p.primaryContactId, wsId),
+      };
+      const duplicate = findCompany(data, wsId, fields.name);
+      ensure(
+        !duplicate || duplicate.id === existing?.id,
+        `A company named ${duplicate?.name} already exists.`,
+        'CONFLICT',
+      );
+      if (existing) {
+        Object.assign(existing, fields);
+        touch(existing);
+        // People show the company name; keep it in step with a rename.
+        for (const c of data.contacts)
+          if (c.companyId === existing.id && c.company !== existing.name) {
+            c.company = existing.name;
+            touch(c);
+          }
+      } else {
+        newRecord(data.companies);
+        data.companies.push({ ...base(recordId), ...fields, source: string(p, 'source', 120) });
+      }
+      summary = `Saved company ${fields.name}`;
+      break;
+    }
+    case 'lead.capture': {
+      // Public forms and sales channels: never change an existing person or company, never
+      // create team members, and add the message as a note.
+      ensure(
+        p.fields && typeof p.fields === 'object' && !Array.isArray(p.fields),
+        'Send the lead fields as an object.',
+      );
+      const source = string(p, 'source', 120) || 'Lead form';
+      const lead = normalizeLead({ ...(p.fields as Record<string, unknown>), source }, 'customer');
+      if (lead.person?.kind === 'member') lead.person.kind = 'customer';
+      const note = `[${now.slice(0, 10)} ${source}] ${lead.notes || 'New lead'}`;
+      const { person, company, counts } = intake(
+        lead,
+        { person: `${command.id}-p`, company: `${command.id}-c` },
+        'fill',
+        note,
+      );
+      const projectTitle = string(p, 'projectTitle', 200);
+      if (projectTitle && ws!.modules.includes('crm')) {
+        const stage = ws!.stages.find((s) => s.outcome === 'open')!;
+        const dealId = `${command.id}-d`;
+        ensure(
+          !data.deals.some((d) => d.id === dealId),
+          'A record with this ID already exists.',
+          'CONFLICT',
+        );
+        data.deals.push({
+          ...base(dealId),
+          title: projectTitle,
+          contactId: person?.id ?? '',
+          amountMinor: amount(p.estimatedValueMinor ?? 0, true),
+          stageId: stage.id,
+          due: '',
+          notes: lead.notes,
+          projectId: '',
+        });
+      }
+      auditRecordId = person?.id ?? company!.id;
+      summary = `Lead from ${source}: ${person?.name ?? company!.name}${
+        counts.people || counts.companies ? '' : ' (already known)'
+      }`;
+      break;
+    }
+    case 'contact.import': {
+      ensure(
+        Array.isArray(p.rows) && p.rows.length > 0 && p.rows.length <= IMPORT_BATCH,
+        `Import between 1 and ${IMPORT_BATCH} rows per batch.`,
+      );
+      const existing = choice(p.existing ?? 'skip', ['skip', 'update'] as const, 'duplicate rule');
+      const kind = choice(
+        p.kind ?? 'customer',
+        ['customer', 'supplier', 'member', 'candidate', 'employer'] as const,
+        'contact type',
+      );
+      const source = string(p, 'source', 120) || 'Import';
+      const offset = Number(p.offset ?? 0);
+      ensure(Number.isSafeInteger(offset) && offset >= 0, 'Invalid row offset.');
+      const total = { people: 0, companies: 0, updated: 0 };
+      (p.rows as unknown[]).forEach((raw, i) => {
+        try {
+          ensure(raw && typeof raw === 'object' && !Array.isArray(raw), 'Invalid row.');
+          const lead = normalizeLead({ source, ...(raw as Record<string, unknown>) }, kind);
+          const { counts } = intake(
+            lead,
+            { person: `${command.id}-p${i}`, company: `${command.id}-c${i}` },
+            existing,
+            lead.notes,
+          );
+          total.people += counts.people;
+          total.companies += counts.companies;
+          total.updated += counts.updated;
+        } catch (error) {
+          throw new OperationError(
+            error instanceof OperationError && error.code !== 'INVALID_INPUT'
+              ? error.code
+              : 'INVALID_INPUT',
+            // The client sends each row's line number in its file.
+            `Row ${typeof (raw as { row?: unknown })?.row === 'number' ? (raw as { row: number }).row : offset + i + 1}: ${(error as Error).message}`,
+          );
+        }
+      });
+      summary = `Imported from ${source}: ${total.people} people, ${total.companies} companies added, ${total.updated} updated`;
       break;
     }
     case 'deal.save': {
@@ -1011,6 +1233,7 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
         p.collection,
         [
           'contacts',
+          'companies',
           'deals',
           'projects',
           'tasks',
@@ -1021,7 +1244,7 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
         ] as const,
         'record collection',
       );
-      if (key !== 'contacts' && key !== 'automations')
+      if (key !== 'contacts' && key !== 'companies' && key !== 'automations')
         requireModule(
           (
             {
@@ -1065,8 +1288,9 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
   });
   // Receipts intentionally persist: pruning them could turn a delayed retry into a duplicate.
   data.commands.push({ id: command.id, fingerprint });
+  // Importing old lists must not set off "new lead" rules for every row.
   const result =
-    depth < MAX_AUTOMATION_DEPTH
+    depth < MAX_AUTOMATION_DEPTH && command.type !== 'contact.import'
       ? runAutomations(before, data, wsId, now, command.id, depth, apply)
       : data;
   // One revision per person's command, including whatever its automations changed.

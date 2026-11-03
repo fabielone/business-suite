@@ -57,7 +57,8 @@ export const ROLE_GRANTS: Record<string, Access[]> = {
 export function commandAccess(type: string, collection?: unknown): Access {
   if (type === 'workspace.settings') return 'workspace.manage';
   if (type.startsWith('automation.')) return 'automations.manage';
-  if (type.startsWith('contact.')) return 'contacts.write';
+  if (type.startsWith('contact.') || type.startsWith('company.') || type === 'lead.capture')
+    return 'contacts.write';
   if (type.startsWith('deal.')) return 'crm.write';
   if (type === 'job.save') return 'work.assign';
   if (type === 'order.release') return 'work.write';
@@ -70,6 +71,7 @@ export function commandAccess(type: string, collection?: unknown): Access {
   if (type === 'record.archive' || type === 'record.restore') {
     const access: Record<string, Access> = {
       contacts: 'contacts.write',
+      companies: 'contacts.write',
       deals: 'crm.write',
       projects: 'work.write',
       tasks: 'chores.write',

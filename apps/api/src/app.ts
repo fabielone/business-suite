@@ -56,6 +56,22 @@ export function buildApp(options: Options) {
       }
     }
     const origin = request.headers.origin;
+    // Lead intake accepts posts from customers' websites; each key lists its own origins.
+    if (request.url.startsWith('/v2/intake/')) {
+      if (origin) {
+        reply.header('Access-Control-Allow-Origin', origin);
+        reply.header('Vary', 'Origin');
+        reply.header('Access-Control-Allow-Methods', 'POST,OPTIONS');
+        reply.header(
+          'Access-Control-Allow-Headers',
+          'Authorization,Content-Type,Idempotency-Key,X-Intake-Key',
+        );
+      }
+      reply.header('Cache-Control', 'no-store');
+      reply.header('X-Content-Type-Options', 'nosniff');
+      if (request.method === 'OPTIONS') return reply.code(204).send();
+      return;
+    }
     if (origin && !origins.has(origin))
       throw new DomainError(403, 'ORIGIN_DENIED', 'This browser origin is not allowed.');
     if (origin) {

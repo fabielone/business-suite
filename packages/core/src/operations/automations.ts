@@ -300,6 +300,7 @@ export const subjectKey = (s: AutomationSubject) => (s.jobId ? `${s.id}/${s.jobI
 const same = (a: AutomationSubject, b: AutomationSubject) => subjectKey(a) === subjectKey(b);
 /** Older stored documents predate these collections. */
 export function withAutomationCollections(data: SuiteData): SuiteData {
+  data.companies ??= [];
   data.automations ??= [];
   data.automationRuns ??= [];
   data.notifications ??= [];

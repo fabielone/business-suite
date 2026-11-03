@@ -89,6 +89,7 @@ export function validateData(value: unknown): SuiteData {
   const allIds = new Set<string>();
   const keys = [
     'contacts',
+    'companies',
     'deals',
     'projects',
     'expenses',
@@ -149,9 +150,27 @@ export function validateData(value: unknown): SuiteData {
         c.weight > 0 &&
         c.weight <= 100000 &&
         (c.position === undefined || text(c.position, 120)) &&
-        (c.decisionMaker === undefined || ['yes', 'no', 'unknown'].includes(c.decisionMaker)),
+        (c.decisionMaker === undefined || ['yes', 'no', 'unknown'].includes(c.decisionMaker)) &&
+        (c.source === undefined || text(c.source, 120)),
       'Invalid contact.',
     );
+    if (c.companyId) link(d.companies, c.companyId, c.workspaceId);
+    notes(c);
+  }
+  for (const c of d.companies) {
+    ensure(
+      text(c.name, 200) &&
+        c.name.trim() &&
+        text(c.phone, 50) &&
+        text(c.email, 254) &&
+        (!c.email || /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(c.email)) &&
+        text(c.url, 2000) &&
+        (!c.url || /^https?:\/\//.test(c.url)) &&
+        text(c.address, 500) &&
+        (c.source === undefined || text(c.source, 120)),
+      'Invalid company.',
+    );
+    link(d.contacts, c.primaryContactId, c.workspaceId);
     notes(c);
   }
   for (const r of [...d.deals, ...d.projects]) {
@@ -403,6 +422,7 @@ export function workspaceData(data: SuiteData, ws: Workspace): SuiteData {
   next.workspaces = [structuredClone(ws)];
   for (const key of [
     'contacts',
+    'companies',
     'deals',
     'projects',
     'expenses',
