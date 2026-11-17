@@ -35,6 +35,7 @@ const TABLES = {
   automationRuns: 'suite_automation_runs',
   notifications: 'suite_notifications',
   companies: 'suite_companies',
+  timeEntries: 'suite_time_entries',
 } as const;
 /** Audit actor for changes the scheduler makes; no person has this ID. */
 const AUTOMATION_ACTOR = '00000000-0000-0000-0000-000000000000';

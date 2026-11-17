@@ -140,6 +140,7 @@ export function validateData(value: unknown): SuiteData {
     'automations',
     'automationRuns',
     'notifications',
+    'timeEntries',
   ] as const;
   for (const key of keys)
     for (const r of d[key] as Row[]) {
@@ -458,6 +459,21 @@ export function validateData(value: unknown): SuiteData {
       'Invalid notification.',
     );
   }
+  for (const e of d.timeEntries) {
+    member(e.memberId, e.workspaceId);
+    link(d.projects, e.orderId, e.workspaceId);
+    ensure(
+      e.memberId !== 'pool' &&
+        dateTime(e.start) &&
+        (e.end === '' || (dateTime(e.end) && Date.parse(e.end) >= Date.parse(e.start))) &&
+        text(e.jobId, 300) &&
+        (e.jobId === '' || e.orderId !== '') &&
+        text(e.note, 1100) &&
+        (e.adjustedReason === undefined || text(e.adjustedReason, 500)) &&
+        (e.adjustedBy === undefined || text(e.adjustedBy, 120)),
+      'Invalid time entry.',
+    );
+  }
   for (const a of d.audit)
     ensure(
       a &&
@@ -495,6 +511,7 @@ export function workspaceData(data: SuiteData, ws: Workspace): SuiteData {
     'automations',
     'automationRuns',
     'notifications',
+    'timeEntries',
     'audit',
   ] as const)
     (next[key] as unknown[]) = structuredClone(

@@ -60,6 +60,7 @@ import {
   householdBalances,
   poolBalance,
 } from './calculations.js';
+import { openEntry, CLOCK_SKEW_MS, CLOCK_BACKDATE_MS, MAX_SHIFT_MS } from './time.js';
 
 const text = (value: unknown, label: string, max = 200, required = false): string => {
   ensure(typeof value === 'string', `${label} must be text.`);
@@ -510,6 +511,26 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
   };
   const memberName = (memberId: string) =>
     data.contacts.find((c) => c.id === memberId)?.name ?? 'Someone';
+  const instant = (value: unknown, label: string) => {
+    const s = text(value, label, 40, true);
+    ensure(Number.isFinite(Date.parse(s)), `Enter a valid ${label.toLowerCase()} time.`);
+    return new Date(s).toISOString();
+  };
+  /** Device time for offline punches, within limits; otherwise the server's time. */
+  const clockTime = (value: unknown) => {
+    if (!value) return now;
+    const at = instant(value, 'Clock');
+    const ms = Date.parse(at);
+    ensure(
+      ms <= Date.parse(now) + CLOCK_SKEW_MS,
+      'The device clock is ahead. Check the time and retry.',
+    );
+    ensure(
+      ms >= Date.parse(now) - CLOCK_BACKDATE_MS,
+      'This punch is more than 24 hours old. Ask a reviewer to add the hours.',
+    );
+    return at;
+  };
   let summary = command.type.replaceAll('.', ' ');
   let auditRecordId = recordId;
   const systemOnly = () =>
@@ -1410,6 +1431,102 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
         data.tasks.push(next);
       }
       summary = `Completed ${task.title}`;
+      break;
+    }
+    case 'time.clockIn': {
+      requireModule('work');
+      newRecord(data.timeEntries);
+      const memberId = member(data, p.memberId, wsId);
+      ensure(memberId !== 'pool', 'Choose a workspace member.');
+      const running = openEntry(data, wsId, memberId);
+      ensure(
+        !running,
+        `${memberName(memberId)} is already on the clock since ${running ? localTime(running.start, hoursOf(ws)) : ''}. Clock out first.`,
+        'CONFLICT',
+      );
+      const orderId = project(data, p.orderId, wsId);
+      let jobId = '';
+      if (p.jobId) {
+        ensure(orderId, 'Choose the order this job belongs to.');
+        const order = data.projects.find((o) => o.id === orderId)!;
+        jobId = orderJobs(order).find((j) => j.id === p.jobId)?.id ?? '';
+        ensure(jobId, 'The selected job is unavailable on this order.', 'NOT_FOUND');
+      }
+      const start = clockTime(p.at);
+      // An offline clock-in that syncs late must not overlap time already recorded.
+      const last = data.timeEntries
+        .filter((e) => e.workspaceId === wsId && e.memberId === memberId && !e.archived && e.end)
+        .reduce((max, e) => (e.end > max ? e.end : max), '');
+      ensure(
+        !last || start >= last,
+        'This clock-in is earlier than the last recorded clock-out. Ask a reviewer to correct the hours.',
+        'CONFLICT',
+      );
+      data.timeEntries.push({
+        ...base(recordId),
+        memberId,
+        start,
+        end: '',
+        orderId,
+        jobId,
+        note: string(p, 'note', 500),
+      });
+      summary = `${memberName(memberId)} clocked in`;
+      break;
+    }
+    case 'time.clockOut': {
+      requireModule('work');
+      const entry = own(data.timeEntries, p.id, wsId);
+      ensure(!entry.end, 'This shift is already clocked out.', 'CONFLICT');
+      const end = clockTime(p.at);
+      ensure(end >= entry.start, 'Clock-out cannot be earlier than clock-in.');
+      ensure(
+        Date.parse(end) - Date.parse(entry.start) <= MAX_SHIFT_MS,
+        'This shift is longer than 24 hours. Ask a reviewer to correct the hours.',
+      );
+      entry.end = end;
+      const note = string(p, 'note', 500);
+      if (note) entry.note = entry.note ? `${entry.note}\n${note}` : note;
+      touch(entry);
+      summary = `${memberName(entry.memberId)} clocked out`;
+      break;
+    }
+    case 'time.adjust': {
+      requireModule('work');
+      const entry = own(data.timeEntries, p.id, wsId);
+      const start = instant(p.start, 'Start');
+      const end = p.end ? instant(p.end, 'End') : '';
+      ensure(
+        Date.parse(start) <= Date.parse(now) + CLOCK_SKEW_MS,
+        'Start cannot be in the future.',
+      );
+      if (end) {
+        ensure(end >= start, 'End cannot be earlier than start.');
+        ensure(Date.parse(end) <= Date.parse(now) + CLOCK_SKEW_MS, 'End cannot be in the future.');
+        ensure(
+          Date.parse(end) - Date.parse(start) <= MAX_SHIFT_MS,
+          'One entry can cover at most 24 hours. Split longer work into separate entries.',
+        );
+      } else
+        ensure(
+          !data.timeEntries.some(
+            (e) =>
+              e.id !== entry.id &&
+              e.workspaceId === wsId &&
+              e.memberId === entry.memberId &&
+              !e.end &&
+              !e.archived,
+          ),
+          'This person already has another running shift.',
+        );
+      const reason = string(p, 'reason', 500, true);
+      const before = `${entry.start}–${entry.end || 'running'}`;
+      entry.start = start;
+      entry.end = end;
+      entry.adjustedReason = reason;
+      entry.adjustedBy = by();
+      touch(entry);
+      summary = `Corrected hours for ${memberName(entry.memberId)} (was ${before}): ${reason}`;
       break;
     }
     case 'referral.save': {

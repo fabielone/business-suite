@@ -272,7 +272,7 @@ export function operationsAuth(
       } else {
         // A manually provisioned owner invitation starts three empty, independent spaces.
         for (const [name, preset] of [
-          ['Insignia', 'signage'],
+          ['Signage', 'signage'],
           ['Household', 'household'],
           ['Referrals', 'referrals'],
         ]) {

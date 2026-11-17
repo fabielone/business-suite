@@ -21,6 +21,10 @@ export const PERMISSIONS = [
   'referrals.write',
   'backup.export',
   'automations.manage',
+  /** Clock yourself in and out. */
+  'time.track',
+  /** See everyone's hours, clock others in or out and correct entries with a reason. */
+  'time.review',
 ] as const;
 export type Access = (typeof PERMISSIONS)[number];
 export const ROLE_GRANTS: Record<string, Access[]> = {
@@ -38,6 +42,7 @@ export const ROLE_GRANTS: Record<string, Access[]> = {
     'chores.write',
     'referrals.read',
     'referrals.write',
+    'time.track',
   ],
   finance: [
     'contacts.read',
@@ -48,11 +53,21 @@ export const ROLE_GRANTS: Record<string, Access[]> = {
     'money.review',
     'money.pay',
     'backup.export',
+    'time.track',
+    'time.review',
   ],
   viewer: ['contacts.read', 'crm.read', 'work.read', 'chores.read', 'referrals.read'],
   // Production never receives prices. Team leads see all production work; workers only theirs.
-  lead: ['contacts.read', 'work.read', 'work.lead', 'chores.read', 'chores.write'],
-  production: ['contacts.read', 'work.read.assigned', 'chores.read', 'chores.write'],
+  lead: [
+    'contacts.read',
+    'work.read',
+    'work.lead',
+    'chores.read',
+    'chores.write',
+    'time.track',
+    'time.review',
+  ],
+  production: ['contacts.read', 'work.read.assigned', 'chores.read', 'chores.write', 'time.track'],
 };
 export function commandAccess(type: string, collection?: unknown): Access {
   if (type === 'workspace.settings') return 'workspace.manage';
@@ -67,6 +82,8 @@ export function commandAccess(type: string, collection?: unknown): Access {
   if (type === 'expense.review') return 'money.review';
   if (type === 'payment.add' || type === 'money.void') return 'money.pay';
   if (type.startsWith('task.')) return 'chores.write';
+  if (type === 'time.adjust') return 'time.review';
+  if (type.startsWith('time.')) return 'time.track';
   if (/^(referral|template|draft)\./.test(type)) return 'referrals.write';
   if (type === 'record.archive' || type === 'record.restore') {
     const access: Record<string, Access> = {

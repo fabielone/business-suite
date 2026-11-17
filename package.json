@@ -27,6 +27,7 @@
     "build:mobile": "npm run build --workspace @suite/core && npm run build --workspace @suite/offline && npm run export --workspace @suite/mobile",
     "build:mobile:demo": "npm run build --workspace @suite/core && npm run build --workspace @suite/offline && npm run export:demo --workspace @suite/mobile",
     "test:offline": "playwright test --config playwright.offline.config.ts",
+    "test:demo": "playwright test --config playwright.demo.config.ts",
     "preview:offline": "npm run preview --workspace @suite/web -- --outDir dist-demo",
     "demo:offline": "node scripts/demo.mjs --offline",
     "build:desktop:renderer": "npm run build --workspace @suite/core && npm run build --workspace @suite/offline && npm run build --workspace @suite/web -- --mode desktop",

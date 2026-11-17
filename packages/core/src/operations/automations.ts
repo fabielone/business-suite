@@ -367,6 +367,7 @@ export function withAutomationCollections(data: SuiteData): SuiteData {
   data.automations ??= [];
   data.automationRuns ??= [];
   data.notifications ??= [];
+  data.timeEntries ??= [];
   return data;
 }
 /** Cancels waiting runs, e.g. when a rule is switched off, changed or archived. */

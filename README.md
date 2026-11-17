@@ -43,6 +43,8 @@ Initial foundation: `NOTE-007`. Offline/native continuation: `NOTE-008 Offline f
 
 ## Local demo
 
+**Showcase demo account:** the operations app has a browser-only demo company with every role, a full pipeline, production, money review and a time clock. See [docs/demo-account.md](docs/demo-account.md) (`?demo=1` on port 5181, or `Run Zut CRM demo.command`; `npm run test:demo` walks it end to end).
+
 Use Node **22.13+ within Node22**, or a supported newer even release (24.3+ or26+). `.nvmrc` selects22. The host's Node25 is outside Expo58's supported range; checks were also run with Node22.23.4.
 
 ```sh

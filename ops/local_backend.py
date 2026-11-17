@@ -21,7 +21,7 @@ import webbrowser
 APP = 'business_suite'
 IMAGE = 'business-suite-api:local-operations-20261030'
 WEB = '/apps/business_suite/api/app/'
-TABLES = ['suite_contacts', 'suite_deals', 'suite_projects', 'suite_expense_entries', 'suite_payments', 'suite_tasks', 'suite_referrals', 'suite_message_templates', 'suite_message_drafts', 'suite_automations', 'suite_automation_runs', 'suite_notifications', 'suite_companies']
+TABLES = ['suite_contacts', 'suite_deals', 'suite_projects', 'suite_expense_entries', 'suite_payments', 'suite_tasks', 'suite_referrals', 'suite_message_templates', 'suite_message_drafts', 'suite_automations', 'suite_automation_runs', 'suite_notifications', 'suite_companies', 'suite_time_entries']
 
 
 def profile(root, port, lan_ip, tls_port):

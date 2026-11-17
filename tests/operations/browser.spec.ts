@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 
 test('three examples persist edits, export drafts and adapt to a phone', async ({ page }) => {
   await page.goto('?examples=1');
-  await expect(page.getByRole('heading', { name: 'Insignia', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Brightline Signs', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Pipeline', exact: true }).click();
   await expect(page.getByText('Reception signage', { exact: true })).toBeVisible();
   await page.getByLabel('Choose workspace').selectOption('household');

@@ -7,6 +7,7 @@ import {
   workspaceData,
   PRESETS,
   ROLE_GRANTS,
+  DEMO_PEOPLE,
   type Actor,
   type SuiteData,
   type Command,
@@ -19,6 +20,7 @@ import {
   sampleCommand,
   sampleEntries,
   sampleTick,
+  resetSamples,
   OfflineVault,
   download,
   RequestError,
@@ -53,6 +55,7 @@ import {
 } from './pages';
 import { Settings } from './Settings';
 import { Automations } from './Automations';
+import { TimeClock, ClockChip } from './TimeClock';
 import './operations.css';
 
 const OFFLINE_COMMANDS = new Set([
@@ -69,10 +72,14 @@ const OFFLINE_COMMANDS = new Set([
   'referral.save',
   'template.save',
   'draft.save',
+  // Punches keep their device time, so a shift can start in a basement or on a roof.
+  'time.clockIn',
+  'time.clockOut',
 ]);
 const PAGE_NAMES: Record<string, string> = {
   overview: 'Overview',
   mywork: 'My work',
+  time: 'Time clock',
   crm: 'Pipeline',
   contacts: 'People',
   companies: 'Companies',
@@ -85,13 +92,25 @@ const PAGE_NAMES: Record<string, string> = {
   activity: 'Activity',
   sync: 'Device sync',
 };
-/** Example mode only: preview each role with the same projection the server applies. */
-const VIEW_AS: Record<string, { label: string; email: string }> = {
-  owner: { label: 'Owner', email: '' },
-  manager: { label: 'Manager', email: '' },
-  collaborator: { label: 'Sales', email: '' },
-  lead: { label: 'Team lead (Sam)', email: 'sam@example.com' },
-  production: { label: 'Production (Alex)', email: 'alex@example.com' },
+/**
+ * Demo account only: sign in as each fictional person, seeing exactly what the server
+ * projection would give their role. Never used with a real sign-in.
+ */
+const VIEW_AS: Record<string, { label: string; name: string; email: string; role: string }> =
+  Object.fromEntries(
+    DEMO_PEOPLE.map((p) => [
+      p.key,
+      {
+        label: `${p.name.replace(' · example', '')} · ${p.title}`,
+        name: p.name,
+        email: p.email,
+        role: p.role,
+      },
+    ]),
+  );
+const demoRequested = () => {
+  const q = new URLSearchParams(location.search);
+  return q.get('examples') === '1' || q.get('demo') === '1';
 };
 type Theme = 'system' | 'light' | 'dark';
 type Breakpoint = 'phone' | 'tablet' | 'desktop';
@@ -131,9 +150,7 @@ export function OperationsApp() {
     else localStorage.setItem(THEME_KEY, next);
   };
   const themeAttr = theme === 'system' ? undefined : theme;
-  const [example, setExample] = useState(
-    new URLSearchParams(location.search).get('examples') === '1',
-  );
+  const [example, setExample] = useState(demoRequested);
   const [viewAs, setViewAs] = useState('owner');
   const [user, setUser] = useState<User | null>(null);
   const [entries, setEntries] = useState<WorkspaceEntry[]>([]);
@@ -695,16 +712,15 @@ export function OperationsApp() {
     });
   }
   const ws = entry?.workspace;
-  const exampleActor: Actor = { grants: ROLE_GRANTS[viewAs]!, email: VIEW_AS[viewAs]!.email };
+  const viewer = VIEW_AS[viewAs] ?? VIEW_AS.owner!;
+  const exampleActor: Actor = { grants: ROLE_GRANTS[viewer.role]!, email: viewer.email };
   // In example mode `data` holds every sample workspace; other roles see the server projection.
   const shown = useMemo(
     () =>
-      example && viewAs !== 'owner' && ws
-        ? projectForActor(workspaceData(data, ws), {
-            grants: ROLE_GRANTS[viewAs]!,
-            email: VIEW_AS[viewAs]!.email,
-          })
+      example && viewer.role !== 'owner' && ws
+        ? projectForActor(workspaceData(data, ws), exampleActor)
         : data,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [example, viewAs, data, ws],
   );
   if (!example && !user)
@@ -725,7 +741,7 @@ export function OperationsApp() {
             </p>
           </div>
           <div className="op-auth-scenarios">
-            <span>Insignia · signage sales and installation</span>
+            <span>Signage · sales, production and installation</span>
             <span>Household · shared expenses and chores</span>
             <span>Referrals · candidates and follow-ups</span>
           </div>
@@ -809,10 +825,12 @@ export function OperationsApp() {
               <button
                 onClick={() => {
                   setError('');
+                  localStorage.removeItem('suite-device-locked');
+                  history.replaceState(null, '', location.pathname + '?demo=1');
                   setExample(true);
                 }}
               >
-                Explore example workspaces
+                Open the demo account
               </button>
             </div>
             <small>
@@ -822,12 +840,16 @@ export function OperationsApp() {
         </main>
       </div>
     );
-  const grants = example ? ROLE_GRANTS[viewAs]! : (entry?.grants ?? []);
+  const grants = example ? ROLE_GRANTS[viewer.role]! : (entry?.grants ?? []);
   const actor: Actor = example ? exampleActor : { grants, email: user?.email ?? '' };
   const nav = [
     'overview',
     // Second, so phones keep it in the bottom bar.
     ...(ws?.modules.includes('chores') && grants.includes('chores.read') ? ['mywork'] : []),
+    ...(ws?.modules.includes('work') &&
+    (grants.includes('time.track') || grants.includes('time.review'))
+      ? ['time']
+      : []),
     ...(grants.includes('contacts.read') ? ['contacts'] : []),
     ...(grants.includes('contacts.read') && ws?.preset !== 'household' ? ['companies'] : []),
     ...(['crm', 'work', 'money', 'chores', 'referrals'] as Module[]).filter(
@@ -856,6 +878,7 @@ export function OperationsApp() {
           money: <Money {...props} />,
           chores: <Tasks {...props} />,
           mywork: <MyWork {...props} />,
+          time: <TimeClock {...props} />,
           referrals: <Referrals {...props} />,
           activity: <Activity {...props} />,
           automations: (
@@ -992,8 +1015,9 @@ export function OperationsApp() {
         : PAGE_NAMES[n];
   const primaryNav = nav.filter((n) => !['sync', 'activity', 'settings'].includes(n)).slice(0, 4);
   const moreNav = nav.filter((n) => !primaryNav.includes(n));
+  const clockChip = props && ws?.modules.includes('work') ? <ClockChip p={props} /> : null;
   const syncLabel = example
-    ? 'Example data'
+    ? 'Demo data'
     : offline
       ? 'Offline'
       : pending.length
@@ -1019,10 +1043,28 @@ export function OperationsApp() {
       </select>
     </label>
   );
-  const accountName = example
-    ? `Example ${VIEW_AS[viewAs]!.label.toLowerCase()}`
-    : user?.name || user?.email || 'Signed in';
-  const accountDetail = example ? 'Fictional records only' : (entry?.role ?? user?.email ?? '');
+  const accountName = example ? viewer.name : user?.name || user?.email || 'Signed in';
+  const accountDetail = example
+    ? `Demo · ${DEMO_PEOPLE.find((p) => p.key === viewAs)?.title ?? viewer.role}`
+    : (entry?.role ?? user?.email ?? '');
+  async function resetDemo() {
+    showForm({
+      title: 'Reset the demo account',
+      description:
+        'This replaces everything in the demo account on this browser with fresh fictional data dated today. Changes made during the demo are lost. Real workspaces are not affected.',
+      fields: [],
+      submitLabel: 'Reset demo',
+      submit: async () => {
+        const fresh = await resetSamples();
+        setData(fresh);
+        setEntries(sampleEntries(fresh));
+        const current = sampleEntries(fresh).find((e) => e.workspace.id === entry?.workspace.id);
+        if (current) setEntry(current);
+        setPage('overview');
+        notify('Demo account reset with fresh fictional data.');
+      },
+    });
+  }
   return (
     <div className="operations" data-theme={themeAttr}>
       <a className="op-skip" href="#op-main">
@@ -1031,20 +1073,28 @@ export function OperationsApp() {
       {example && (
         <div className="op-example-bar">
           <span>
-            <strong>Example workspaces.</strong> Fictional records saved only in this browser.
+            <strong>Demo account.</strong> Fictional records saved only in this browser.
           </span>
           <label className="op-view-as">
-            <span>View as</span>
-            <select value={viewAs} onChange={(e) => setViewAs(e.target.value)}>
-              {Object.entries(VIEW_AS).map(([role, v]) => (
-                <option key={role} value={role}>
+            <span>Signed in as</span>
+            <select
+              value={viewAs}
+              aria-label="Demo person"
+              onChange={(e) => {
+                setViewAs(e.target.value);
+                setForm(null);
+              }}
+            >
+              {Object.entries(VIEW_AS).map(([key, v]) => (
+                <option key={key} value={key}>
                   {v.label}
                 </option>
               ))}
             </select>
           </label>
+          <button onClick={() => void resetDemo()}>Reset demo</button>
           <button onClick={() => void signOut()}>
-            Sign in for shared workspaces <Icon name="arrow" size={14} />
+            Sign out <Icon name="arrow" size={14} />
           </button>
         </div>
       )}
@@ -1104,6 +1154,7 @@ export function OperationsApp() {
               </div>
               {breakpoint === 'tablet' && workspaceSwitch}
               <Search value={search} set={setSearch} />
+              {clockChip}
               <button
                 className="op-sync-status"
                 onClick={() => go('sync')}
@@ -1198,7 +1249,7 @@ export function OperationsApp() {
                   </Button>
                 }
               >
-                Start from the Insignia, household or referrals template. You can add more templates
+                Start from the signage, household or referrals template. You can add more templates
                 and invite members afterwards.
               </Empty>
             ) : (

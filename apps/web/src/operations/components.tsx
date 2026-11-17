@@ -160,6 +160,12 @@ export function Icon({ name, size = 20 }: { name: string; size?: number }) {
         <rect x="13" y="13" width="8" height="8" rx="2" fill="currentColor" stroke="none" />
       </>
     ),
+    time: (
+      <>
+        <circle cx="12" cy="13" r="8" />
+        <path d="M12 9v4l2.5 2.5M9 2h6" />
+      </>
+    ),
     lock: (
       <>
         <rect x="4" y="10" width="16" height="12" rx="2" />
@@ -305,6 +311,7 @@ export type Field = {
     | 'email'
     | 'url'
     | 'date'
+    | 'datetime-local'
     | 'number'
     | 'amount'
     | 'textarea'

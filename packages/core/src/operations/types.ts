@@ -202,6 +202,22 @@ export type Task = Row & {
   /** Who held the task over time; newest last, at most TASK_HISTORY_LIMIT entries. */
   history?: TaskEvent[];
 };
+/**
+ * One shift on the time clock. `end` is empty while the person is on the clock. Hours only:
+ * the clock never sets pay, prices or payments.
+ */
+export type TimeEntry = Row & {
+  memberId: string;
+  start: string;
+  end: string;
+  /** Optional Order (stored as a project) and one of its Jobs the time was spent on. */
+  orderId: string;
+  jobId: string;
+  note: string;
+  /** Set when a reviewer corrected the times; a reason is always required. */
+  adjustedReason?: string;
+  adjustedBy?: string;
+};
 export type Referral = Row & {
   candidateId: string;
   company: string;
@@ -328,6 +344,8 @@ export type SuiteData = {
   automations: Automation[];
   automationRuns: AutomationRun[];
   notifications: Notification[];
+  /** Added with the time clock; absent on older documents. */
+  timeEntries: TimeEntry[];
   audit: Audit[];
   commands: { id: string; fingerprint: string }[];
 };
@@ -417,6 +435,7 @@ export const emptyData = (): SuiteData => ({
   automations: [],
   automationRuns: [],
   notifications: [],
+  timeEntries: [],
   audit: [],
   commands: [],
 });

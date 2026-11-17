@@ -2348,3 +2348,154 @@ body:has(> #root > .operations[data-theme='dark']) {
     gap: 6px;
   }
 }
+
+/* ---------- Time clock ---------- */
+.op-num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.op-optional {
+  color: var(--text-3);
+  font-weight: 400;
+}
+.op-clock {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 20px 28px;
+  padding: 24px;
+  margin-bottom: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+}
+.op-clock.running {
+  border-color: var(--success);
+  box-shadow: inset 4px 0 0 var(--success);
+}
+.op-clock > .op-stats {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.op-clock-face {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.op-clock-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.op-clock-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+.op-clock.running .op-clock-dot,
+.op-clock-chip .op-clock-dot {
+  background: var(--success);
+  animation: op-clock-pulse 2s var(--ease) infinite;
+}
+@keyframes op-clock-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .op-clock-dot {
+    animation: none !important;
+  }
+}
+.op-clock-timer {
+  font-family: var(--mono);
+  font-size: 44px;
+  line-height: 1.05;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.op-clock.running .op-clock-timer {
+  color: var(--success);
+}
+.op-clock-face small {
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.op-clock-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.op-clock-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.op-clock-button {
+  min-height: 48px;
+  font-size: 16px;
+}
+.operations .op-clock-button.out {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.operations .op-clock-button.out:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.op-clock-running {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--success);
+  font-weight: 600;
+}
+.op-clock-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--success-soft);
+  color: var(--success);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+@media (max-width: 767px) {
+  .op-clock {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+  .op-clock-timer {
+    font-size: 40px;
+  }
+}
+@media (max-width: 639px) {
+  /* Demo bar: keep the person, reset and sign-out controls on one phone-width line. */
+  .op-example-bar {
+    gap: 6px;
+    padding: 0 10px;
+  }
+  .op-example-bar .op-view-as > span {
+    display: none;
+  }
+  .op-example-bar .op-view-as select {
+    max-width: 150px;
+  }
+  .op-example-bar button {
+    margin-left: 0;
+  }
+}

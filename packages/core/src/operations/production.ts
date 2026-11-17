@@ -156,6 +156,26 @@ export function authorizeCommand(data: SuiteData, command: Command, actor: Actor
     sees(task);
     return;
   }
+  if (command.type === 'time.clockIn' || command.type === 'time.clockOut') {
+    has('time.track');
+    const memberId =
+      command.type === 'time.clockIn'
+        ? (p.memberId as string)
+        : data.timeEntries?.find((e) => e.id === p.id && e.workspaceId === command.workspaceId)
+            ?.memberId;
+    if (!mine.includes(memberId ?? '') && !grants.includes('time.review'))
+      deny('You can only clock yourself in and out.');
+    // Workers who only see their own jobs can only log time against those jobs.
+    if (command.type === 'time.clockIn' && p.orderId && assignedOnly(grants)) {
+      const order = data.projects.find(
+        (o) => o.id === p.orderId && o.workspaceId === command.workspaceId,
+      );
+      const jobs = order ? orderJobs(order).filter((j) => mine.includes(j.assigneeId)) : [];
+      if (!jobs.length || (p.jobId && !jobs.some((j) => j.id === p.jobId)))
+        deny('You can only log time against jobs assigned to you.');
+    }
+    return;
+  }
   if (command.type === 'notification.read') {
     const note = data.notifications?.find(
       (n) => n.id === p.id && n.workspaceId === command.workspaceId,
@@ -235,6 +255,14 @@ export function projectForActor(data: SuiteData, actor: Actor): SuiteData {
     copy.automations = [];
     copy.automationRuns = [];
   }
+  // Hours: reviewers see everyone; others only their own entries.
+  if (!grants.includes('time.review')) {
+    const mineIds = ws ? actorMemberIds(data, ws.id, actor.email) : [];
+    copy.timeEntries = grants.includes('time.track')
+      ? (copy.timeEntries ?? []).filter((e) => mineIds.includes(e.memberId))
+      : [];
+  }
+  if (ws && !ws.modules.includes('work')) copy.timeEntries = [];
   // Each person reads only the notifications addressed to them.
   const recipients = ws ? actorMemberIds(data, ws.id, actor.email) : [];
   copy.notifications = (copy.notifications ?? []).filter((n) => recipients.includes(n.recipientId));

@@ -2,7 +2,8 @@ import {
   emptyData,
   executeCommand,
   runDueAutomations,
-  sampleData,
+  demoData,
+  SAMPLE_VERSION,
   ROLE_GRANTS,
   validateData,
   type SuiteData,
@@ -106,12 +107,17 @@ export async function updateSamples(update: (current: SuiteData) => SuiteData): 
     const tx = db.transaction('documents', 'readwrite');
     const store = tx.objectStore('documents');
     const get = store.get('samples');
+    const version = store.get('samples-version');
     let next: SuiteData;
     let error: unknown;
-    get.onsuccess = () => {
+    // Requests in one transaction finish in order, so both results are ready here.
+    version.onsuccess = () => {
       try {
-        next = update(get.result ? validateData(get.result) : sampleData());
+        // Demo data from an older app version is replaced, so the showcase is never stale.
+        const current = version.result === SAMPLE_VERSION && get.result;
+        next = update(current ? validateData(get.result) : demoData());
         store.put(next, 'samples');
+        store.put(SAMPLE_VERSION, 'samples-version');
       } catch (e) {
         error = e;
         tx.abort();
@@ -126,6 +132,10 @@ export async function updateSamples(update: (current: SuiteData) => SuiteData): 
       reject(error ?? tx.error ?? new Error('Local save failed. Nothing was changed.'));
     };
   });
+}
+/** Starts the demo account over with fresh fictional data (clocks and dates move to today). */
+export async function resetSamples(): Promise<SuiteData> {
+  return updateSamples(() => demoData());
 }
 export async function sampleCommand(command: Command): Promise<SuiteData> {
   const db = await database();
