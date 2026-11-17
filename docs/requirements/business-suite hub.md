@@ -1,6 +1,6 @@
 ---
 tags: [hub, business-suite, requirements]
-updated: 2026-11-03
+updated: 2026-11-17
 ---
 # Business Suite
 
@@ -8,11 +8,16 @@ updated: 2026-11-03
 
 The current operation does not need a sales pipeline. CRM is optional. Jobs, receipts, expenses, income, amounts due, assignments and trips all remain important product requirements; the small initial implementation is sequencing, not cancellation of the rest. The first test group is approximately five people, not a product limit. The exact first operating workflow remains to be clarified. Earlier human direction also requires quotations, site visits, worker/resource allocation, man-hours and future professional payroll/tax/bookkeeping integrations, aimed at small operators in Mexico with international and larger-business growth later.
 
-**Current delivery — NOTE-009, 2026-10-24:** offline-first Android/iOS, Windows/macOS desktop applications and browser access are in scope. The human explicitly included both desktop platforms now. Electron is the desktop engineering choice; React Native/SQLite remains mobile. NOTE-008 verified a bounded two-command offline foundation, not the full product. Desktop runtime/package evidence and live auth/storage privacy remain separate. [business-suite desktop applications](<business-suite desktop applications.md>) and [business-suite offline and multiplatform](<business-suite offline and multiplatform.md>) define the contracts.
+## Where things stand — 2026-11-17
+- **Works today:** the browser operations app with real sign-in on a local Docker backend (people, pipeline, orders, jobs, tasks, teams, automations, money review, time clock, encrypted offline capture), plus a browser-only showcase demo.
+- **Not ready:** production hosting, email and password recovery, hosted CI, phone and desktop apps with real sign-in. The full list is [business-suite launch readiness](<business-suite launch readiness.md>).
+- **Scope change 2026-11-17:** moving data out of the old CRM and CocinaCostos is no longer required; a general data import is wanted instead.
+- **Current task:** NOTE-018 (Obsidian reference).
 
-**Current backend result — NOTE-010, 2026-10-24:** independent Suite Auth/database/API are running, and source is uploaded to private [GitHub](https://github.com/fabielone/business-suite). Real Auth/API and PostgreSQL checks pass; hosted CI cannot start yet. Real client login remains unfinished. [business-suite deployed backend](<business-suite deployed backend.md>) and NOTE-010 Deploy Business Suite backend and publish repository (Obsidian reference) hold the current deployment boundaries and evidence. Earlier local-only restrictions remain historical.
-
-**Public-source release — NOTE-011, 2026-10-24:** the human now authorizes making [fabielone/business-suite](https://github.com/fabielone/business-suite) public, with attribution and contributions under AGPL-3.0-only for original project work. Fabiel (@fabielone) remains the official maintainer. Source/history review and license installation are complete; GitHub public visibility and AGPLv3 recognition are verified in NOTE-011 License and publicly release Business Suite (Obsidian reference); the earlier private-repository checkpoint above is historical. [business-suite open source and contributions](<business-suite open source and contributions.md>) records the policy and remaining release boundaries.
+## How to change anything
+1. Put the request in [business-suite change requests](<business-suite change requests.md>).
+2. Follow [business-suite change process](<business-suite change process.md>): decision, specification note, task, branch, checks, pull request, record.
+3. Look up what already happened in [business-suite change log](<business-suite change log.md>).
 
 ## Read in this order
 1. [Confirmed requirements and their provenance](<business-suite requirements.md>).
@@ -25,6 +30,10 @@ The current operation does not need a sales pipeline. CRM is optional. Jobs, rec
 ## Specification map
 | Area | Canonical note |
 |---|---|
+| What blocks a production launch | [business-suite launch readiness](<business-suite launch readiness.md>) |
+| How to make a change | [business-suite change process](<business-suite change process.md>) |
+| Requested interface and workflow changes | [business-suite change requests](<business-suite change requests.md>) |
+| Dated history of what was built | [business-suite change log](<business-suite change log.md>) |
 | Purpose and requirement IDs | [business-suite requirements](<business-suite requirements.md>) |
 | Unresolved product policies | [business-suite open decisions](<business-suite open decisions.md>) |
 | Work, CRM, resources, trips and time | [business-suite modules and workflows](<business-suite modules and workflows.md>) |
@@ -41,38 +50,15 @@ The current operation does not need a sales pipeline. CRM is optional. Jobs, rec
 | Open-source license, ownership and contributions | [business-suite open source and contributions](<business-suite open source and contributions.md>) |
 | Security, personal data and operations | [business-suite security privacy and operations](<business-suite security privacy and operations.md>) |
 | Meaningful tests and evidence levels | [business-suite quality and verification](<business-suite quality and verification.md>) |
-| Legacy import and authority cutover | [business-suite migration](<business-suite migration.md>) |
+| Data import; legacy applications (migration not required) | [business-suite migration](<business-suite migration.md>) |
 | Current slice and future work | [business-suite roadmap](<business-suite roadmap.md>) |
 | Source inventory and agent instructions | [business-suite sources and agent handoff](<business-suite sources and agent handoff.md>) |
 
-## Active task and repository
-Current task: NOTE-011 (Obsidian reference). Its scope is licensing and public source release; it does not deploy new application behavior or enable real client login.
-
-Latest completed local extension: NOTE-009 (Obsidian reference). Its acceptance criteria and execution checklist are authoritative; these notes do not duplicate task checkboxes. NOTE-008 retains the completed offline/mobile foundation record. NOTE-007 (Obsidian reference) retains the completed local-foundation record.
-
-Repository: [Desktop business-suite](/Users/fabiel/Desktop/business-suite). Start with its [AGENTS.md](/Users/fabiel/Desktop/business-suite/AGENTS.md), [implementation contract](/Users/fabiel/Desktop/business-suite/docs/implementation-contract.md), and [interview snapshot](/Users/fabiel/Desktop/business-suite/docs/interview-snapshot.json).
-
-**Verified local foundation — 2026-10-23:** 15 linked specification notes, a Desktop Git repository, connected responsive Work/Money demo and backend permissions/persistence foundation. Type checks and builds pass; 11 backend scenarios and 8 browser flows pass. Desktop and phone screenshots were inspected. NOTE-007 2026-10-23 Business Suite foundation report (Obsidian reference) records limits and handoff. Real login UX/provider provisioning, receipt storage, remaining modules, PostgreSQL server/concurrency checks and migration/cutover remain unfinished.
+## Repository
+[Desktop business-suite](/Users/fabiel/Desktop/business-suite), public at [fabielone/business-suite](https://github.com/fabielone/business-suite). Start with its [AGENTS.md](/Users/fabiel/Desktop/business-suite/AGENTS.md), [implementation contract](/Users/fabiel/Desktop/business-suite/docs/implementation-contract.md) and [verification record](/Users/fabiel/Desktop/business-suite/docs/verification.md). `docs/requirements` in the repository is an export of this folder.
 
 ## Specification authority
 Direct later human decisions supersede older notes. [business-suite requirements](<business-suite requirements.md>) distinguishes confirmed requirements from proposed design and bounded engineering defaults. The interview snapshot is historical evidence; its statement that implementation has not started must not overwrite later dated implementation reports. Research documents explain recommendations but are not blanket product approvals.
 
 No deployment, purchases, remote publication, legacy deletion or data migration follows from a proposed architecture or backlog entry. NOTE-010 records the authorized development deployment and initial private upload; NOTE-011 separately authorizes public source release and licensing. NOTE-007/008/009 preserve historical foundation evidence.
 
-**NOTE-008 local result:** 30 shared/API/native unit scenarios and10 browser flows pass; Android/iOS exports pass. Actual native-device/runtime tests, real authentication and5 high Expo toolchain audit entries remain before release. NOTE-008 2026-10-23 Offline and native foundation report (Obsidian reference).
-
-## Verified desktop foundation — 2026-10-24
-NOTE-009 now has a packaged Electron desktop foundation: 38 aggregate unit/API tests, 3 actual macOS Electron runtime tests, all-workspace type checks and 10 browser regressions pass. On macOS 27.0.1 arm64, two queued intents survive app quit/relaunch and sync with their original IDs; the packaged demo shell also launches without a web/API server. Unsigned Mac DMG/ZIP and Windows x64 ZIP are built and integrity-checked.
-
-Windows NSIS installer creation failed on the ARM build host; no Windows runtime or CI run is claimed. Signing/notarization, real auth/local privacy, upgrades/uninstall/recovery and full business workflows remain unfinished. Exact evidence, failure cause and artifact links: [business-suite roadmap](<business-suite roadmap.md#note-009-desktop-foundation--2026-10-24>).
-
-Final desktop report: NOTE-009 2026-10-24 Desktop application foundation report (Obsidian reference). NOTE-009 edit claims are released; further work needs its own authorized scope.
-
-## NOTE-012 local setup — 2026-10-30
-Cloned current public main (`6404e9d`) to `/Users/fabiel/Desktop/business-suite` on this Mac. Installed locked dependencies; 38 unit/API, 10 browser/offline and 3 macOS runtime tests pass. Browser demo at `http://127.0.0.1:5178` and macOS desktop demo were left running; source unchanged. Live API health is reachable, but real client login remains unfinished. NOTE-012 2026-10-30 Desktop clone and local runtime report (Obsidian reference) records startup commands, dependency findings and evidence limits.
-
-## NOTE-013 local shared browser checkpoint — 2026-10-30
-Fresh isolated Docker backend and authenticated browser workflows for Insignia, Household and Referrals are implemented on this Mac. 46 unit scenarios, 9 real backend verification groups and 2 new browser flows pass, including encrypted offline reopen/sync. Owner activation and a physical second Wi-Fi device test are pending; native expansion, billing/email activation and broader ERP work remain unfinished. Source changes are local, unpushed. The mini deployment is unchanged. Checkpoint report (Obsidian reference) · NOTE-013 Configurable CRM money household and referrals (Obsidian reference).
-
-## CRM workflow and terminology — 2026-11-03
-The human defined the shared vocabulary and the Insignia workflow (H-CRM-20261103); decisions from that conversation control over older notes. A Project is the sales deal on the pipeline; an accepted Project leads to an Order, whose Jobs appear as "Order / Job" cards on the production timeline without prices. This is a documentation decision only; the NOTE-013 code still differs. [business-suite CRM workflow and terminology](<business-suite CRM workflow and terminology.md>) · NOTE-014 (Obsidian reference).

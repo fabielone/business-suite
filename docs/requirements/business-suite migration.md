@@ -1,10 +1,21 @@
 ---
 tags: [business-suite, migration, integrations]
-updated: 2026-10-24
+updated: 2026-11-17
 ---
 # Business Suite migration
 
 ← [business-suite hub](<business-suite hub.md>) · [business-suite architecture](<business-suite architecture.md>) · [business-suite API and integrations](<business-suite API and integrations.md>)
+
+## Current direction — 2026-11-17 (H-LAUNCH-20261117)
+**Moving records out of the old CRM and CocinaCostos is not required.** Fabiel said on 2026-11-17: "the only thing not needed is moving data from old crms and cocinacostos. a way to import data would be good i do not need to import data from those apps necessarily." Legacy migration is therefore no longer a gate for launch. The old applications stay as they are; nothing here authorizes deleting them or retargeting their endpoints.
+
+What is wanted instead is a **general data import** that works from files a business already has:
+
+- **Exists:** people and companies from CSV or vCard (`contact.import`); pipeline projects and orders from CSV (`deal.import`, `project.import`, added 2026-11-17). Each has column mapping, a preview, duplicate handling and a downloadable template. Details: [business-suite API and integrations](<business-suite API and integrations.md#data-import>).
+- **Still open:** opening balances, which wait for BS-DEC-012; importing orders that are already finished.
+- **Rules:** an import runs as the signed-in member with that member's permissions; it is previewed before anything is written; it never runs automations, never records a payment or approval, and every imported record is marked with its source in the activity history. Amounts are integer minor units with an explicit currency.
+
+The sections below are the earlier migration analysis. They remain as background for anyone who later chooses to bring legacy records across by exporting them to files; they are not current work.
 
 The user wants Business Suite eventually to replace standalone CRM and CocinaCostos. This direction does not mean their records, databases, users or integrations have already moved. The current authorization covers requirements and a new local foundation; no old application is deleted, no live endpoint is retargeted and no migration/cutover is claimed.
 

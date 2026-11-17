@@ -1,23 +1,35 @@
 {
-  "exportedAt": "2026-11-03T15:02:51.839Z",
+  "exportedAt": "2026-11-17T14:41:05.315Z",
   "sourceDirectory": "/Users/fabiel/Library/Mobile Documents/iCloud~md~obsidian/Documents/obnotes/business-suite",
   "authority": "Obsidian source notes; this directory is a portable snapshot, not an independent specification.",
   "files": [
     {
       "file": "business-suite API and integrations.md",
-      "sha256": "74085ab26171223534688401f4f2b1f297218b3ccd19d18b101767809f41ae7e"
+      "sha256": "fbc7a9e3814d8963107d8e23e6cc74fac36c27b48d9ea18e3f5899fd7f892a2b"
     },
     {
       "file": "business-suite CRM workflow and terminology.md",
-      "sha256": "143dbeaf4d4af9b05f238dd5bbd60a25afd23f30470c6aa00624ca3ba89075d0"
+      "sha256": "362a051861ff9ac232ebe6eb9e16b6e8ee0a550544f0335e295ef0f2176f5196"
     },
     {
       "file": "business-suite architecture.md",
       "sha256": "d1dc97224a3e99f504fd6e681412449f542e74b077e94c8174876fc92c003587"
     },
     {
+      "file": "business-suite change log.md",
+      "sha256": "dbb54880c75e0937888483cb624fba07b2227513b6ddb2effc7eb45e1494bd87"
+    },
+    {
+      "file": "business-suite change process.md",
+      "sha256": "dfb4199e000fca1edfe8c9840bb6dcefaf01cf215306402e891c0ffd43986947"
+    },
+    {
+      "file": "business-suite change requests.md",
+      "sha256": "f68e2353fa74965a03cb3a085a427df8777e9d821ecb98b6e3ef9765512ac042"
+    },
+    {
       "file": "business-suite data model.md",
-      "sha256": "62e7e5c1378488f87ed99671d0a80051e991aed703f15fc4a819439faa495a96"
+      "sha256": "13a609057b4922d5cfe0c3237216f3aedab976daf7d41551591784a7d77d597f"
     },
     {
       "file": "business-suite deployed backend.md",
@@ -29,15 +41,19 @@
     },
     {
       "file": "business-suite hub.md",
-      "sha256": "2a9015de664fd20770b257a693c57c45e98f3638de5b2adfa20e1fdfe792a307"
+      "sha256": "1269822fc904fa2dacbdebc90ed28ed228232e7185f770f1bd4d10810636e89d"
+    },
+    {
+      "file": "business-suite launch readiness.md",
+      "sha256": "f178349082c92ca3a152a63a0165dc5751e57fcc5d446414dafcccb2ec1c0976"
     },
     {
       "file": "business-suite migration.md",
-      "sha256": "ac99036d933f4f0a21b876ceed093c512c43b6172603072794e421247743ca1e"
+      "sha256": "ffbd759020234fed6ab7de1a00a0ce517df9732b61efc7fe1a1eaf79995843c7"
     },
     {
       "file": "business-suite modules and workflows.md",
-      "sha256": "8d087a2cb6709209ced5d27e3113e368205208f3c529d10afed74fe3dcfd57c9"
+      "sha256": "34c74f8918f125294045a5f5bb47bf726fba5305a6ab7a7fa7d55e3eaed84349"
     },
     {
       "file": "business-suite money and reimbursements.md",
@@ -49,7 +65,7 @@
     },
     {
       "file": "business-suite open decisions.md",
-      "sha256": "93b9ec9d3ae756171aa25bdced56b5a7163f43fd5de18fc71f9306674bfe0e62"
+      "sha256": "ba1c2362f0ba50a5d4c642f86b01302f3915ffee0e8696671f77c0182362ca4e"
     },
     {
       "file": "business-suite open source and contributions.md",
@@ -57,7 +73,7 @@
     },
     {
       "file": "business-suite permissions.md",
-      "sha256": "d0dd452387dd9d03a29e061bf265e924a9ad90266f4a4bc5d02e7756d36fd1b5"
+      "sha256": "340c4e4bf56c5a66965a1651d2c234d2a22c0230f0ae595a534bdbe660171527"
     },
     {
       "file": "business-suite quality and verification.md",
@@ -65,15 +81,15 @@
     },
     {
       "file": "business-suite requirements.md",
-      "sha256": "11816517c66ebc0ba41d59f05868b201e2341f874990d374cb208658368b1a26"
+      "sha256": "4cdcb2db166e8732ac1b5a0c692f7e65ed0f4d47beeedf8a6cf9959ceb4a3654"
     },
     {
       "file": "business-suite roadmap.md",
-      "sha256": "22a63ba63d2ee9682a5e8f97e3c232f40b5bc32f40b2b8e512245940543e4edc"
+      "sha256": "0b0558d7c97248e1dc97650e5f300345b93bef41f2589e0217668150ed18483a"
     },
     {
       "file": "business-suite screens and flows.md",
-      "sha256": "0720e926033f06a55c50022cf18931b96bebb8416ebee1f4a213c67e5e959e7c"
+      "sha256": "c84feced8d387d067f9f308c3ef43a67383262170a4488428a564dad3cf5e127"
     },
     {
       "file": "business-suite security privacy and operations.md",

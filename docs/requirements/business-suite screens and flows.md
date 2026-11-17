@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, product, ux]
-updated: 2026-10-24
+updated: 2026-11-17
 ---
 # Business Suite screens and flows
 
@@ -82,3 +82,6 @@ Three actual Electron runtime tests on macOS 27.0.1 arm64 cover bundled interfac
 
 ## CRM role views — 2026-11-03
 BS-SCR-009 (sales) becomes the **sales pipeline** of Project cards (a Project is a deal) for sales/marketing. BS-SCR-013 (physical work) becomes the **production timeline** of "Order / Job" cards by date: only work with an Order, no prices. UI is English with a Spanish toggle. Managers see both plus Money. Details and stages: [business-suite CRM workflow and terminology](<business-suite CRM workflow and terminology.md>).
+
+## Import panels — 2026-11-17
+People, Pipeline and Production each have an **Import** button beside their add button, shown only to members who may create those records and add contacts. The panel opens above the list: choose file or download the template, check the column mapping, read the preview (new, already here, repeated in file, left out with the reason), then one button that states how many rows will be imported. Nothing is written before that button. On a phone the preview table becomes stacked cards and a long problem message wraps under a short "Left out" badge.

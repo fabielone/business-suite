@@ -111,3 +111,36 @@ The public endpoint is `https://api-dev.fabiel.org/apps/business_suite/api/healt
 Source commit `25d2acd1592998af3d8a88fa9616524ac11de394` was pushed to private [fabielone/business-suite](https://github.com/fabielone/business-suite), branch main, and matched `git ls-remote`. The first push required the user to authorize GitHub CLI's workflow scope; that authorization was completed. Commit `ca329c4631bc51df5980c0ec2ee7f16317e3763a` adds a manual workflow trigger without changing deployed application code.
 
 The initial push run40119290812 and subsequent push/manual runs40119507838/40119507706 all reported `startup_failure` before creating jobs. [Manual run details](https://github.com/fabielone/business-suite/actions/runs/40119507706). GitHub Actions is enabled for the repository, both workflows are registered, and actionlint1.7.12 validates both without diagnostics. GitHub API/CLI returns no specific annotation; the exact startup cause remains unresolved. **No hosted CI test pass is claimed.** The successful local and deployed checks above are independent evidence. Documentation-only commits record the handoff and are configured to skip source checks; GitHub still emits a pre-job startup failure even for these pushes.
+
+## NOTE-018 launch readiness review — 2026-11-17
+
+Scope: repository review, dependency update and process documentation on branch `note-018-launch-readiness`. No application behavior changed. Host macOS 27.0, Node 25.5.0 (outside the supported Node 22 line; `.nvmrc` remains 22).
+
+| Check actually executed | Result |
+|---|---|
+| `npm audit fix` (non-breaking) | `package-lock.json` only. High advisories cleared (node-forge, Zod, glob). 8 moderate remain: `minimatch` under electron-builder and Expo build tooling, fixable only with `--force` major changes, not applied |
+| `npm run check` | Passed for core, offline, API, web, mobile, desktop |
+| `npm test` | 92 passed, 0 failed: 50 core, 16 offline, 16 API, 8 desktop, 2 mobile |
+| `npm run build` | Passed |
+| `npm run build:mobile` | Android and iOS export passed |
+| GitHub Actions run 44090490899 | Did not start. Annotation: "The job was not started because your account is locked due to a billing issue." This is the cause of every hosted failure since publication; the workflow files are not at fault |
+
+Not run in this task: Playwright browser, offline, demo and operations suites; real-PostgreSQL checks; Electron runtime; local or deployed backend verifiers. Their last results are in the sections above. Launch gaps and their status are tracked in `docs/requirements/business-suite launch readiness.md`.
+
+## NOTE-019 import of projects and orders — 2026-11-17
+
+Scope: `deal.import` and `project.import` commands, their preview and screen, on branch `note-019-data-import`. Local only, fictional data, host Node 25.5.0. The browser demo runs the shared command engine in the browser; the API and PostgreSQL path was not exercised.
+
+| Check actually executed | Result |
+|---|---|
+| `npm run check` | Passed, all workspaces |
+| `npm test` | 99 passed, 0 failed: 57 core (7 new in `record-import.test.ts`), 16 offline, 16 API, 8 desktop, 2 mobile |
+| `npm run format:check`, `npm run build` | Passed |
+| `npm run test:demo` | 1 showcase flow passed |
+| `npm run test:e2e` | 8 connected flows passed |
+| Manual browser, 1280 px, demo workspace | Pipeline import of a 7-row file: 2 new, 1 repeated, 4 left out with reasons (ambiguous amount `1.234`, unknown stage, missing title, 31/02 date). After import, open projects 8 → 10 and pipeline value rose by exactly MX$17,300.50. Loading the same file again offered 0 rows |
+| Manual browser, 375 px | Orders import with Spanish headings mapped without correction; 3 orders created as Order 4–6, all awaiting release; no horizontal page scroll after two fixes found here (panel grid column, wrapping problem text) |
+
+New tests cover: amount and date parsing including refused cases; header mapping; customer matching and single creation; repeat import adds nothing; orders created unreleased with no payment or expense; company-only rows; denied roles and the `contacts.write` requirement; whole-batch rejection with row number; an automation that fires for a hand-saved project does not fire for an imported one.
+
+Not run: operations suite against a real local backend (`SUITE_LOCAL_E2E`), real-PostgreSQL checks, offline suite, desktop and mobile. No API-level test of the new commands; authorization is tested through the shared `authorizeCommand` the API calls. Files larger than a few rows were not timed.
