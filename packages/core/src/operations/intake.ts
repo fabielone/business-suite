@@ -70,12 +70,14 @@ export type NormalizedLead = {
   source: string;
 };
 
-const key = (header: string) =>
+/** Comparison key: ignores case, accents, spaces and punctuation. */
+export const importKey = (header: string) =>
   header
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '');
+const key = importKey;
 /**
  * Column names used by common exports: HubSpot, Salesforce, Pipedrive, Zoho, Google Contacts,
  * Outlook, Mailchimp, Typeform/Google Forms and Spanish-language spreadsheets.

@@ -967,6 +967,8 @@ body:has(> #root > .operations[data-theme='dark']) {
   border-radius: var(--r-md);
   padding: 16px;
   display: grid;
+  /* Content such as stat grids and tables must not widen the panel past the screen. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   align-content: start;
   min-width: 0;

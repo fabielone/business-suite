@@ -51,6 +51,7 @@ import {
 import { download, eml } from './client';
 import { Notifications } from './Automations';
 import { ContactImport } from './Import';
+import { RecordImport } from './RecordImport';
 
 export interface PageProps {
   data: SuiteData;
@@ -422,6 +423,7 @@ function dealForm(p: PageProps, row?: Deal) {
 export function CRM(p: PageProps) {
   const deals = active(rows(p.data.deals, p.ws)).filter((r) => match(r, p.search));
   const open = deals.filter((d) => p.ws.stages.find((s) => s.id === d.stageId)?.outcome === 'open');
+  const [importing, setImporting] = useState(false);
   return (
     <>
       <PageTitle
@@ -429,12 +431,20 @@ export function CRM(p: PageProps) {
         description="Projects by sales stage, with the next follow-up and estimated value. A won project can lead to several orders."
         action={
           can(p, 'crm.write') && (
-            <Button icon="plus" onClick={() => dealForm(p)}>
-              New project
-            </Button>
+            <div className="op-row-actions">
+              {can(p, 'contacts.write') && (
+                <Button secondary icon="upload" onClick={() => setImporting((v) => !v)}>
+                  Import
+                </Button>
+              )}
+              <Button icon="plus" onClick={() => dealForm(p)}>
+                New project
+              </Button>
+            </div>
           )
         }
       />
+      {importing && <RecordImport {...p} kind="deals" close={() => setImporting(false)} />}
       <Stats
         values={[
           { label: 'Open projects', value: open.length },
@@ -604,6 +614,7 @@ export function Work(p: PageProps) {
   const selectedProject = all.find((j) => j.id === selected);
   const pieces = all.flatMap((order) => orderJobs(order).map((job) => ({ order, job })));
   const manageOrders = can(p, 'work.write');
+  const [importing, setImporting] = useState(false);
   return (
     <>
       <PageTitle
@@ -615,12 +626,20 @@ export function Work(p: PageProps) {
         }
         action={
           manageOrders && (
-            <Button icon="plus" onClick={() => projectForm(p)}>
-              Create order
-            </Button>
+            <div className="op-row-actions">
+              {can(p, 'contacts.write') && p.ws.preset !== 'household' && (
+                <Button secondary icon="upload" onClick={() => setImporting((v) => !v)}>
+                  Import
+                </Button>
+              )}
+              <Button icon="plus" onClick={() => projectForm(p)}>
+                Create order
+              </Button>
+            </div>
           )
         }
       />
+      {importing && <RecordImport {...p} kind="orders" close={() => setImporting(false)} />}
       <div className="op-pipeline" aria-label="Production board">
         {PRODUCTION_STAGES.map((stage, index) => {
           const here = pieces.filter((x) => x.job.stage === stage);

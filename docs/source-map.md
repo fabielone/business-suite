@@ -25,6 +25,12 @@ This map covers NOTE-007, NOTE-008 and NOTE-009 local foundations. It does not r
 | UI verification | `tests/e2e/work-money.spec.ts`, `playwright.config.ts` | Connected desktop/mobile workflows, response-loss retry, conflicts, revocation, setup gate |
 | Offline verification | `packages/offline/test`, `tests/offline`, `playwright.offline.config.ts` | Queue failure cases and real browser offline reload/reconnect tests; native runtime separate |
 
+## Operations app additions
+
+| Responsibility | Actual source | Current boundary |
+|---|---|---|
+| Data import | `packages/core/src/operations/{intake,recordImport}.ts`, `*.import` commands in `commands.ts`, `apps/web/src/operations/{Import,RecordImport}.tsx` | People, companies, pipeline projects and orders from CSV (people also vCard); preview first; never payments, releases or automations. See `docs/data-import.md` |
+
 ## What is deliberately absent from this slice
 
 No real sign-in/onboarding or permission-management UI; no deployed database; no private receipt store or OCR; no normal receipt-present/direct-posting flow; no reimbursement, payment, cash ledger, receivable/payable or actual profit calculations; no quote acceptance, CRM pipeline, time entry, trips, scheduling or inventory. Job creation supports basic assignments, not complete Resources. No legacy data imports, shared-backend changes, remote Git publication or cutover occurred.
