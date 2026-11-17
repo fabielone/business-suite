@@ -9,6 +9,12 @@ Working name only. This is a new single modular application replacing CRM and Co
 - Maintainer agents with vault access: read the vault's `AGENTS.md`, `_management/Agent handbook.md` and the current task. External contributors follow CONTRIBUTING.md and the portable requirements instead. NOTE-007 is the historical initial foundation; NOTE-008 records offline-first/native continuation. NOTE-009 records Windows/macOS desktop implementation. NOTE-010 records the authorized Docker backend and GitHub publication; NOTE-011 records public release and licensing. Read `docs/offline-contract.md` before changing data access or client code, `apps/desktop/README.md` for shell/bridge boundaries, and `docs/shared-backend.md` plus `ops/lean-backend/README.md` before deployment work.
 - Interview snapshot is historical evidence. Vault decisions and later human directions supersede it; unresolved answers remain unresolved.
 
+## Making a change
+- Every change follows `docs/requirements/business-suite change process.md` (canonical copy in the vault): request → decision → owning specification note → task → branch `note-NNN-short-name` → layered build → checks for the change type → pull request → change log and re-export. Do not commit directly to `main`.
+- Launch blockers and their status are in `docs/requirements/business-suite launch readiness.md`. Requested interface and workflow changes are in `docs/requirements/business-suite change requests.md`.
+- Specification notes state current truth; dated history goes in the change log, not in new appended sections.
+- Human direction 2026-11-17: moving data from the old CRM and CocinaCostos is not required. A general file import is wanted instead; imports are previewed, run with the member's own permissions, never run automations and never record payments or approvals.
+
 ## Working rules
 - Offline-first browser, Android/iOS native and Windows/macOS desktop delivery are confirmed requirements, superseding the historical web-first/native-later snapshot. Platform-specific storage/UI may differ; share domain/sync rules.
 - Commit local capture before claiming it is saved. Keep pending intent separate from confirmed records/approval/payment. Never silently discard unsynced work or automatically rebase money/state conflicts.

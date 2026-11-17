@@ -7,6 +7,7 @@ export * from './permissions.js';
 export * from './production.js';
 export * from './automations.js';
 export * from './intake.js';
+export * from './recordImport.js';
 export * from './teams.js';
 export * from './time.js';
 export * from './demo.js';

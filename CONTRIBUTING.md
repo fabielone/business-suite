@@ -15,6 +15,11 @@ is not required to contribute. Propose changes to the portable notes in your
 pull request; the maintainer reconciles accepted changes into the canonical
 requirements before the next export.
 
+The steps every change goes through, the checks each kind of change needs and
+the definition of done are in the
+[change process](<docs/requirements/business-suite change process.md>). The pull
+request template follows it.
+
 For a substantial feature or architectural change, open an issue describing the
 problem and proposed behavior first. Small, focused fixes can go straight to a
 pull request. Keep unrelated cleanup separate and preserve the documented

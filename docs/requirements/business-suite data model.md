@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, architecture, data]
-updated: 2026-10-24
+updated: 2026-11-13
 ---
 # Business Suite data model
 
@@ -92,3 +92,9 @@ NOTE-009 adds Windows/macOS clients using the shared confirmed-snapshot/pending-
 Profile identity, environment and tenant/actor scope must remain stable and explicit. Keep application assets/executable separate from the mutable profile. A package update, product rename or signing/distribution change must not accidentally select a blank profile and strand pending work. An explicit profile migration needs source/target identity, supported schema, atomic/recoverable transfer and verification of queued command IDs/versions. Never merge two account queues because their customers have the same name.
 
 Record schema version and last synchronization; preserve confirmed amounts and pending intent separately. No desktop installation/uninstall routine should silently clear unsynced records. The implementation documents separate `Business Suite Desktop/setup` and `/demo` profile roots under platform application data, with persistent Electron sessions. Installer/uninstaller retention behavior, encryption/backup and profile-migration recovery remain unverified; see BS-DEC-029/030/031 and [business-suite desktop applications](<business-suite desktop applications.md>).
+
+## Teams and business hours — 2026-11-03
+From NOTE-016 (Obsidian reference), stored in workspace settings (no migration): `Workspace.teams[]` (`id`, `name`, `memberIds`, `leadIds` ⊆ members, `alert {amount, unit: hours|days}`, `archived`) and `Workspace.businessHours` (`timeZone`, `days`, `start`, `end`). Members are member contacts. Optional new Task fields: `teamId`, `queuedAt`, `claimedAt`, `alerts`, `lastAlertAt`, `completedBy`, `completedAt`, `history[]` (who held it, at most 50 entries). Older tasks without them are unchanged. A team with open tasks cannot be archived.
+
+## Time entries — 2026-11-13
+From NOTE-017 (Obsidian reference): `SuiteData.timeEntries[]`, table `suite_time_entries` (migration `005_time_entries.sql`, tenant RLS). `TimeEntry` = row fields + `memberId`, `start`, `end` (empty while running), optional `orderId`/`jobId`, `note`, `adjustedReason`, `adjustedBy`. Invariants: at most one running entry per member; `end ≥ start`; at most 24 h per entry; a job link requires its order. Older documents load with an empty list. Hours only: no rate, pay or payment link.

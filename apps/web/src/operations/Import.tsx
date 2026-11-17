@@ -41,7 +41,7 @@ type Loaded = {
 };
 
 /** Excel on Windows still saves "CSV" as Windows-1252; UTF-8 decoding then shows �. */
-async function decode(file: File) {
+export async function decode(file: File) {
   const bytes = await file.arrayBuffer();
   const utf8 = new TextDecoder('utf-8').decode(bytes);
   return utf8.includes('�') ? new TextDecoder('windows-1252').decode(bytes) : utf8;

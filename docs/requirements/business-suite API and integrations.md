@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, architecture, api, integrations]
-updated: 2026-10-24
+updated: 2026-11-17
 ---
 # Business Suite API and integrations
 
@@ -40,6 +40,27 @@ A proposed consequential command runs authorization and domain checks, locks or 
 Several HTTP calls to PostgREST do not form one transaction. Direct table writes must not bypass the same rules. First-slice migration and transaction implementation need inspection before the proposed design is described as verified.
 
 A future outbox is a durable row written with the business transaction for work that must be sent later. A worker claims it, calls an external service with a stable posting identity, stores the result and retries safely. An inbox deduplicates provider events and records their outcome. Delivery is at least once; reconciliation and recovery handle unknown results, duplicates and out-of-order events. Do not promise exactly-once delivery.
+
+## Data import
+Built 2026-11-17 under NOTE-019 (Obsidian reference). Three commands import from CSV or TSV files (people also from vCard). All of them are ordinary commands on `POST /v2/workspaces/{id}/commands`, so they have idempotency receipts and an activity entry naming the source file.
+
+| Command | Creates | Permission | Duplicate rule |
+|---|---|---|---|
+| `contact.import` | People and Companies | `contacts.write` | Person by email, else phone; company by name. Skip or update |
+| `deal.import` | Pipeline Projects (stored as `deals`) | `crm.write` and `contacts.write` | Same title for the same customer is skipped |
+| `project.import` | Orders (stored as `projects`) | `work.write` and `contacts.write` | Same title for the same customer is skipped |
+
+Rules that hold for every import:
+- The file is parsed in the client and shown as a preview first. The server validates every row again; one bad row rejects its whole batch with the row number.
+- At most 500 rows per command, 10,000 rows and 5 MB per file. A failed batch leaves earlier batches saved; importing the same file again skips what is already there.
+- Amounts are integer minor units in the workspace currency. Text such as `12,500.50` or `1200,5` is converted without floating point; ambiguous text such as `1.234` is reported, never guessed.
+- Dates are stored as `YYYY-MM-DD`. For `03/04/2026` the person chooses day-first or month-first.
+- A customer is matched by email, then phone, then exact name. A customer who is not found is added (as a lead for projects, a customer for orders) with the file as source.
+- A row that names only a company keeps `Company: <name>` in its notes, because a project or order links to a person.
+- Imported projects land in the stage named in the file, or the first stage. An unknown stage is an error.
+- **Imported orders always start awaiting release.** An import never records a deposit, payment, approval, expense or release, never creates tasks, and never starts automations.
+
+Not built: opening balances (waits for BS-DEC-012), importing orders as already completed, expenses, tasks, and reading `.xlsx` directly.
 
 ## Future integration boundaries
 | Integration | Confirmed need or proposed role | Unsettled choices |

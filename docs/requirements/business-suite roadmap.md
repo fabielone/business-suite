@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, roadmap, status]
-updated: 2026-10-30
+updated: 2026-11-17
 ---
 # Business Suite roadmap
 
@@ -9,6 +9,8 @@ updated: 2026-10-30
 This roadmap sequences implementation without removing confirmed scope. Jobs, assignments, trips, time, receipts, expenses, income, balances, reimbursements, optional CRM/quotes/site visits and professional integrations remain part of the intended product. The exact first pilot remains open; approximately five test users is context, not a technical capacity ceiling.
 
 ## Current authorized work
+**2026-11-17:** NOTE-018 (Obsidian reference) is the current task. Fabiel asked to work through the production-launch gaps, expects many interface and workflow changes, wants one consistent way of changing the repository, and removed legacy data migration from scope in favor of a general import. The ordered list of launch work is [business-suite launch readiness](<business-suite launch readiness.md>); the stage table below remains the long-term product sequence, except that "rehearsed CRM/Cocina/Salad successor mappings" in its migration row is no longer required. The paragraphs that follow are earlier history.
+
 NOTE-011 (Obsidian reference) is the current licensing/public-source task. On 2026-10-24 the human authorized a public repository with attribution, forks and contributions, retaining official merge/release control. AGPL-3.0-only is selected for original project work; GitHub public visibility and AGPLv3 recognition are verified. See [business-suite open source and contributions](<business-suite open source and contributions.md>).
 
 NOTE-010 (Obsidian reference) owns the completed development-deployment and initial private-upload acceptance evidence. On2026-10-24 the human explicitly requested use of the existing shared Docker host and a GitHub upload. The additive development backend is running; final verification/publication evidence is tracked in that task and [business-suite deployed backend](<business-suite deployed backend.md>). This does not authorize legacy deletion, operational data migration or an automatic client cutover.
@@ -122,3 +124,6 @@ Cloned current public main (`6404e9d`) to `/Users/fabiel/Desktop/business-suite`
 
 ## NOTE-013 local shared browser checkpoint — 2026-10-30
 Fresh isolated Docker backend and authenticated browser workflows for Insignia, Household and Referrals are implemented on this Mac. 46 unit scenarios, 9 real backend verification groups and 2 new browser flows pass, including encrypted offline reopen/sync. Owner activation and a physical second Wi-Fi device test are pending; native expansion, billing/email activation and broader ERP work remain unfinished. Source changes are local, unpushed. The mini deployment is unchanged. Checkpoint report (Obsidian reference) · NOTE-013 Configurable CRM money household and referrals (Obsidian reference).
+
+## NOTE-015 and NOTE-016 CRM, automations and teams — 2026-11-03
+First CRM workflow slice, automations, Company records, lead intake and contact import are committed on `main` (`f67bf14`…`8c6671b`). Teams, claimable task queues and business-hours alerts are on `main` (`1c21cb5`, merged 2026-11-04): 85 unit/API tests pass and browser example mode was checked; real-backend and e2e verification remain. Next candidates (not authorized): teams for Jobs and team-scoped leads, automations that target a team, fan-out tasks, holidays. NOTE-016 (Obsidian reference).

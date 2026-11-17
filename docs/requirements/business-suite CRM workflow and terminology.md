@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, requirements, crm, workflow, glossary]
-updated: 2026-11-03
+updated: 2026-11-04
 ---
 # Business Suite CRM workflow and terminology
 
@@ -126,17 +126,27 @@ A workflow template bundles pipeline stages, production stages, stage checklists
 - Can one Order be created from part of a Project's accepted quote, or does each Order need its own quote?
 
 ## Implementation status — NOTE-015, 2026-11-03
-A first slice is implemented locally (uncommitted at writing): Project terms in the pipeline, several numbered Orders per Project, release by deposit or manager with reason, Jobs split per team member with "Order / Job" cards and one colour per Order, `lead` and `production` roles with assigned-only visibility and no prices, the task completion rule, and decision maker/position on Person. Unit tests and a browser example-mode check pass; the real local backend was not exercised. Remaining gaps are listed in NOTE-015 (Obsidian reference).
+A first slice is implemented and committed on `main` (`f67bf14`): Project terms in the pipeline, several numbered Orders per Project, release by deposit or manager with reason, Jobs split per team member with "Order / Job" cards and one colour per Order, `lead` and `production` roles with assigned-only visibility and no prices, the task completion rule, and decision maker/position on Person. Unit tests and a browser example-mode check pass; the real local backend was not exercised. Remaining gaps are listed in NOTE-015 (Obsidian reference).
 
-## Implementation status — automations, 2026-11-03
-Implemented locally (uncommitted at writing), with the human's choice of scope: When/If/Wait/Then rules, waits and time-based triggers included, and a small fixed If list.
-- Triggers: project stage changed (also "quote sent", using the Quote sent stage), job production stage changed, task completed, all tasks of an Order done, a date reached (project follow-up, job or task due date, with days before/after), no project activity for N days, and a person or company added (any type, or only customers, suppliers, team members, candidates or employers; a Company is still a field on a Person).
+## Implementation status — automations, companies and lead intake, 2026-11-03
+Committed on `main` (`08fc794`, `97a0995`, `aa79ab2`, `8c6671b`), with the human's choice of scope: When/If/Wait/Then rules, waits and time-based triggers included, and a small fixed If list.
+- Triggers: project stage changed (also "quote sent", using the Quote sent stage), job production stage changed, task completed, all tasks of an Order done, a date reached (project follow-up, job or task due date, with days before/after), no project activity for N days, and a person or company added (any type, or only customers, suppliers, team members, candidates or employers).
 - If: nobody worked on the record during the wait, project still at a stage, a job at a production stage, job unassigned.
 - Then: create a task, assign the job, notify someone in the app, move a stage, add an activity note. Prepare-a-message is not implemented, because message templates belong to the referrals module.
-- Guardrails: rules can only issue task, job, project-stage, notification and note changes, and those changes keep their own checks. Won and lost stay a person's decision; Awaiting release cannot be targeted, so an automation never releases an Order. Every run applies all of its actions or none and is logged as done, skipped, failed or cancelled. Automations that trigger each other stop after three steps. Each person's command still advances the workspace revision only once.
-- Only owners and managers can see and manage rules and runs (`automations.manage`). Each person sees only the notifications addressed to them.
-- Waits and timers run on the server (once a minute, under the workspace lock) and in the browser in example mode. Time-based triggers count from when a rule is turned on, so turning one on cannot flood the workspace. Dates use UTC until workspaces have a time zone.
-- Gaps: Projects have no owner, so "the owner" cannot be a task assignee; teams now exist for Tasks (see `docs/teams.md`: team queues, claiming, business-hours alerts), but automations and Jobs still assign one member; notifications are in the app only. Migration 003 also allows the lead and production roles in the database. The shared-host runtime grants for the new tables and the API scheduler were not exercised against real PostgreSQL.
+- Guardrails: rules can only issue task, job, project-stage, notification and note changes, and those changes keep their own checks. Won and lost stay a person's decision; Awaiting release cannot be targeted, so an automation never releases an Order. Every run applies all of its actions or none and is logged as done, skipped, failed or cancelled. Automations that trigger each other stop after three steps.
+- Only owners and managers see and manage rules and runs (`automations.manage`). Each person sees only the notifications addressed to them.
+- Waits and timers run on the server (once a minute, under the workspace lock) and in the browser in example mode. Time-based triggers count from when a rule is turned on.
+- Company is its own record (migration 004) linked from Person; website forms and sales channels post leads to `POST /v2/intake/{workspaceId}/leads` with an intake key; contacts can be imported from files. Intake and imports create **leads**, not customers. Detail: repository `docs/lead-intake.md`.
+- Gaps: Projects have no owner, so "the owner" cannot be a task assignee; automations and Jobs still assign one member; notifications are in the app only; the shared-host runtime grants for the new tables and the API scheduler were not exercised against real PostgreSQL.
+
+## Teams and claimable tasks — 2026-11-03
+Human decisions (recorded under NOTE-016 (Obsidian reference)); implemented in `1c21cb5`, merged into `main` 2026-11-04. Detail: repository `docs/teams.md`.
+- Workspaces have **teams** (departments). Signage workspaces start with **Production, Sales, Marketing and Office**; the admin department is called **Office** so it is not confused with admin permissions.
+- A Task goes to **one person** or to a **team with nobody yet** ("up for grabs"). Any member of that team can **claim** it; the first claim wins and a later one is told who claimed first and when. The team stays on the task after the claim; the holder, a lead or a manager can give it back.
+- **Only your own team:** members see their own teams' tasks, including what teammates hold, never another team's. People in two teams see both. Owners, managers and team leads see everything.
+- **Prices stay hidden:** teams never grant permissions; production never receives prices, even on a teammate's task.
+- **Alerts:** unclaimed team work alerts the team's leads after a per-team wait of 1–23 business hours or 1–5 business days (defaults Sales 2 h, Production 4 h, Marketing and Office 1 business day). Only business hours count (workspace time zone, working days, opening/closing; default Mon–Fri 09:00–18:00, America/Mexico_City). A due date brings the first alert forward after at least one business hour of grace; then one reminder per business day, at most 5 alerts. Teams without a lead alert owners and managers.
+- Not decided/built: teams for Jobs and team-scoped `lead` role, automations that target a team, "everyone must do it" tasks, round robin, holidays.
 
 ## Relation to the NOTE-013 implementation
 Checked 2026-11-03 in `packages/core/src/operations`. The code's names map to these terms as follows:

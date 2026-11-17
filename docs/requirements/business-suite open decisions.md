@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, decisions, discovery]
-updated: 2026-11-03
+updated: 2026-11-17
 ---
 # Business Suite open decisions
 
@@ -30,9 +30,9 @@ updated: 2026-11-03
 | BS-DEC-018 | Labor rate basis, overhead allocation and costing recognition | Estimates, actual cost, margin labels | Label basis; no automatic repricing or statutory-profit claim |
 | BS-DEC-019 | Businesses, legal entities and resources shared across them | Access, intercompany records, consolidation | Explicit scope; no cross-business sharing by default |
 | BS-DEC-020 | Offline policy details after confirmed offline-first requirement | Offline access duration, prefetch bounds, conflict resolution, local-data recovery | Need for offline is resolved by H-OFF-20261023; two-command demo slice does not settle full policy |
-| BS-DEC-021 | Initial import sources, opening balances and cutover scope | Replacement of CRM/CocinaCostos | Old apps remain authoritative for their existing records |
+| BS-DEC-021 | Partly resolved 2026-11-17 (H-LAUNCH-20261117): importing from the old CRM and CocinaCostos is not required; a general file import is wanted. Opening-balance rules remain open | Import formats, opening balances | Build the general import (LR-09); old apps stay untouched; see [business-suite migration](<business-suite migration.md>) |
 | BS-DEC-022 | Accountant, payroll/fiscal/payment providers and authoritative books | Connectors and legal mappings | No provider selected or live connector claimed |
-| BS-DEC-023 | Hosting, operational ownership, backups and launch targets | Production rollout | Local task only; Docker unavailable at initial task inspection |
+| BS-DEC-023 | Hosting, operational ownership, backups and launch targets. Still open; now the main launch dependency | Production rollout, monitoring, backups, receipts storage | Development host only; see LR-03 to LR-05 in [business-suite launch readiness](<business-suite launch readiness.md>) |
 | BS-DEC-024 | Partly resolved 2026-11-03: English UI by default with a Spanish toggle. Locale formats and currencies beyond MXN remain open | Copy, timestamps, number input | E1 MXN; English/Spanish UI strings |
 | BS-DEC-025 | Resolved 2026-10-24: Windows and macOS desktop apps now | Current desktop delivery under NOTE-009 | Human selected both; Linux not added; release details move to BS-DEC-029/030/031 |
 | BS-DEC-026 | Offline access after token expiry, logout, revocation or device loss | Cache lock, queue retention, shared-device behavior and authentication recovery | Fictional demo only until live auth/storage privacy is designed and tested |
@@ -62,6 +62,8 @@ Both expense review and privileged direct posting were selected. The missing-rec
 Use: decision ID; date; human wording or source; selected policy; affected requirement IDs; data/API/UI/test consequences; migration effect; implementation evidence link. Keep rejected options only where they explain a consequential tradeoff. A later technical implementation report records what was built, not a new human answer.
 
 ## Current execution
+Since 2026-11-17 launch work is tracked in [business-suite launch readiness](<business-suite launch readiness.md>) under NOTE-018 (Obsidian reference), and every change follows [business-suite change process](<business-suite change process.md>). The paragraph below is the earlier state.
+
 Current licensing/public-source acceptance and task status live in NOTE-011 (Obsidian reference); NOTE-010 preserves deployed-backend evidence and NOTE-009 preserves desktop evidence; NOTE-008 preserves the completed offline/mobile foundation; NOTE-007 (Obsidian reference) preserves the completed foundation evidence. The first local job/expense slice can progress without resolving every item above. A dependent feature must either wait for its answer or clearly expose the bounded default and limitation.
 
 ## CRM workflow and terminology resolution — 2026-11-03

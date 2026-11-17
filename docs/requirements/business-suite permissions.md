@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, permissions, security]
-updated: 2026-10-24
+updated: 2026-11-17
 ---
 # Business Suite permissions
 
@@ -70,3 +70,12 @@ The Electron main process and preload bridge are technical trust boundaries, not
 
 ## CRM rules confirmed 2026-11-03
 From H-CRM-20261103 ([business-suite CRM workflow and terminology](<business-suite CRM workflow and terminology.md>)): production (workers and team leads) can read Order / Job work only once an Order exists (record scope) and never receives price fields — agreed price, quote amounts, estimated value or payments (field scope, enforced in the API). A Task can be completed by its assignee, the assignee's team lead or a manager, and completion records the actor. Within production, record scope is by assignment: a team member reads only the Orders/Jobs/Tasks assigned to them, a team lead those assigned to their team. The manager assigns members and may configure assignment automations; an automation cannot widen field access to prices. A manager can release an Order into production without a recorded deposit, with a required reason; this is a manager grant, not available to production. Team lead is a new actor template.
+
+## Team record scope — 2026-11-03
+From NOTE-016 (Obsidian reference): Tasks can belong to a team. Owners, managers and leads (`work.assign` / `work.lead`) see every task; everyone else sees tasks they hold and tasks of teams they belong to, never another team's; roles that read all work also see tasks with no team. The same rule (`seesTask`) filters the projection and guards every task command. Production workers edit or archive only tasks they hold; only leads and managers give a task to someone else; a person can claim only for themself; the acting member (`by`) must be the caller's own member contact. Teams are not permissions and never widen price access. This fixed an earlier hole where `task.save` and task archiving checked only `chores.write`.
+
+## Time clock — 2026-11-13
+From NOTE-017 (Obsidian reference): `time.track` clocks yourself in and out (collaborator, finance, lead, production; owner and manager hold all permissions). `time.review` sees everyone's hours, clocks other people in or out and corrects entries with a required reason (owner, manager, finance, lead). Viewer has neither. Without `time.review` the projection returns only the caller's own entries. Workers who see only assigned work may log time only against jobs assigned to them. Hours never grant price or payment access.
+
+## Imports — 2026-11-17
+Importing projects needs `crm.write` and `contacts.write`; importing orders needs `work.write` and `contacts.write`, because both can add the customers their rows name. Viewer, production, production lead and finance roles cannot import. The backend checks this; the Import button is only hidden for convenience.

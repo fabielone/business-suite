@@ -186,6 +186,8 @@ export function authorizeCommand(data: SuiteData, command: Command, actor: Actor
   }
   has(commandAccess(command.type, p.collection));
   if (command.type === 'deal.convert') has('work.write');
+  // These imports also add the customers their rows name.
+  if (command.type === 'deal.import' || command.type === 'project.import') has('contacts.write');
   if (command.type === 'order.release' && p.basis === 'manager') has('work.assign');
 }
 

@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, workflows, modules]
-updated: 2026-10-23
+updated: 2026-11-13
 ---
 # Business Suite modules and workflows
 
@@ -38,6 +38,8 @@ These are proposed transitions beyond E1. Closure requirements, partial quantity
 
 ## Time and trip workflows
 BS-WORK-003 requires timer and manual entry. Proposed time record: worker, job/task link when relevant, start/end or duration, break, source (`timer` or `manual`), note, edit reason and version. Starting/stopping must be idempotent. Multiple open timers, overnight entries, time zones, supervisor approval and billable hours are pending policies. Recorded labor does not automatically become payroll or an extra wage expense.
+
+**Implemented 2026-11-13 (NOTE-017 (Obsidian reference)):** a timer-style clock (clock in / clock out, optional order/job and note) with reviewer corrections that require a reason. Resolved for now: one open timer per person; offline punches keep device time if synced within 24 h, may not be ahead of the server clock and may not overlap recorded hours; entries over 24 h need a correction. Still pending: breaks, manual duration entry as a separate source, supervisor approval/lock of a period, billable hours and payroll.
 
 BS-WORK-004 requires driver/vehicle, origin/destination, distance, fuel and toll expenses. Proposed trip lifecycle: planned → underway → finished, with correction/cancellation retaining history. A trip can serve several jobs; assigning its complete cost to each would duplicate it. Preserve the source cost and an explicit allocation method. Continuous GPS, route optimization and automatic mileage inference are not confirmed. Fuel/tolls use the same expense/receipt/reimbursement rules as other business spending.
 

@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, requirements, product]
-updated: 2026-10-24
+updated: 2026-11-17
 ---
 # Business Suite requirements
 
@@ -90,7 +90,7 @@ The exact current allowlist and state contract are in [business-suite offline an
 Measure owner/worker task completion without assistance, duplicate entry, unresolved expense review, unexplained amounts due, partial reimbursement correctness, and time to identify a job's next action. Define actual events and baselines in [business-suite quality and verification](<business-suite quality and verification.md>). No fabricated time-saved percentage, scale promise or delivery estimate is approved.
 
 ## Change procedure
-Record a later human answer under its decision ID, date and provenance; update the related requirement and dependent specifications. Preserve historical sources. A research suggestion, implementer's shortcut or demo behavior cannot silently change a confirmed requirement.
+The full step-by-step path for any change is [business-suite change process](<business-suite change process.md>) (adopted 2026-11-17). In short: record a later human answer under its decision ID, date and provenance; update the related requirement and dependent specifications. Preserve historical sources. A research suggestion, implementer's shortcut or demo behavior cannot silently change a confirmed requirement.
 
 ## Desktop derived delivery requirements
 BS-PROD-011 confirms the platforms; the following are engineering requirements for that delivery, not claims of implementation:

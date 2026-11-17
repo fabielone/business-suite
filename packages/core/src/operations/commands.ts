@@ -10,6 +10,8 @@ import {
   type Plan,
   type Contact,
   type Company,
+  type Deal,
+  type Project,
   type Row,
   type Expense,
   type Payment,
@@ -29,6 +31,12 @@ import {
   IMPORT_BATCH,
   type NormalizedLead,
 } from './intake.js';
+import {
+  findImportedRecord,
+  importCompanyNote,
+  importCustomer,
+  resolveImportStage,
+} from './recordImport.js';
 import {
   parseAutomation,
   runAutomations,
@@ -777,6 +785,107 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
         }
       });
       summary = `Imported from ${source}: ${total.people} people, ${total.companies} companies added, ${total.updated} updated`;
+      break;
+    }
+    case 'deal.import':
+    case 'project.import': {
+      // Pipeline Projects are stored as deals; Orders are stored as projects.
+      const deals = command.type === 'deal.import';
+      requireModule(deals ? 'crm' : 'work');
+      ensure(
+        Array.isArray(p.rows) && p.rows.length > 0 && p.rows.length <= IMPORT_BATCH,
+        `Import between 1 and ${IMPORT_BATCH} rows per batch.`,
+      );
+      const source = string(p, 'source', 120) || 'Import';
+      const offset = Number(p.offset ?? 0);
+      ensure(Number.isSafeInteger(offset) && offset >= 0, 'Invalid row offset.');
+      const total = { added: 0, skipped: 0, people: 0, companies: 0 };
+      (p.rows as unknown[]).forEach((raw, i) => {
+        try {
+          ensure(raw && typeof raw === 'object' && !Array.isArray(raw), 'Invalid row.');
+          const r = raw as Record<string, unknown>;
+          const title = text(r.title ?? '', 'Title', 200, true);
+          const amountMinor = amount(r.amountMinor ?? 0, true);
+          const due = date(r.due);
+          let notes = text(r.notes ?? '', 'Notes', 9000);
+          const stage = deals
+            ? resolveImportStage(ws!, text(r.stage ?? '', 'Stage', 120))
+            : undefined;
+          ensure(!deals || stage, `Stage "${String(r.stage)}" is not in this pipeline.`);
+          const who = importCustomer(
+            data,
+            wsId,
+            {
+              customerName: text(r.customerName ?? '', 'Customer name', 150),
+              customerEmail: text(r.customerEmail ?? '', 'Customer email', 254),
+              customerPhone: text(r.customerPhone ?? '', 'Customer phone', 50),
+              company: text(r.company ?? '', 'Company name', 200),
+            },
+            deals ? 'lead' : 'customer',
+          );
+          let contactId = who.contactId;
+          if (who.status === 'new') {
+            const made = intake(
+              { ...who.lead, source },
+              { person: `${command.id}-p${i}`, company: `${command.id}-c${i}` },
+              'skip',
+              '',
+            );
+            contactId = made.person?.id ?? made.company?.primaryContactId ?? '';
+            total.people += made.counts.people;
+            total.companies += made.counts.companies;
+          }
+          const companyName = who.lead.company?.name ?? '';
+          const collection: (Deal | Project)[] = deals ? data.deals : data.projects;
+          if (findImportedRecord(collection, wsId, title, contactId, companyName)) {
+            total.skipped++;
+            return;
+          }
+          // Without a person the record cannot link to its company, so the name is kept.
+          if (!contactId && companyName) notes = appendNote(notes, importCompanyNote(companyName));
+          const rowId = `${command.id}-r${i}`;
+          ensure(
+            !collection.some((x) => x.id === rowId),
+            'A record with this ID already exists.',
+            'CONFLICT',
+          );
+          if (deals)
+            data.deals.push({
+              ...base(rowId),
+              title,
+              contactId,
+              amountMinor,
+              stageId: stage!.id,
+              due,
+              notes,
+              projectId: '',
+            });
+          else
+            // Always awaiting release: an import is not a deposit or a manager's release.
+            data.projects.push({
+              ...base(rowId),
+              title,
+              contactId,
+              amountMinor,
+              due,
+              notes,
+              status: 'planned',
+              dealId: '',
+              assigneeId: '',
+              number: nextOrderNumber(),
+              jobs: [newJob(`${rowId}-job-1`, 'Production', '', due, false)],
+            });
+          total.added++;
+        } catch (error) {
+          throw new OperationError(
+            error instanceof OperationError && error.code !== 'INVALID_INPUT'
+              ? error.code
+              : 'INVALID_INPUT',
+            `Row ${typeof (raw as { row?: unknown })?.row === 'number' ? (raw as { row: number }).row : offset + i + 1}: ${(error as Error).message}`,
+          );
+        }
+      });
+      summary = `Imported from ${source}: ${total.added} ${deals ? 'projects' : 'orders'} added, ${total.skipped} already here, ${total.people} people and ${total.companies} companies added`;
       break;
     }
     case 'deal.save': {
@@ -1733,9 +1842,9 @@ function apply(original: SuiteData, command: Command, now: string, depth: number
   });
   // Receipts intentionally persist: pruning them could turn a delayed retry into a duplicate.
   data.commands.push({ id: command.id, fingerprint });
-  // Importing old lists must not set off "new lead" rules for every row.
+  // Importing old lists must not set off "new lead" or stage rules for every row.
   const result =
-    depth < MAX_AUTOMATION_DEPTH && command.type !== 'contact.import'
+    depth < MAX_AUTOMATION_DEPTH && !command.type.endsWith('.import')
       ? runAutomations(before, data, wsId, now, command.id, depth, apply)
       : data;
   // One revision per person's command, including whatever its automations changed.
