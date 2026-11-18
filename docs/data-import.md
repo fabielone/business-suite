@@ -2,11 +2,11 @@
 
 Bring existing lists into a workspace from files. Nothing here reads another application directly: export a CSV from wherever the data lives and import that.
 
-| What | Where | Command | Needs |
-| --- | --- | --- | --- |
-| People and companies | People → Import | `contact.import` | `contacts.write` |
-| Pipeline projects | Pipeline → Import | `deal.import` | `crm.write` and `contacts.write` |
-| Orders | Production → Import | `project.import` | `work.write` and `contacts.write` |
+| What                 | Where               | Command          | Needs                             |
+| -------------------- | ------------------- | ---------------- | --------------------------------- |
+| People and companies | People → Import     | `contact.import` | `contacts.write`                  |
+| Pipeline projects    | Pipeline → Import   | `deal.import`    | `crm.write` and `contacts.write`  |
+| Orders               | Production → Import | `project.import` | `work.write` and `contacts.write` |
 
 Each panel has a **CSV template** button. Column names are matched in English or Spanish (`Deal Name`, `Amount`, `Pedido`, `Precio`, `Cliente`…) and can be corrected before importing. Spreadsheet files must be saved as CSV first.
 

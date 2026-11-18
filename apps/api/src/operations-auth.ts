@@ -22,7 +22,9 @@ export function operationsAuth(
   db: Database,
   config: AuthConfig,
   secure = true,
+  cookiePath = '/',
 ) {
+  if (!/^\/[\w\-./]*$/.test(cookiePath)) throw new Error('The session cookie path is invalid.');
   const verify = createJwtVerifier(config);
   const key = config.secret
     ? Buffer.from(hkdfSync('sha256', config.secret, '', 'business-suite-session-v1', 32))
@@ -57,7 +59,7 @@ export function operationsAuth(
   const setCookie = (reply: FastifyReply, value: string, age: number) =>
     reply.header(
       'Set-Cookie',
-      `${cookieName}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${age}${secure || reply.request.headers['x-forwarded-proto'] === 'https' ? '; Secure' : ''}`,
+      `${cookieName}=${value}; Path=${cookiePath}; HttpOnly; SameSite=Lax; Max-Age=${age}${secure || reply.request.headers['x-forwarded-proto'] === 'https' ? '; Secure' : ''}`,
     );
   const upstream = async (path: string, body?: unknown, token?: string) => {
     let response: Response;
@@ -100,6 +102,8 @@ export function operationsAuth(
     await identityFromToken(tokens.access_token);
     const secret = randomBytes(32).toString('base64url');
     const expiry = new Date(Date.now() + 7 * 86400000);
+    // Sign-in is a convenient moment to drop sessions nobody can use any more.
+    await db.query('DELETE FROM suite_sessions WHERE expires_at<now()');
     await db.query(
       'INSERT INTO suite_sessions(token_hash,encrypted_tokens,expires_at) VALUES($1,$2,$3)',
       [hash(secret), seal(tokens), expiry.toISOString()],
@@ -266,7 +270,8 @@ export function operationsAuth(
           [invitation.space_id, user.id],
         );
         await tx.query(
-          'INSERT INTO suite_space_members(space_id,user_id,email,name,role) VALUES($1,$2,$3,$4,$5) ON CONFLICT(space_id,user_id) DO UPDATE SET active=true,role=EXCLUDED.role',
+          // An owner who accepts an invitation to their own workspace stays the owner.
+          "INSERT INTO suite_space_members(space_id,user_id,email,name,role) VALUES($1,$2,$3,$4,$5) ON CONFLICT(space_id,user_id) DO UPDATE SET active=true,role=EXCLUDED.role WHERE suite_space_members.role<>'owner'",
           [invitation.space_id, user.id, user.email, user.name, invitation.role],
         );
       } else {

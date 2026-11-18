@@ -11,7 +11,19 @@ import { registerOperations } from './operations.js';
 import { OperationError } from '@suite/core/operations';
 
 type Options = { database: Database } & (
-  { mode: 'demo' } | { mode: 'real'; auth: AuthConfig; allowedOrigins?: string[] }
+  | { mode: 'demo' }
+  | {
+      mode: 'real';
+      auth: AuthConfig;
+      allowedOrigins?: string[];
+      /**
+       * Addresses or CIDR ranges of the reverse proxies in front of the API. Only then is
+       * X-Forwarded-For believed, so rate limits count the visitor and not the proxy.
+       */
+      trustedProxies?: string[];
+      /** Path the session cookie is limited to; narrow it when other apps share the host. */
+      cookiePath?: string;
+    }
 );
 const DEMO_ORIGINS = new Set([
   'http://127.0.0.1:5178',
@@ -24,7 +36,8 @@ export function buildApp(options: Options) {
   const app = Fastify({
     logger: false,
     bodyLimit: 64 * 1024,
-    trustProxy: false,
+    trustProxy:
+      options.mode === 'real' && options.trustedProxies?.length ? options.trustedProxies : false,
   });
   const verify = options.mode === 'real' ? createJwtVerifier(options.auth) : undefined;
   const origins = options.mode === 'demo' ? DEMO_ORIGINS : new Set(options.allowedOrigins ?? []);
@@ -89,7 +102,7 @@ export function buildApp(options: Options) {
     reply.header('X-Content-Type-Options', 'nosniff');
     if (request.method === 'OPTIONS') return reply.code(204).send();
   });
-  app.setErrorHandler((error, _request, reply) => {
+  app.setErrorHandler((error, request, reply) => {
     if (error instanceof OperationError)
       return reply
         .code(
@@ -143,6 +156,20 @@ export function buildApp(options: Options) {
         error: { code: 'INVALID_INPUT', message: 'The request is invalid.' },
       });
     }
+    // Unexpected failures must be visible to the operator. Only the error itself is written:
+    // no request body, headers or query values.
+    const failure = error as { name?: string; code?: string; message?: string; stack?: string };
+    console.error(
+      '[api] unhandled error',
+      JSON.stringify({
+        method: request.method,
+        route: request.routeOptions?.url ?? 'unmatched',
+        name: failure.name,
+        code: failure.code,
+        message: failure.message,
+      }),
+      failure.stack ?? '',
+    );
     return reply.code(500).send({
       error: {
         code: 'INTERNAL_ERROR',
@@ -245,6 +272,7 @@ export function buildApp(options: Options) {
       options.database,
       options.auth,
       process.env.SUITE_SECURE_COOKIES !== 'false',
+      options.cookiePath,
     );
   app.options('/*', async (_request, reply) => reply.code(204).send());
   return app;

@@ -30,10 +30,21 @@ try {
       'The real API requires a non-owner PostgreSQL role without SUPERUSER or BYPASSRLS.',
     );
   }
+  const list = (value: string | undefined) =>
+    (value ?? '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  // Trusting every sender would let anyone forge their address; name the proxies exactly.
+  const trustedProxies = list(process.env.API_TRUSTED_PROXIES);
+  if (trustedProxies.some((proxy) => !/^[0-9a-fA-F:.]+(\/\d{1,3})?$/.test(proxy)))
+    throw new Error('API_TRUSTED_PROXIES must list IP addresses or CIDR ranges, comma separated.');
   const app = buildApp({
     database,
     mode: 'real',
     auth,
+    trustedProxies,
+    cookiePath: process.env.SUITE_COOKIE_PATH || '/',
     allowedOrigins: (process.env.API_ALLOWED_ORIGINS ?? '')
       .split(',')
       .map((origin) => origin.trim())

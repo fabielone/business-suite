@@ -9,6 +9,7 @@ import {
 import { type Access, commandAccess } from './permissions.js';
 import { ensure } from './calculations.js';
 import { teamIdsFor } from './teams.js';
+import { normalizeLead } from './intake.js';
 
 /** Who is acting: their grants and the email that links them to a member contact. */
 export type Actor = { grants: Access[]; email: string };
@@ -186,6 +187,35 @@ export function authorizeCommand(data: SuiteData, command: Command, actor: Actor
   }
   has(commandAccess(command.type, p.collection));
   if (command.type === 'deal.convert') has('work.write');
+  // A member contact is how a signed-in person is recognised: their email links them to
+  // their own jobs, tasks and hours. Whoever can edit one can become that person, so only
+  // people who run the workspace may add, change, archive or restore one.
+  const isMember = (contactId: unknown) =>
+    data.contacts.some(
+      (c) => c.id === contactId && c.workspaceId === command.workspaceId && c.kind === 'member',
+    );
+  const teamOnly = () =>
+    grants.includes('workspace.manage') ||
+    deny('Only an owner or manager can add or change team members.');
+  if (command.type === 'contact.save' && (p.kind === 'member' || isMember(p.id))) teamOnly();
+  if (
+    (command.type === 'record.archive' || command.type === 'record.restore') &&
+    p.collection === 'contacts' &&
+    isMember(p.id)
+  )
+    teamOnly();
+  if (
+    command.type === 'contact.import' &&
+    (p.kind === 'member' ||
+      (Array.isArray(p.rows) &&
+        p.rows.some(
+          (row) =>
+            row &&
+            typeof row === 'object' &&
+            normalizeLead(row as Record<string, unknown>).person?.kind === 'member',
+        )))
+  )
+    teamOnly();
   // These imports also add the customers their rows name.
   if (command.type === 'deal.import' || command.type === 'project.import') has('contacts.write');
   if (command.type === 'order.release' && p.basis === 'manager') has('work.assign');

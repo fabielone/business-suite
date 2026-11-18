@@ -79,3 +79,6 @@ From NOTE-017 (Obsidian reference): `time.track` clocks yourself in and out (col
 
 ## Imports — 2026-11-17
 Importing projects needs `crm.write` and `contacts.write`; importing orders needs `work.write` and `contacts.write`, because both can add the customers their rows name. Viewer, production, production lead and finance roles cannot import. The backend checks this; the Import button is only hidden for convenience.
+
+## Team member contacts — 2026-11-17
+A member contact is how a signed-in person is recognised: the email on it links them to their own jobs, tasks and hours. Adding, changing, archiving or restoring a member contact, directly or through an import, therefore needs `workspace.manage` (owner or manager). Other roles with `contacts.write` keep full use of every other contact type. Found and fixed in the security review, NOTE-020 (Obsidian reference) finding S1.

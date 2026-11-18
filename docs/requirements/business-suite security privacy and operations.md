@@ -1,6 +1,6 @@
 ---
 tags: [business-suite, security, privacy, operations]
-updated: 2026-10-24
+updated: 2026-11-17
 ---
 # Business Suite security privacy and operations
 
@@ -66,3 +66,13 @@ A signed/notarized artifact is distinct from a secure app implementation, and an
 
 ## NOTE-010 deployment boundaries — 2026-10-24
 The existing Docker host now runs independent Suite Auth/database/API. Dedicated runtime login has no elevated flags, ownership or role membership, and no CONNECT to peer app databases; business rows use forced RLS plus server authorization. Public signup is disabled; no production provider or actual customer data is configured. Existing peer service definitions and private credentials were preserved. Credentials, backups and synthetic verification identities stay outside Git. See [business-suite deployed backend](<business-suite deployed backend.md>) for narrow operations, test evidence and backup locations; real-client session/local-data privacy, off-site recovery and production operations remain release work.
+
+## Operations API review — 2026-11-17
+NOTE-020 (Obsidian reference) reviewed the `/v2` API. The full list with severities is in the repository at `docs/security-review-2026-11.md`. Current rules that came out of it:
+
+- Only an owner or manager may add or change team member contacts (see [business-suite permissions](<business-suite permissions.md>)).
+- Behind a reverse proxy, `API_TRUSTED_PROXIES` must name the proxy so rate limits count each visitor. Unset, all visitors share one limit.
+- Where other applications share the host, `SUITE_COOKIE_PATH` limits the session cookie to the Suite's path. Production should have its own origin.
+- An invitation never changes an owner's role. Expired sessions are removed at sign-in. Unexpected server errors are written to the service log without request contents.
+
+Still open: a per-account sign-in limit (decide with password recovery), quotas for workspace creation, restore and command volume, token refresh inside a database transaction, the self-approval rule in a restored workspace, and session lifetime policy (BS-DEC-026).

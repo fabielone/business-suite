@@ -59,8 +59,9 @@ export function registerOperations(
   db: Database,
   auth: AuthConfig,
   secureCookies = true,
+  cookiePath = '/',
 ) {
-  const { authenticate, hash } = operationsAuth(app, db, auth, secureCookies);
+  const { authenticate, hash } = operationsAuth(app, db, auth, secureCookies, cookiePath);
   async function context<T>(
     user: Identity,
     rawId: string,
