@@ -10,8 +10,9 @@ One row per merged or recorded change, newest first. Detail lives in the linked 
 
 | Date | Task | What changed | State |
 |---|---|---|---|
-| 2026-11-17 | NOTE-019 (Obsidian reference) | Import of pipeline projects and orders from CSV, with preview; phone-width fix for panels | Branch `note-019-data-import`, uncommitted |
-| 2026-11-17 | NOTE-018 (Obsidian reference) | Launch readiness list, change process, change-request intake, slimmer hub; legacy migration dropped from launch scope; high dependency advisories cleared | Branch `note-018-launch-readiness`, uncommitted |
+| 2026-11-17 | NOTE-020 (Obsidian reference) | Security review of the operations API: team-member contacts restricted to owner and manager; proxy-aware rate limits; cookie path setting; owner kept on invitation; error logging; expired-session cleanup | Branch `note-020-operations-api-security`, uncommitted |
+| 2026-11-17 | NOTE-019 (Obsidian reference) | Import of pipeline projects and orders from CSV, with preview; phone-width fix for panels | Commit `26dc274`; merged to `main` 2026-11-17 by Fabiel, [pull request 1](https://github.com/fabielone/business-suite/pull/1), merge commit `323b315` |
+| 2026-11-17 | NOTE-018 (Obsidian reference) | Launch readiness list, change process, change-request intake, slimmer hub; legacy migration dropped from launch scope; high dependency advisories cleared | Commit `7e05f77`, merged with pull request 1 (`323b315`) |
 | 2026-11-13 | NOTE-017 (Obsidian reference) | Browser demo account (Brightline Signs) and time clock | Committed `a9749db` on `main` |
 | 2026-11-04 | NOTE-016 (Obsidian reference) | Teams, claimable task queues, business-hours alerts | Merged `1c21cb5` |
 | 2026-11-03 | NOTE-015 (Obsidian reference) | Orders, release, jobs, roles; automations; companies; lead intake; contact import | Committed through `8c6671b` |

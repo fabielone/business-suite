@@ -144,3 +144,17 @@ Scope: `deal.import` and `project.import` commands, their preview and screen, on
 New tests cover: amount and date parsing including refused cases; header mapping; customer matching and single creation; repeat import adds nothing; orders created unreleased with no payment or expense; company-only rows; denied roles and the `contacts.write` requirement; whole-batch rejection with row number; an automation that fires for a hand-saved project does not fire for an imported one.
 
 Not run: operations suite against a real local backend (`SUITE_LOCAL_E2E`), real-PostgreSQL checks, offline suite, desktop and mobile. No API-level test of the new commands; authorization is tested through the shared `authorizeCommand` the API calls. Files larger than a few rows were not timed.
+
+## NOTE-020 operations API security review — 2026-11-17
+
+Scope and findings: [security review](security-review-2026-11.md). Branch `note-020-operations-api-security`, local only, host Node 25.5.0, PGlite for API tests.
+
+| Check actually executed | Result |
+|---|---|
+| Probe before the fix | A collaborator changed a member contact's email to their own and then clocked in as that member. Confirmed S1 |
+| `npm test` | 107 passed, 0 failed: 60 core (3 new, `member-identity.test.ts`), 16 offline, 21 API (5 new, `operations-security.test.ts`), 8 desktop, 2 mobile |
+| Mutation check | With the owner guard removed, the invitation test fails with `'viewer' !== 'owner'` |
+| `npm run check`, `format:check`, `build` | Passed |
+| `npm run test:demo`, `npm run test:e2e` | 1 and 8 browser flows passed; the new team-member rule did not break the showcase |
+
+Not run: real-PostgreSQL checks, local or deployed backend verifiers, operations browser suite against a real backend. The new environment settings are not applied to any deployment. The error logging change has no test. Sign-in in the API tests uses a stand-in service, not GoTrue.

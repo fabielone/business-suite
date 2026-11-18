@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2026-11-17T14:41:05.315Z",
+  "exportedAt": "2026-11-18T02:46:26.114Z",
   "sourceDirectory": "/Users/fabiel/Library/Mobile Documents/iCloud~md~obsidian/Documents/obnotes/business-suite",
   "authority": "Obsidian source notes; this directory is a portable snapshot, not an independent specification.",
   "files": [
@@ -17,7 +17,7 @@
     },
     {
       "file": "business-suite change log.md",
-      "sha256": "dbb54880c75e0937888483cb624fba07b2227513b6ddb2effc7eb45e1494bd87"
+      "sha256": "0a37d3308697887b63672b5d4ec91537bc5fdbbc5afccda0bf4b72b69aa8b758"
     },
     {
       "file": "business-suite change process.md",
@@ -45,7 +45,7 @@
     },
     {
       "file": "business-suite launch readiness.md",
-      "sha256": "f178349082c92ca3a152a63a0165dc5751e57fcc5d446414dafcccb2ec1c0976"
+      "sha256": "b86040b6ed1fda6a3c6ec382ef6e53b5f7328549d256280ba2e7f8034802e986"
     },
     {
       "file": "business-suite migration.md",
@@ -73,7 +73,7 @@
     },
     {
       "file": "business-suite permissions.md",
-      "sha256": "340c4e4bf56c5a66965a1651d2c234d2a22c0230f0ae595a534bdbe660171527"
+      "sha256": "8f73b4a5c00ed434ad9218cb430e083f433fa7e87fc398503a0bd34a47c51c87"
     },
     {
       "file": "business-suite quality and verification.md",
@@ -93,7 +93,7 @@
     },
     {
       "file": "business-suite security privacy and operations.md",
-      "sha256": "302d6f801953a78049dd0bd7597c649ac55af4216e353b626e9e3f3a699a3841"
+      "sha256": "6ad5fae6f204757875dfef220f649b76632711b5bad477d4984cbe708ac73693"
     },
     {
       "file": "business-suite sources and agent handoff.md",
